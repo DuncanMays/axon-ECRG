@@ -6,7 +6,7 @@ default_rpc_config = {
 }
 
 comms_config = {
-	'notice_board_ip': '192.168.2.19',
+	'notice_board_ip': '192.168.229.12',
 	'notice_board_port': 8002,
 	'request_timeout': 30,
 	'RVL_port': 8001,
