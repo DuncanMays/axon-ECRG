@@ -13,7 +13,7 @@ import asyncio
 # catches any errors in fn, and handles them properly
 def error_wrapper(fn):
 
-	def wrapped_fn(params):
+	def wrapped_fn(args, kwargs):
 		return_object = {
 			'errcode': 0,
 			'result': None,
@@ -21,7 +21,7 @@ def error_wrapper(fn):
 
 		try:
 			# execute the given function
-			return_object['result'] = fn(*params)
+			return_object['result'] = fn(*args, **kwargs)
 
 		except:
 			# catch and return all errors
@@ -51,10 +51,10 @@ def simplex_wrapper(fn, executor):
 	def run_inline():
 		# calculates the parameters of the function
 		params_str = route_req.form['msg']
-		params = deserialize(params_str)
+		args, kwargs = deserialize(params_str)
 
 		# runs the function
-		return_object = error_wrapper(fn)(params)
+		return_object = error_wrapper(fn)(args, kwargs)
 
 		# serilizes and returns the function's result
 		return serialize(return_object)
@@ -68,7 +68,7 @@ def simplex_wrapper(fn, executor):
 		def wrk_fn(fn, params_str, result_holder):
 
 			# deserializes parameters
-			params = deserialize(params_str)
+			args, kwargs = deserialize(params_str)
 
 			# if fn is a coroutine, it needs to be run with an event loop
 			if inspect.iscoroutinefunction(fn): fn = async_wrapper(fn)
@@ -77,7 +77,7 @@ def simplex_wrapper(fn, executor):
 			fn = error_wrapper(fn)
 
 			# runs the function
-			return_object = fn(params)
+			return_object = fn(args, kwargs)
 
 			result_holder['result'] = serialize(return_object)
 
@@ -109,7 +109,7 @@ def duplex_wrapper(fn, executor):
 		def wrk_fn(fn, params_str, calling_ip):
 
 			# deserializes parameters
-			(call_info, params) = deserialize(params_str)
+			(call_info, args, kwargs) = deserialize(params_str)
 
 			# the info needed to return the result
 			call_id = call_info['id']
@@ -122,7 +122,7 @@ def duplex_wrapper(fn, executor):
 			fn = error_wrapper(fn)
 
 			# runs the function
-			return_object = fn(params)
+			return_object = fn(args, kwargs)
 
 			# returns the result via a POST request
 			url = 'http://'+calling_ip+':'+str(rvl_port)+'/_return_value_linker'

@@ -13,7 +13,7 @@ def GET(url):
 	return resp.status_code, resp.text
 
 async def async_GET(url):
-	async with aiohttp.ClientSession(timeout=5) as session:
+	async with aiohttp.ClientSession() as session:
 		async with session.get(url) as resp:
 			return resp.status, await resp.text()
 
@@ -22,7 +22,7 @@ def POST(url, data=None):
 	return resp.status_code, resp.text
 
 async def async_POST(url, data=None):
-	async with aiohttp.ClientSession(timeout=5) as session:
+	async with aiohttp.ClientSession() as session:
 		async with session.post(url, data=data) as resp:
 			return resp.status, await resp.text()
 

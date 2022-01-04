@@ -39,11 +39,11 @@ def error_handler(worker_ip, return_obj):
 def get_simplex_rpc_stub(worker_ip, rpc_name):
 
 	# this function makes a calling request to a simplex RPC on the worker with IP worker_ip to the RPC named rpc_name
-	async def simplex_rpc_stub(*params):
+	async def simplex_rpc_stub(*args, **kwargs):
 		# URL of RPC
 		url = 'http://'+str(worker_ip)+':'+str(comms_config.worker_port)+'/'+rpc_name
 		# makes the calling request
-		status, text = await async_POST(url=url , data={'msg': serialize(params)})
+		status, text = await async_POST(url=url , data={'msg': serialize((args, kwargs))})
 		# deserializes return object from worker
 		return_obj = deserialize(text)
 		return error_handler(worker_ip, return_obj)
@@ -53,7 +53,7 @@ def get_simplex_rpc_stub(worker_ip, rpc_name):
 def get_duplex_rpc_stub(worker_ip, rpc_name):
 
 	# this function makes a calling request to a simplex RPC on the worker with IP worker_ip to the RPC named rpc_name
-	async def duplex_rpc_stub(*params):
+	async def duplex_rpc_stub(*args, **kwargs):
 		global rvl
 		if rvl == None:
 			await start_client()
@@ -70,7 +70,7 @@ def get_duplex_rpc_stub(worker_ip, rpc_name):
 		# we now start the RPC
 		url = 'http://'+str(worker_ip)+':'+str(comms_config.worker_port)+'/'+rpc_name
 		# makes the calling request
-		status, text = await async_POST(url=url , data={'msg': serialize((call_info, params))})
+		status, text = await async_POST(url=url , data={'msg': serialize((call_info, args, kwargs))})
 		return_obj = deserialize(text)
 
 		# raises exception if the receiving RPC is simplex, not duplex
@@ -96,7 +96,6 @@ class RemoteWorker():
 
 		# profile_or_ip is either an ip address or a worker profile, here we test to see which one
 		try:
-			print('hello there!')
 			profile_or_ip['ip_addr']
 			# profile_or_ip has a member ip_addr, and so must be a profile
 			profile = profile_or_ip

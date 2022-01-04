@@ -9,7 +9,7 @@ import requests, aiohttp
 import asyncio 
 
 # broadcasts to all IPs on the LAN, and returns a list of the IPs that provide a response
-async def broadcast(endpoint='discovery', port=comms_config.notice_board_port, single_host=True, timeout=10):
+async def broadcast_discovery(endpoint='/', port=comms_config.notice_board_port, num_hosts=-1, timeout=10):
 	self_ip = get_self_ip()
 	# the first three numbers of the ip address, representing the LAN address
 	base_addr = '.'.join(self_ip.split('.')[:-1])+'.'
@@ -26,7 +26,7 @@ async def broadcast(endpoint='discovery', port=comms_config.notice_board_port, s
 
 		# coroutine that we will call on each ip in host_ips
 		async def req_fn(ip, result_holder):
-			url = 'http://'+base_addr+str(ip)+':'+str(port)+'/'+endpoint
+			url = 'http://'+base_addr+str(ip)+':'+str(port)+endpoint
 			status = None
 			test = None
 
@@ -35,18 +35,20 @@ async def broadcast(endpoint='discovery', port=comms_config.notice_board_port, s
 				# sends request and awaits result
 				async with session.get(url) as resp:
 					status = resp.status
-					test = await resp.text()
+					# text = await resp.text()
 
-				# if there is a worker at ip, set the result
-				result_holder['result'].append(base_addr+str(ip))
+				# if the host at ip exposes the endpoint we're looking for, the response status should be in the 200s
+				if (200 <= status < 300):
+					result_holder['result'].append(base_addr+str(ip))
 
-				# if we are to stop after one response, cancel the other coroutines
-				if (single_host):
-					all_reqs.cancel()
+					# if we are to stop after some number of hosts, cancel the other requests
+					if (len(result_holder['result']) >= num_hosts) and (0 < num_hosts):
+						all_reqs.cancel()
 
 				return
 
 			except(aiohttp.client_exceptions.ClientConnectorError):
+				# if the client can't connect, if there isn't any host at ip or if that host doesn't expose the endpoint we're looking for
 				return
 
 			except(aiohttp.client_exceptions.ServerTimeoutError):
@@ -63,11 +65,7 @@ async def broadcast(endpoint='discovery', port=comms_config.notice_board_port, s
 		except(asyncio.exceptions.CancelledError):
 			pass
 
-	if (single_host):
-		return result_holder['result'][0]
-
-	else:
-		return result_holder['result']
+	return result_holder['result']
 
 def sign_in(ip='localhost', port=comms_config.notice_board_port):
 	try:
@@ -77,7 +75,7 @@ def sign_in(ip='localhost', port=comms_config.notice_board_port):
 			print('sign_in: notice board gave warning, may not be registered')
 
 	except(requests.exceptions.ConnectionError):
-		print('sign in: no notice board found at '+str(comms_config.notice_board_ip))
+		print('sign_in: no notice board found at '+str(comms_config.notice_board_ip))
 
 def sign_out(ip='localhost', port=comms_config.notice_board_port):
 	try:
@@ -90,4 +88,12 @@ def sign_out(ip='localhost', port=comms_config.notice_board_port):
 			print('sing_out: notice board gave warning')
 
 	except(requests.exceptions.ConnectionError):
-		print('sign out: no notice board found at '+str(comms_config.notice_board_ip))
+		print('sign_out: no notice board found at '+str(comms_config.notice_board_ip))
+
+def get_ips(ip='localhost', port=comms_config.notice_board_port):
+	try:
+		status, text = GET('http://'+str(ip)+':'+str(port)+'/get_ips')
+		return deserialize(text)
+
+	except(requests.exceptions.ConnectionError):
+		print('get_ips: no notice board found at '+str(ip))

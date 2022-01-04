@@ -7,11 +7,12 @@ from flask import request as route_req
 # this class is a notice board, which workers can sign into and out of to notify other workers of their presence
 class NoticeBoard():
 
-	def __init__(self, name='notice board', port=comms_config.notice_board_port):
+	def __init__(self, name='notice board', port=comms_config.notice_board_port, show_logs=True):
 
 		self.ip_set = set({})
 		self.app = Flask(name)
 		self.port = port
+		self.show_logs = show_logs
 
 		# we now add routes to the app
 
@@ -20,7 +21,7 @@ class NoticeBoard():
 			remote_addr = route_req.remote_addr
 			self.ip_set.add(remote_addr)
 
-			print('/sign_in: ip address:', remote_addr, 'recorded, now have', len(self.ip_set), 'registered addresses')
+			self.log('/sign_in: ip address:', remote_addr, 'recorded, now have', len(self.ip_set), 'registered addresses')
 
 			return 'sign in successful'
 
@@ -30,11 +31,11 @@ class NoticeBoard():
 
 			try:
 				self.ip_set.remove(remote_addr)
-				print('/sign_out: ip address:', remote_addr, 'removed, now have', len(self.ip_set), 'registered addresses')
+				self.log('/sign_out: ip address:', remote_addr, 'removed, now have', len(self.ip_set), 'registered addresses')
 				return 'sign out successful'
 
 			except(KeyError):
-				print('/sign_out: ip address:', remote_addr, 'not recorded')
+				self.log('/sign_out: ip address:', remote_addr, 'not recorded')
 				return 'ip address not recorded'
 
 
@@ -58,5 +59,8 @@ class NoticeBoard():
 		return list(self.ip_set)
 
 	def start(self):
-		print('starting notice board app')
+		self.log('starting notice board app')
 		self.app.run(host='0.0.0.0', port=self.port)
+
+	def log(self, *args):
+		if self.show_logs: print(*args)

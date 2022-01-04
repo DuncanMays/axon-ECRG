@@ -7,7 +7,7 @@ import time
 import random
 
 @rpc(comms_pattern='duplex', executor='Process')
-def do_work(num_iters):
+def do_work(num_iters, msg='default'):
 	# the number of iterations that would take a second on my ideapad
 	one_second = 44000000
 
@@ -19,7 +19,7 @@ def do_work(num_iters):
 
 	# time.sleep(num_iters)
 
-	print('work completed')
+	print(msg)
 
 	return random.randint(0, 10)
 
