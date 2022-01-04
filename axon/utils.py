@@ -13,7 +13,7 @@ def GET(url):
 	return resp.status_code, resp.text
 
 async def async_GET(url):
-	async with aiohttp.ClientSession() as session:
+	async with aiohttp.ClientSession(timeout=5) as session:
 		async with session.get(url) as resp:
 			return resp.status, await resp.text()
 
@@ -22,7 +22,7 @@ def POST(url, data=None):
 	return resp.status_code, resp.text
 
 async def async_POST(url, data=None):
-	async with aiohttp.ClientSession() as session:
+	async with aiohttp.ClientSession(timeout=5) as session:
 		async with session.post(url, data=data) as resp:
 			return resp.status, await resp.text()
 
@@ -76,26 +76,3 @@ def get_open_port(lower_bound=8000, upper_bound=9000):
 
 	sock.close()
 	raise BaseException('No available ports in between '+str(lower_bound)+' and '+str(upper_bound))
-
-def sign_in(ip=comms_config.notice_board_ip, port=comms_config.notice_board_port):
-	try:
-		status, text = GET('http://'+str(ip)+':'+str(port)+'/sign_in')
-
-		if (hash(text) != hash('sign in successful')):
-			print('sign_in: notice board gave warning, may not be registered')
-
-	except(requests.exceptions.ConnectionError):
-		print('sign in: no notice board found at '+str(comms_config.notice_board_ip))
-
-def sign_out(ip=comms_config.notice_board_ip, port=comms_config.notice_board_port):
-	try:
-		status, text = GET('http://'+str(ip)+':'+str(port)+'/sign_out')
-
-		if (hash(text) == hash('ip address not recorded')):
-			print('sing_out: not registered at given ip')
-
-		elif (hash(text) != hash('sign out successful')):
-			print('sing_out: notice board gave warning')
-
-	except(requests.exceptions.ConnectionError):
-		print('sign out: no notice board found at '+str(comms_config.notice_board_ip))

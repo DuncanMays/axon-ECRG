@@ -96,6 +96,7 @@ class RemoteWorker():
 
 		# profile_or_ip is either an ip address or a worker profile, here we test to see which one
 		try:
+			print('hello there!')
 			profile_or_ip['ip_addr']
 			# profile_or_ip has a member ip_addr, and so must be a profile
 			profile = profile_or_ip

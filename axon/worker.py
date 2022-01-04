@@ -1,7 +1,8 @@
 # the bit that listens idly and serves RPCs
 # and executor is the thing that takes a function, and executes it in a thread/process and returns the result as response or even another HTTP req entirely
 
-from .utils import deserialize, serialize, sign_in, sign_out, get_self_ip
+from .utils import deserialize, serialize, get_self_ip
+from .discovery import sign_in, sign_out
 from .comms_wrappers import simplex_wrapper, duplex_wrapper
 from .config import comms_config, default_rpc_config
 
@@ -42,6 +43,17 @@ def _get_profile():
 	}
 
 	return serialize(profile)
+
+# a default route to kill the worker
+@app.route('/kill', methods=['GET'])
+def kill():
+	func = route_req.environ.get('werkzeug.server.shutdown')
+
+	if func is None:
+		raise RuntimeError('Not running with the Werkzeug Server')
+
+	func()
+	return 'shutting down'
 
 # accepts two dicts, target and source
 # in any shared keys between the two will be overwritten to source's value, and any keys in source will be copied to target, with thei values
@@ -113,7 +125,7 @@ def teardown(frame, file):
 	sign_out()
 	exit()
 
-signal.signal(signal.SIGINT, teardown)
+# signal.signal(signal.SIGINT, teardown)
 
 # starts the web app
 def init():

@@ -1,3 +1,6 @@
+import sys
+sys.path.append('..')
+
 from axon.worker import rpc, init
 
 import time

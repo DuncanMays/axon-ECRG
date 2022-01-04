@@ -1,3 +1,8 @@
+import sys
+sys.path.append('..')
+
 import axon
 
-axon.start_notice_board()
+nb = axon.discovery.NoticeBoard()
+
+nb.start()
