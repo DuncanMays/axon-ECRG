@@ -75,7 +75,7 @@ def sign_in(ip='localhost', port=comms_config.notice_board_port):
 			print('sign_in: notice board gave warning, may not be registered')
 
 	except(requests.exceptions.ConnectionError):
-		print('sign_in: no notice board found at '+str(comms_config.notice_board_ip))
+		print('sign_in: no notice board found at '+str(ip))
 
 def sign_out(ip='localhost', port=comms_config.notice_board_port):
 	try:
@@ -88,7 +88,7 @@ def sign_out(ip='localhost', port=comms_config.notice_board_port):
 			print('sing_out: notice board gave warning')
 
 	except(requests.exceptions.ConnectionError):
-		print('sign_out: no notice board found at '+str(comms_config.notice_board_ip))
+		print('sign_out: no notice board found at '+str(ip))
 
 def get_ips(ip='localhost', port=comms_config.notice_board_port):
 	try:

@@ -4,14 +4,15 @@ sys.path.append('..')
 from axon.client import RemoteWorker, start_client
 from axon.utils import get_active_workers
 from axon.discovery import broadcast_discovery, get_ips
+from axon.config import comms_config
 import asyncio
 
 async def main():
 
 	# finding notice board
-	nb_ip = await broadcast_discovery(endpoint='/discovery', num_hosts=1)
+	worker_ips = await broadcast_discovery(endpoint='/active_worker', num_hosts=1, port=comms_config.worker_port)
 
-	worker_ips = get_ips(nb_ip.pop())
+	# worker_ips = get_ips(nb_ip.pop())
 
 	# print('getting worker ips')
 	worker = RemoteWorker(worker_ips.pop())

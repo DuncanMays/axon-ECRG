@@ -2,7 +2,6 @@
 # and executor is the thing that takes a function, and executes it in a thread/process and returns the result as response or even another HTTP req entirely
 
 from .utils import deserialize, serialize, get_self_ip
-from .discovery import sign_in, sign_out
 from .comms_wrappers import simplex_wrapper, duplex_wrapper
 from .config import comms_config, default_rpc_config
 
@@ -10,19 +9,7 @@ from flask import Flask
 from flask import request as route_req
 from multiprocessing import Process
 import threading
-import sys
-import signal
 import inspect
-
-# stops flask from outputting starting message
-# cli = sys.modules['flask.cli']
-# cli.show_server_banner = lambda *x: 'hello there'
-
-# # stops flask from printing to console when it fulfills a request
-# import logging
-# log = logging.getLogger('werkzeug')
-# log.setLevel(logging.ERROR)
-# log.disabled = True
 
 # where the rpcs being offered are stored
 rpcs = []
@@ -31,13 +18,15 @@ ip_addr = get_self_ip()
 # the app that listens for incomming http requests
 app = Flask(__name__)
 # app.logger.disabled = True
+name = 'worker'
 
 # a default route to serve up what rpcs this worker offers, and their configuration
 @app.route('/_get_profile', methods=['GET'])
 def _get_profile():
-	global rpcs
+	global name, ip_addr, rpcs
 
 	profile = {
+		'name': name,
 		'ip_addr': ip_addr,
 		'rpcs': rpcs
 	}
@@ -120,15 +109,10 @@ def rpc(**configuration):
 
 	return init_rpc
 
-# gracefully kills the worker
-def teardown(frame, file):
-	sign_out()
-	exit()
-
-# signal.signal(signal.SIGINT, teardown)
-
 # starts the web app
-def init():
-	sign_in()
+def init(wrkr_name='worker'):
+	global name
+
+	name = wrkr_name
 	# the web application that will serve the rpcs as routes
 	app.run(host='0.0.0.0', port=comms_config.worker_port)

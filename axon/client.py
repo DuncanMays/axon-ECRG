@@ -105,14 +105,18 @@ class RemoteWorker():
 			profile = get_worker_profile(profile_or_ip)
 
 		# sets up all the rfc stubs
-		self.setup_rfc_stubs(profile)
+		self.setup(profile)
 
-	def setup_rfc_stubs(self, profile):
+	def setup(self, profile):
 		self.ip_addr = profile['ip_addr']
+		self.name = profile['name']
 
+		self.setup_rpc_stubs(profile['rpcs'])
+
+	def setup_rpc_stubs(self, rpcs_profiles):
 		rpcs = {}
 
-		for rpc_desc in profile['rpcs']:
+		for rpc_desc in rpcs_profiles:
 			
 			name = rpc_desc['name']
 			configuration = rpc_desc['configuration']
