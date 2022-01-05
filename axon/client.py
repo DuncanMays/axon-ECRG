@@ -2,7 +2,7 @@
 # an RPC stub is the thing on the client that makes a calling request and waits for the response
 
 from .utils import serialize, deserialize, GET, POST, async_GET, async_POST
-from .config import comms_config
+from .config import comms_config, default_rpc_config
 from .return_value_linker import ReturnEvent, RVL
 
 from types import SimpleNamespace
@@ -38,10 +38,12 @@ def error_handler(worker_ip, return_obj):
 
 def get_simplex_rpc_stub(worker_ip, rpc_name):
 
+	# URL of RPC
+	url = 'http://'+str(worker_ip)+':'+str(comms_config.worker_port)+'/'+default_rpc_config['endpoint_prefix']+rpc_name
+
 	# this function makes a calling request to a simplex RPC on the worker with IP worker_ip to the RPC named rpc_name
 	async def simplex_rpc_stub(*args, **kwargs):
-		# URL of RPC
-		url = 'http://'+str(worker_ip)+':'+str(comms_config.worker_port)+'/'+rpc_name
+		
 		# makes the calling request
 		status, text = await async_POST(url=url , data={'msg': serialize((args, kwargs))})
 		# deserializes return object from worker
@@ -50,7 +52,28 @@ def get_simplex_rpc_stub(worker_ip, rpc_name):
 
 	return simplex_rpc_stub
 
+def get_multicast_simplex_rpc_stub(worker_ips, rpc_name):
+
+	# URLs of RPCs
+	get_url = lambda ip : 'http://'+str(ip)+':'+str(comms_config.worker_port)+'/'+default_rpc_config['endpoint_prefix']+rpc_name
+	urls = [get_url(ip) for ip in worker_ips]
+
+	# this function makes a calling request to a simplex RPC on the worker with IP worker_ip to the RPC named rpc_name
+	async def multicast_simplex_rpc_stub(arg_list, kwargs_list, shared_args, shared_kwargs):
+		
+		# makes the calling requests
+
+		status, text = await async_POST(url=url , data={'msg': serialize((args, kwargs))})
+		# deserializes return object from worker
+		return_obj = deserialize(text)
+		return error_handler(worker_ip, return_obj)
+
+	return simplex_rpc_stub
+
 def get_duplex_rpc_stub(worker_ip, rpc_name):
+
+	# the URL of the RPC
+	url = 'http://'+str(worker_ip)+':'+str(comms_config.worker_port)+'/'+default_rpc_config['endpoint_prefix']+rpc_name
 
 	# this function makes a calling request to a simplex RPC on the worker with IP worker_ip to the RPC named rpc_name
 	async def duplex_rpc_stub(*args, **kwargs):
@@ -67,8 +90,6 @@ def get_duplex_rpc_stub(worker_ip, rpc_name):
 		# this object holds information about the function call that the worker will need to provide to the rvl upon completion
 		call_info = {'id': call_id, 'rvl_port': rvl.port}
 
-		# we now start the RPC
-		url = 'http://'+str(worker_ip)+':'+str(comms_config.worker_port)+'/'+rpc_name
 		# makes the calling request
 		status, text = await async_POST(url=url , data={'msg': serialize((call_info, args, kwargs))})
 		return_obj = deserialize(text)

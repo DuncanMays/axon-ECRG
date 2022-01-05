@@ -44,7 +44,7 @@ class NoticeBoard():
 			self.ip_list = list(self.ip_set)
 			return serialize(self.ip_list)
 
-		# route to shut the server down
+		# route to shut the server down in case sigint fails
 		@self.app.route('/kill')
 		def kill():
 			func = route_req.environ.get('werkzeug.server.shutdown')
@@ -54,6 +54,11 @@ class NoticeBoard():
 
 			func()
 			return 'shutting down'
+
+		# a default route to provide basic info about the axon node, namely, that it's a notice board
+		@self.app.route('/_type', methods=['GET'])
+		def _type():
+			return 'notice_board'
 
 	def get_ips(self):
 		return list(self.ip_set)

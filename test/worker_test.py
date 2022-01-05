@@ -9,7 +9,7 @@ import asyncio
 import signal
 
 # this IP address of the notice board that this worker will sign in and out of
-notice_board_ip = '192.168.2.26'
+notice_board_ip = '192.168.2.19'
 
 @worker.rpc(comms_pattern='duplex', executor='Process')
 def do_work(num_iters, msg='default'):
@@ -26,10 +26,6 @@ def do_work(num_iters, msg='default'):
 
 	return random.randint(0, 10)
 
-@worker.app.route('/active_worker')
-def fn(): 
-	return'string'
-
 def sigint_handler(a, b):
 	discovery.sign_out(notice_board_ip)
 	exit()
@@ -37,6 +33,7 @@ def sigint_handler(a, b):
 async def main():
 	# signs into the notice board
 	discovery.sign_in(notice_board_ip)
+	print('sign in complete')
 
 	# sets a handler to sign out of the notice board
 	signal.signal(signal.SIGINT, sigint_handler)

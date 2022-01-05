@@ -9,7 +9,7 @@ import requests, aiohttp
 import asyncio 
 
 # broadcasts to all IPs on the LAN, and returns a list of the IPs that provide a response
-async def broadcast_discovery(endpoint='/', port=comms_config.notice_board_port, num_hosts=-1, timeout=10):
+async def broadcast_discovery(node_type='*', port=comms_config.worker_port, num_hosts=-1, timeout=10):
 	self_ip = get_self_ip()
 	# the first three numbers of the ip address, representing the LAN address
 	base_addr = '.'.join(self_ip.split('.')[:-1])+'.'
@@ -18,7 +18,7 @@ async def broadcast_discovery(endpoint='/', port=comms_config.notice_board_port,
 
 	# the future that holds all the request coroutines
 	all_reqs = None
-	# where the IP address of the first discovered endpoint will be stored
+	# where the IP addresses of the discovered nodes will be stored
 	result_holder = {'result': []}
 
 	# we need to create a clientsession to send async requests
@@ -26,7 +26,7 @@ async def broadcast_discovery(endpoint='/', port=comms_config.notice_board_port,
 
 		# coroutine that we will call on each ip in host_ips
 		async def req_fn(ip, result_holder):
-			url = 'http://'+base_addr+str(ip)+':'+str(port)+endpoint
+			url = 'http://'+base_addr+str(ip)+':'+str(port)+'/_type'
 			status = None
 			test = None
 
@@ -35,29 +35,29 @@ async def broadcast_discovery(endpoint='/', port=comms_config.notice_board_port,
 				# sends request and awaits result
 				async with session.get(url) as resp:
 					status = resp.status
-					# text = await resp.text()
+					text = await resp.text()
 
 				# if the host at ip exposes the endpoint we're looking for, the response status should be in the 200s
 				if (200 <= status < 300):
-					result_holder['result'].append(base_addr+str(ip))
+					# checks to make sure that the found node is the right kind of node, if the caller provides a type of node
+					if (node_type == '*') or (text == node_type):
 
-					# if we are to stop after some number of hosts, cancel the other requests
-					if (len(result_holder['result']) >= num_hosts) and (0 < num_hosts):
-						all_reqs.cancel()
+						result_holder['result'].append(base_addr+str(ip))
+
+						# if we are to stop after some number of hosts, cancel the other requests
+						if (len(result_holder['result']) >= num_hosts) and (0 < num_hosts):
+							all_reqs.cancel()
 
 				return
 
 			except(aiohttp.client_exceptions.ClientConnectorError):
-				# if the client can't connect, if there isn't any host at ip or if that host doesn't expose the endpoint we're looking for
 				return
 
 			except(aiohttp.client_exceptions.ServerTimeoutError):
 				return
 
-
 		# the futures returned by sending requests to each host
-		futures = [req_fn(ip, result_holder) for ip in host_ips]
-		all_reqs = asyncio.gather(*futures)
+		all_reqs = asyncio.gather(*[req_fn(ip, result_holder) for ip in host_ips])
 
 		try:	
 			await all_reqs

@@ -8,8 +8,8 @@ import codecs
 import time
 import socket
 
-def GET(url):
-	resp = requests.get(url, timeout=comms_config.request_timeout)
+def GET(url, timeout=comms_config.request_timeout):
+	resp = requests.get(url, timeout=timeout)
 	return resp.status_code, resp.text
 
 async def async_GET(url):
@@ -17,8 +17,8 @@ async def async_GET(url):
 		async with session.get(url) as resp:
 			return resp.status, await resp.text()
 
-def POST(url, data=None):
-	resp = requests.post(url=url, data=data, timeout=comms_config.request_timeout)
+def POST(url, data=None, timeout=comms_config.request_timeout):
+	resp = requests.post(url=url, data=data, timeout=timeout)
 	return resp.status_code, resp.text
 
 async def async_POST(url, data=None):

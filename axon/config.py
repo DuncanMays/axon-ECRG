@@ -2,6 +2,8 @@ from types import SimpleNamespace
 
 default_rpc_config = {
 	'comms_pattern': 'simplex',
+	'endpoint_prefix': 'rpc/',
+	'executor': 'Thread',
 	'log_errors': False,
 	'new_process': False
 }

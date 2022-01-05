@@ -81,8 +81,6 @@ def simplex_wrapper(fn, executor):
 
 			result_holder['result'] = serialize(return_object)
 
-			print('thread fn done')
-
 		params_str = route_req.form['msg']
 
 		fn_executor = executor(target=wrk_fn, args=(fn, params_str, result_holder))
