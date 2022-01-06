@@ -17,8 +17,8 @@ rpcs = []
 ip_addr = get_self_ip()
 # the app that listens for incomming http requests
 app = Flask(__name__)
-# app.logger.disabled = True
 name = 'worker'
+node_type = 'worker'
 
 # a default route to serve up what rpcs this worker offers, and their configuration
 @app.route('/_get_profile', methods=['GET'])
@@ -47,7 +47,7 @@ def kill():
 # a default route to provide basic info about the axon node, namely, that it's a worker
 @app.route('/_type', methods=['GET'])
 def _type():
-	return 'worker'
+	return node_type
 
 # accepts two dicts, target and source
 # in any shared keys between the two will be overwritten to source's value, and any keys in source will be copied to target, with thei values
@@ -122,4 +122,4 @@ def init(wrkr_name='worker'):
 
 	name = wrkr_name
 	# the web application that will serve the rpcs as routes
-	app.run(host='0.0.0.0', port=comms_config.worker_port)
+	app.run(host='0.0.0.0', port=comms_config.worker_port, threaded=False)

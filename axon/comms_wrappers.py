@@ -47,18 +47,6 @@ def async_wrapper(fn):
 # adds code to deserialize parameters from the request and return its results through the response
 def simplex_wrapper(fn, executor):
 
-	# this function simply runs fn as normal, not in a thread or process
-	def run_inline():
-		# calculates the parameters of the function
-		params_str = route_req.form['msg']
-		args, kwargs = deserialize(params_str)
-
-		# runs the function
-		return_object = error_wrapper(fn)(args, kwargs)
-
-		# serilizes and returns the function's result
-		return serialize(return_object)
-
 	def wrapped_fn():
 
 		mp_manager = Manager()
@@ -90,10 +78,6 @@ def simplex_wrapper(fn, executor):
 		fn_executor.join()
 
 		return result_holder['result']
-
-	if (executor.__name__ == 'Thread'):
-		# flask runs routes in threads by default, so if the executor is a thread we can just run it inline
-		wrapped_fn = run_inline
 
 	return wrapped_fn
 

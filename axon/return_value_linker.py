@@ -71,7 +71,7 @@ class RVL():
 	def start(self):
 
 		def start_app(port):
-			self.app.run(host='0.0.0.0', port=port)
+			self.app.run(host='0.0.0.0', port=port, threaded=False)
 
 		# finds an available port
 		rvl_port = get_open_port(lower_bound=comms_config.RVL_port)

@@ -46,24 +46,10 @@ def get_simplex_rpc_stub(worker_ip, rpc_name):
 		
 		# makes the calling request
 		status, text = await async_POST(url=url , data={'msg': serialize((args, kwargs))})
-		# deserializes return object from worker
-		return_obj = deserialize(text)
-		return error_handler(worker_ip, return_obj)
 
-	return simplex_rpc_stub
+		if (text =='duplex'):
+			raise(BaseException('simplex call sent to duplex RPC'))
 
-def get_multicast_simplex_rpc_stub(worker_ips, rpc_name):
-
-	# URLs of RPCs
-	get_url = lambda ip : 'http://'+str(ip)+':'+str(comms_config.worker_port)+'/'+default_rpc_config['endpoint_prefix']+rpc_name
-	urls = [get_url(ip) for ip in worker_ips]
-
-	# this function makes a calling request to a simplex RPC on the worker with IP worker_ip to the RPC named rpc_name
-	async def multicast_simplex_rpc_stub(arg_list, kwargs_list, shared_args, shared_kwargs):
-		
-		# makes the calling requests
-
-		status, text = await async_POST(url=url , data={'msg': serialize((args, kwargs))})
 		# deserializes return object from worker
 		return_obj = deserialize(text)
 		return error_handler(worker_ip, return_obj)
@@ -95,7 +81,7 @@ def get_duplex_rpc_stub(worker_ip, rpc_name):
 		return_obj = deserialize(text)
 
 		# raises exception if the receiving RPC is simplex, not duplex
-		if (return_obj == 'simplex'):
+		if (return_obj != 'duplex'):
 			print(return_obj)
 			raise(BaseException('duplex call sent to simplex RPC'))
 
