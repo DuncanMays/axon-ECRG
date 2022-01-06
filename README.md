@@ -10,26 +10,26 @@ pip install axon-ECRG
 
 ### Client
 
-`import asyncio
-from axon import client
+`import asyncio`
+`from axon import client`
 
-hello_world = client.get_simplex_rpc_stub("127.0.0.1", "hello_world")
+`hello_world = client.get_simplex_rpc_stub("127.0.0.1", "hello_world")`
 
-async def main():
-	result = await hello_world()
-	print(result)
+`async def main():`
+	`result = await hello_world()`
+	`print(result)`
 
-asyncio.run(main())`
+`asyncio.run(main())`
 
 ### Worker
 
-`from axon import worker
+`from axon import worker`
 
-@worker.rpc()
-def hello_world():
-	print("hello")
-	return "world"
+`@worker.rpc()`
+`def hello_world():`
+	`print("hello")`
+	`return "world"`
 
-worker.init()`
+`worker.init()`
 
 Replace '127.0.0.1' with the IP address of the worker, and you can call functions on other computers on your network.
