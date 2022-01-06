@@ -4,32 +4,36 @@ Edge computing framework developed and maintained by the Edge Computing Research
 
 ## Installation
 
-`pip install axon-ECRG`
+pip install axon-ECRG
 
 ## QuickStart
 
 ### Client
 
-`import asyncio\n`
-`from axon import client\n`
+```
+import asyncio
+from axon import client
 
-`hello_world = client.get_simplex_rpc_stub("127.0.0.1", "hello_world")\n`
+hello_world = client.get_simplex_rpc_stub("127.0.0.1", "hello_world")
 
-`async def main():\n`
-	`result = await hello_world()\n`
-	`print(result)\n`
+async def main():
+	result = await hello_world()
+	print(result)
 
-`asyncio.run(main())\n`
+asyncio.run(main())
+```
 
 ### Worker
 
-`from axon import worker\n`
+```
+from axon import worker
 
-`@worker.rpc()\n`
-`def hello_world():\n`
-	`print("hello")\n`
-	`return "world"\n`
+@worker.rpc()
+def hello_world():
+	print("hello")
+	return "world"
 
-`worker.init()\n`
+worker.init()
+```
 
 Replace '127.0.0.1' with the IP address of the worker, and you can call functions on other computers on your network.
