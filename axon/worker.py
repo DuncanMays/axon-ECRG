@@ -4,6 +4,7 @@
 from .utils import deserialize, serialize, get_self_ip
 from .comms_wrappers import simplex_wrapper, duplex_wrapper
 from .config import comms_config, default_rpc_config
+from .inline_executor import InlineExecutor
 
 from flask import Flask
 from flask import request as route_req
@@ -76,7 +77,10 @@ def get_executor(configuration, fn):
 		raise BaseException('unrecognized comms_pattern: '+str(comms_pattern))
 
 	executor = configuration['executor']
-	if (executor == 'Process'):
+
+	if (executor == 'inline'):
+		executor = InlineExecutor
+	elif (executor == 'Process'):
 		executor = Process
 	elif((executor == 'Thread')):
 		executor = threading.Thread

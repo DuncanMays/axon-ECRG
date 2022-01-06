@@ -2,15 +2,11 @@ import sys
 sys.path.append('..')
 
 from axon import worker
+import time, random
 
 @worker.rpc()
-def fn_1(a):
+def wait(a):
+	time.sleep(random.randint(0, 3))
 	print(a)
-	return 'this is simplex_fn'
-
-@worker.rpc(comms_pattern='duplex')
-def fn_2(a):
-	print(a)
-	return 'this is duplex_fn'
 
 worker.init()
