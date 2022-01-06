@@ -10,6 +10,7 @@ from flask import request as route_req
 from multiprocessing import Process
 import threading
 import inspect
+import copy
 
 # where the rpcs being offered are stored
 rpcs = []
@@ -52,6 +53,8 @@ def _type():
 # accepts two dicts, target and source
 # in any shared keys between the two will be overwritten to source's value, and any keys in source will be copied to target, with thei values
 def overwrite(target, source):
+	# to avoid aliasing
+	target = copy.copy(target)
 
 	for key in source:
 		target[key] = source[key]
