@@ -68,32 +68,20 @@ async def broadcast_discovery(node_type='*', port=comms_config.worker_port, num_
 	return result_holder['result']
 
 def sign_in(ip='localhost', port=comms_config.notice_board_port):
-	try:
-		status, text = GET('http://'+str(ip)+':'+str(port)+'/sign_in')
+	status, text = GET('http://'+str(ip)+':'+str(port)+'/sign_in')
 
-		if (hash(text) != hash('sign in successful')):
-			print('sign_in: notice board gave warning, may not be registered')
-
-	except(requests.exceptions.ConnectionError):
-		print('sign_in: no notice board found at '+str(ip))
+	if (hash(text) != hash('sign in successful')):
+		print('sign_in: notice board gave warning, may not be registered')
 
 def sign_out(ip='localhost', port=comms_config.notice_board_port):
-	try:
-		status, text = GET('http://'+str(ip)+':'+str(port)+'/sign_out')
+	status, text = GET('http://'+str(ip)+':'+str(port)+'/sign_out')
 
-		if (hash(text) == hash('ip address not recorded')):
-			print('sing_out: not registered at given ip')
+	if (hash(text) == hash('ip address not recorded')):
+		print('sing_out: not registered at given ip')
 
-		elif (hash(text) != hash('sign out successful')):
-			print('sing_out: notice board gave warning')
-
-	except(requests.exceptions.ConnectionError):
-		print('sign_out: no notice board found at '+str(ip))
+	elif (hash(text) != hash('sign out successful')):
+		print('sing_out: notice board gave warning')
 
 def get_ips(ip='localhost', port=comms_config.notice_board_port):
-	try:
-		status, text = GET('http://'+str(ip)+':'+str(port)+'/get_ips')
-		return deserialize(text)
-
-	except(requests.exceptions.ConnectionError):
-		print('get_ips: no notice board found at '+str(ip))
+	status, text = GET('http://'+str(ip)+':'+str(port)+'/get_ips')
+	return deserialize(text)

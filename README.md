@@ -116,6 +116,8 @@ async def main():
 asyncio.run(main())
 ```
 
+RPCs can also be run in their own thread or a Process by passing `executor='Thread'` or `executor='Process'` to the rcp decorator. Be warned that this feature is on the chopping block, to be replaced by literal `ThreadPool` or `ProcessPool` executors rather than threads and processes instantiated per call.
+
 #### How do I find workers on my network?
 
 It can be a logistical challenge to keep track of the IP addresses of the workers on your network. To help with this task, axon comes with a discovery module that can be used to discover workers and other entities. If I had two workers on my network I could find their IP addresses you running the following command in a python terminal:
@@ -128,4 +130,39 @@ This would return the following array of IP addresses:
 
 The function `broadcast_discovery` will search for axon entities that are listenning on the default port, and will return a list of the IP addresses of all the entities it finds. By default it spends 10 seconds searching, but this can be set with the timeout option. If you know how many workers are on your network, you can tell axon to stop looking after it finds a certain number of hosts with the num_hosts option, saving the time it takes to wait for the timeout.
 
-RPCs can also be run in their own thread or a Process by passing `executor='Thread'` or `executor='Process'` to the rcp decorator. Be warned that this feature is on the chopping block, to be replaced by literal `ThreadPool` or `ProcessPool` executors rather than threads and processes instantiated per call.
+Discovering workers via broadcasts is inneficient and causes a lot of network noise. The right way to discover workers is with a notice board, which workers can sign into to show that they're willing to participate in the network, and clients can query to discover the IP adresses of workers. Using a notice board means you only need to remember one IP address, the notice board's, instead of the IP address if every active worker. Starting a notice board is as simple as:
+
+```
+import axon
+
+nb = axon.discovery.NoticeBoard()
+
+nb.start()
+```
+
+Workers can sign in and out of a notice board with the `sign_in` and `sign_out` functions from the discovery module, and clients can query it for active workers with the `get_ips` function. A helpful function is:
+
+```
+import axon, requests
+
+nb_ip = '192.168.2.19'
+
+async def start_up():
+	try:
+		axon.discover.sign_in(ip=nb_ip)
+
+	except(requests.exceptions.ConnectionError):
+		print('no notice board at:', nb_ip)
+
+		ip_list = await axon.discovery.broadcast_discovery(num_hosts=1, port=axon.config.comms_config.notice_board_port)
+
+		if (len(ip_list) == 0):
+			print('no notice board on network, sign in unsuccessful')
+
+		else:
+			nb_ip = ip_list.pop()
+			print('notice board at a new ip:', nb_ip)
+			axon.discover.sign_in(ip=nb_ip)
+```
+
+which will try signing into a notice board at a recorded IP, but in case of failure will look for a notice board on the network, and then either sign into it or give up depending on weather or not it finds one. Notice that the notice board runs on a different port from workers, and so we must specify `port=axon.config.comms_config.notice_board_port` in the call to broadcast_discovery. This is done so that the notice board can run on the same machine as a worker.
