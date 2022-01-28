@@ -9,12 +9,6 @@ import asyncio
 
 async def main():
 
-	# finding notice board
-	# worker_ips = await broadcast_discovery(endpoint='/active_worker', num_hosts=1, port=comms_config.worker_port)
-
-	# worker_ips = get_ips(nb_ip.pop())
-
-	# print('getting worker ips')
 	worker = RemoteWorker('127.0.0.1')
 
 	num_processes = 6
@@ -23,7 +17,7 @@ async def main():
 	await start_client()
 
 	print('doing work')
-	result_futures = [worker.rpcs.do_work(3, msg='all done!') for i in range(num_processes)]
+	result_futures = [worker.rpcs.do_work('3', msg='all done!') for i in range(num_processes)]
 	
 	print('awaiting responses')
 	results = await asyncio.gather(*result_futures)

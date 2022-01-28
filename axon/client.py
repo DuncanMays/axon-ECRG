@@ -30,6 +30,7 @@ def error_handler(worker_ip, return_obj):
 		(error_class, error_instance) = return_obj['result']
 
 		print('an error occured in worker at '+str(worker_ip)+':')
+		raise(error_class)
 		raise(error_instance)
 
 	else:
