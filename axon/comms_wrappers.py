@@ -1,14 +1,17 @@
 from .config import comms_config
 from .utils import deserialize, serialize, POST
+from .inline_executor import InlineExecutor, inline_lock
 
 from flask import Flask
 from flask import request as route_req
 from multiprocessing import Process, Manager
+from threading import Thread
 import threading
 import requests
 import inspect
 import sys
 import asyncio
+import traceback
 
 # catches any errors in fn, and handles them properly
 def error_wrapper(fn):
@@ -24,13 +27,9 @@ def error_wrapper(fn):
 			return_object['result'] = fn(*args, **kwargs)
 
 		except:
-			# catch and return all errors
-			error_info = sys.exc_info()
-			error_class = error_info[0]
-			error_instance = error_info[1]
 
 			return_object['errcode'] = 1
-			return_object['result'] = (error_class, error_instance)
+			return_object['result'] = (traceback.format_exc(), sys.exc_info()[1])
 
 		return return_object
 
@@ -81,6 +80,8 @@ def simplex_wrapper(fn, executor):
 
 	return wrapped_fn
 
+
+
 # wraps fn in the needed for duplex communication pattern
 # adds code to deserialize parameters from the request and return its results through the a separate request
 def duplex_wrapper(fn, executor):
@@ -111,10 +112,25 @@ def duplex_wrapper(fn, executor):
 			data = {'msg': serialize((call_id, return_object))}
 			requests.post(url=url, data=data)
 
+
 		params_str = route_req.form['msg']
 		calling_ip = route_req.remote_addr
 
-		fn_executor = executor(target=wrk_fn, args=(fn, params_str, calling_ip))
+		# because flask, and WSGI servers in general, cannot schedule code to execute after a route completes, inline duplex RPCs would have to send the returning request before the calling request completes
+		# to prevent this, we must run the RPC in a separate thread, and to preserve synchronous bahavior, we must use a threadlock with other inline RPCs. This will ensure no two inline RPCs are executing at the same time.
+		fn_executor = None
+		if(executor == InlineExecutor):
+
+			def inline_lock_fn(fn, params_str, calling_ip):
+				with inline_lock:
+					result = wrk_fn(fn, params_str, calling_ip)
+
+				return result
+
+			fn_executor = Thread(target=inline_lock_fn, args=(fn, params_str, calling_ip))
+		else:
+			fn_executor = executor(target=wrk_fn, args=(fn, params_str, calling_ip))
+
 		fn_executor.deamon = True
 		fn_executor.start()
 

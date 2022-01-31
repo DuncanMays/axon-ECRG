@@ -27,11 +27,11 @@ def get_worker_profile(ip_addr):
 def error_handler(worker_ip, return_obj):
 	if (return_obj['errcode'] == 1):
 		# an error occured in worker, raise it
-		(error_class, error_instance) = return_obj['result']
+		(error_info, error) = return_obj['result']
 
-		print('an error occured in worker at '+str(worker_ip)+':')
-		raise(error_class)
-		raise(error_instance)
+		print('the following error occured in worker at '+str(worker_ip)+':')
+		print(error_info)
+		raise(error)
 
 	else:
 		# returns the result

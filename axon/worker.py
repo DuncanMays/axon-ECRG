@@ -76,7 +76,10 @@ def get_executor(configuration, fn):
 	else:
 		raise BaseException('unrecognized comms_pattern: '+str(comms_pattern))
 
-	executor = configuration['executor']
+	try:
+		executor = configuration['executor']
+	except(KeyError):
+		raise(KeyError('executor not specified in RPC configuration'))
 
 	if (executor == 'inline'):
 		executor = InlineExecutor
@@ -84,6 +87,8 @@ def get_executor(configuration, fn):
 		executor = Process
 	elif((executor == 'Thread')):
 		executor = threading.Thread
+	else:
+		raise(BaseException('unrecognized executor configuration:', executor))
 
 	wrapped_fn = comms_wrapper(fn, executor)
 
