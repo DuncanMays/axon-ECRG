@@ -22,7 +22,7 @@ log.disabled = True
 
 # this class works the same way as asyncio events, except it cannot be cleared
 # the important difference is that the arguements(s) given to set will be returned by wait
-class ReturnEvent():
+class ReturnEvent_coro():
 
 	def __init__(self):
 		self.event = asyncio.Event()
@@ -35,6 +35,22 @@ class ReturnEvent():
 	def put_return_value(self, value):
 		self.value = value
 		self.event.set()
+
+class ReturnEvent_async():
+
+	def __init__(self):
+		self.lock = Lock()
+		self.lock.acquire()
+		self.value = None
+
+	# this function is called from a separate thread that wishes to get the value
+	def get_return_value(self):
+		self.lock.acquire()
+		return self.value
+
+	def put_return_value(self, value):
+		self.value = value
+		self.lock.release()
 
 # this class encapsulates an app that will listen for incoming result requests from duplex RPCs
 class RVL():
@@ -53,7 +69,6 @@ class RVL():
 
 			return_event = self.stubs[uuid]
 
-			# callback = lambda : return_event.put_return_value(result_obj)
 			def callback():
 				return_event.put_return_value(result_obj)
 				del self.stubs[uuid]
@@ -86,7 +101,7 @@ class RVL():
 
 		# registers a return event
 		call_id = uuid.uuid4()
-		return_event = ReturnEvent()
+		return_event = ReturnEvent_coro()
 		self.register(call_id, return_event)
 
 		# polls every 0.1 seconds until we can set the event

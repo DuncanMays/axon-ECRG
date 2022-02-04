@@ -3,7 +3,7 @@
 
 from .utils import serialize, deserialize, GET, POST, async_GET, async_POST
 from .config import comms_config, default_rpc_config
-from .return_value_linker import ReturnEvent, RVL
+from .return_value_linker import ReturnEvent_coro, RVL
 
 from types import SimpleNamespace
 import asyncio
@@ -71,7 +71,7 @@ def get_duplex_rpc_stub(worker_ip, rpc_name):
 		# we must register an event listenner with the return value linker, which will wait for the incomming result request
 		# this uuid will identify the call, so the RVL can lookup the event
 		call_id = uuid.uuid4()
-		return_event = ReturnEvent()
+		return_event = ReturnEvent_coro()
 		rvl.register(call_id, return_event)
 
 		# this object holds information about the function call that the worker will need to provide to the rvl upon completion
