@@ -12,8 +12,7 @@ async def test_ReturnEvent_coro():
 	event = return_value_linker.ReturnEvent_coro()
 
 	def thread_fn(event_loop):
-		time.sleep(1)
-
+		
 		def callback():
 			print('putting return value')
 			event.put_return_value('great success!')
@@ -27,14 +26,13 @@ async def test_ReturnEvent_coro():
 	print('awaiting return value')
 	print('return value attained:', await event.get_return_value())
 
-def test_ReturnEvent_sync():
-	print('test_ReturnEvent_sync')
+def test_ReturnEvent_async():
+	print('test_ReturnEvent_async')
 
 	event = return_value_linker.ReturnEvent_async()
 
 	def thread_fn():
-		time.sleep(1)
-
+		
 		def callback():
 			print('putting return value')
 			event.put_return_value('great success!')
@@ -48,8 +46,16 @@ def test_ReturnEvent_sync():
 	print('awaiting return value')
 	print('return value attained:', event.get_return_value())
 
+async def test_RVL():
+	loop = asyncio.get_running_loop()
+	rvl = return_value_linker.RVL(loop)
+	rvl.start()
+
+	pass
+
 async def main():
 	await test_ReturnEvent_coro()
-	test_ReturnEvent_sync()
+
+	test_ReturnEvent_async()
 
 if (__name__ == '__main__'): asyncio.run(main())

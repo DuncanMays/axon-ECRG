@@ -63,7 +63,7 @@ def get_self_ip():
 # scans for an available port in between upper_bound and lower_bound
 def get_open_port(lower_bound=8000, upper_bound=9000):
 
-	for target_port in range(8000, upper_bound):
+	for target_port in range(lower_bound, upper_bound):
 		# defines a socket, AF_INIT means ipv4 and SOCK_STREAM means TCP
 		sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		location = ("127.0.0.1", target_port)

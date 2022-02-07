@@ -55,35 +55,61 @@ class ReturnEvent_async():
 # this class encapsulates an app that will listen for incoming result requests from duplex RPCs
 class RVL():
 
-	def __init__(self, event_loop):
+	def __init__(self):
+		# the app that will run in a separate thread and listen for incomming result requests
 		self.app = Flask(__name__)
-		self.event_loop = event_loop
+		# boolean indiating weathre or not the app thread is running
+		self.running = False
+		# where asyncio events and such will be posted
+		self.event_loop = None
+
 		self.stubs = {}
 		self.port = None
-		self.running = False
 
 		# adds a route that will listen for incoming result requests from duplex RPCs
 		def lookup():
 
-			(uuid, result_obj) = deserialize(route_req.form['msg'])
-
+			# the ID and result of the function call
+			serialized_result = route_req.form['result']
+			uuid = deserialize(route_req.form['id'])
+			# gets the return event, with which we may pass the return value to the caller of the function
 			return_event = self.stubs[uuid]
 
 			def callback():
-				return_event.put_return_value(result_obj)
+				# passes the return value back to the caller of the RPC
+				return_event.put_return_value(serialized_result)
+				# clears the record of the RPC call to prevent memory leak
 				del self.stubs[uuid]
 
+			if isinstance(return_event, ReturnEvent_coro):
+				# checks that the event loop exists and is running
+				if self.event_loop == None:
+					print('call ID:', uuid)
+					raise(BaseException('Received result from duplex coroutine RPC call, no RVL event loop had been set'))
+				elif not self.event_loop.is_running():
+					print('call ID:', uuid)
+					raise(BaseException('Received result from duplex coroutine RPC call, RVL event loop is inactive'))
 
-			self.event_loop.call_soon_threadsafe(callback)
+				# if the return event is a coroutine we need to schedule its execution on the event loop
+				self.event_loop.call_soon_threadsafe(callback)
 
-			return 'great sucess'
+			else:
+				callback()
+
+			return 'result returned successfully'
 
 		self.app.route("/_return_value_linker", methods=['POST'])(lookup)
 
 	def register(self, uuid, event):
 		self.stubs[uuid] = event
 
-	def start(self):
+	async def set_event_loop(self, loop=None):
+		if loop == None:
+			self.event_loop = asyncio.get_running_loop()
+		else:
+			self.event_loop = loop
+
+	def start_app(self):
 
 		def start_app(port):
 			self.app.run(host='0.0.0.0', port=port, threaded=False)
@@ -91,9 +117,8 @@ class RVL():
 		# finds an available port
 		rvl_port = get_open_port(lower_bound=comms_config.RVL_port)
 		self.port = rvl_port
-
 		# starts a thread that the app will run in
-		self.app_thread = Thread(target=start_app, args=(rvl_port,))
+		self.app_thread = Thread(target=start_app, args=(rvl_port,), name='rvl_thread')
 		self.app_thread.daemon = True
 		self.app_thread.start()
 
@@ -101,8 +126,11 @@ class RVL():
 
 		# registers a return event
 		call_id = uuid.uuid4()
-		return_event = ReturnEvent_coro()
+		return_event = ReturnEvent_async()
 		self.register(call_id, return_event)
+
+		# this has to be done before this function completes or lookup will raise an exception
+		self.running = True
 
 		# polls every 0.1 seconds until we can set the event
 		while True:
@@ -110,7 +138,7 @@ class RVL():
 
 			try:
 				url = 'http://localhost:'+str(rvl_port)+'/_return_value_linker'
-				data = {'msg': serialize((call_id, ''))}
+				data = {'msg': serialize((call_id, 'init return val'))}
 
 				# if the rvl port isn't open, this should throw
 				requests.post(url=url, data=data)
@@ -120,5 +148,3 @@ class RVL():
 
 			except(requests.exceptions.ConnectionError):
 				pass
-
-		self.running = True

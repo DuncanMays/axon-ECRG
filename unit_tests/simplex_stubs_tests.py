@@ -6,7 +6,6 @@ path.append('..')
 
 import axon
 
-
 def test_error_wrappers():
 	print('test_error_wrappers')
 
@@ -26,10 +25,6 @@ def test_error_wrappers():
 
 @axon.worker.rpc()
 def simplex_rpc(prefix, suffix=' test failed'):
-	return prefix+suffix
-
-@axon.worker.rpc(comms_pattern='duplex')
-def duplex_rpc(prefix, suffix=' test failed'):
 	return prefix+suffix
 
 worker_thread = threading.Thread(target=axon.worker.init)
@@ -55,6 +50,14 @@ def test_async_stub():
 
 	print(resultHandle.join())
 
+def test_sync_stub():
+	print('test_sync_stub')
+
+	rpc_name = 'simplex_rpc'
+	url = 'http://localhost:'+str(axon.config.comms_config.worker_port)+'/'+axon.config.default_rpc_config['endpoint_prefix']+rpc_name
+
+	print(axon.simplex_stubs.call_simplex_rpc_sync(url, ('test ', ), {'suffix':'passed!', }))
+
 async def test_GenericSimplexStub():
 	print('test_GenericSimplexStub')
 
@@ -67,12 +70,17 @@ async def test_GenericSimplexStub():
 
 	print(stub.sync_call(('test ', ), {'suffix':'passed!', }))
 
-def test_AsyncSimplexStub():
+async def test_AsyncSimplexStub():
 	print('test_AsyncSimplexStub')
 
 	stub = axon.simplex_stubs.AsyncSimplexStub(worker_ip='localhost', rpc_name='simplex_rpc')
 	handle = stub('test ', suffix='passed!')
 	print(handle.join())
+
+	handle = stub.async_call(('test ', ), {'suffix':'passed!', })
+	print(handle.join())
+	print(await stub.coro_call(('test ', ), {'suffix':'passed!', }))
+	print(stub.sync_call(('test ', ), {'suffix':'passed!', }))
 
 async def test_CoroSimplexStub():
 	print('test_CoroSimplexStub')
@@ -80,11 +88,21 @@ async def test_CoroSimplexStub():
 	stub = axon.simplex_stubs.CoroSimplexStub(worker_ip='localhost', rpc_name='simplex_rpc')
 	print(await stub('test ', suffix='passed!'))
 
-def test_SyncSimplexStub():
+	handle = stub.async_call(('test ', ), {'suffix':'passed!', })
+	print(handle.join())
+	print(await stub.coro_call(('test ', ), {'suffix':'passed!', }))
+	print(stub.sync_call(('test ', ), {'suffix':'passed!', }))
+
+async def test_SyncSimplexStub():
 	print('test_SyncSimplexStub')
 
 	stub = axon.simplex_stubs.SyncSimplexStub(worker_ip='localhost', rpc_name='simplex_rpc')
 	print(stub('test ', suffix='passed!'))
+
+	handle = stub.async_call(('test ', ), {'suffix':'passed!', })
+	print(handle.join())
+	print(await stub.coro_call(('test ', ), {'suffix':'passed!', }))
+	print(stub.sync_call(('test ', ), {'suffix':'passed!', }))
 
 async def main():
 	test_error_wrappers()
@@ -96,10 +114,12 @@ async def main():
 
 	test_async_stub()
 
+	test_sync_stub()
+
 	await test_GenericSimplexStub()
 
-	test_AsyncSimplexStub()
+	await test_AsyncSimplexStub()
 	await test_CoroSimplexStub()
-	test_SyncSimplexStub()
+	await test_SyncSimplexStub()
 
 if (__name__ == '__main__'): asyncio.run(main())

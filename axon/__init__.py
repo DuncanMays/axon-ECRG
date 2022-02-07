@@ -4,5 +4,6 @@ import axon.config
 import axon.discovery
 import axon.return_value_linker
 import axon.simplex_stubs
+import axon.duplex_stubs
 import axon.utils
 import axon.worker

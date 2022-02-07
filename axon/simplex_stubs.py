@@ -1,13 +1,12 @@
 from .utils import serialize, deserialize, GET, POST, async_GET, async_POST
 from .config import comms_config, default_rpc_config
-from .return_value_linker import ReturnEvent_async, RVL
+from .return_value_linker import ReturnEvent_async
 
 import threading
 
-# URL of RPC
-# url = 'http://'+str(worker_ip)+':'+str(comms_config.worker_port)+'/'+default_rpc_config['endpoint_prefix']+rpc_name
-
+# this function checks if an error flag has been set and raises the corresponding error if it has
 def error_handler(return_obj):
+	# print(return_obj)
 	if (return_obj['errcode'] == 1):
 		# an error occured in worker, raise it
 		(error_info, error) = return_obj['result']
@@ -20,7 +19,7 @@ def error_handler(return_obj):
 		# returns the result
 		return return_obj['result']
 
-# this function makes a calling request to a simplex RPC on the worker with IP worker_ip to the RPC named rpc_name
+# this function makes a calling request to a simplex RPC
 async def call_simplex_rpc_coro(url, args, kwargs):
 	
 	# makes the calling request
@@ -33,13 +32,13 @@ async def call_simplex_rpc_coro(url, args, kwargs):
 	return_obj = deserialize(text)
 	return error_handler(return_obj)
 
-class SimplexCallHandle():
+class AsyncCallHandle():
 
 	def __init__(self, response_event):
 		self.response_event = response_event
 
 	def join(self):
-		status, text = self.response_event.get_return_value()
+		text = self.response_event.get_return_value()
 
 		if (text =='duplex'):
 			raise(BaseException('simplex call sent to duplex RPC'))
@@ -48,7 +47,7 @@ class SimplexCallHandle():
 		return_obj = deserialize(text)
 		return error_handler(return_obj)
 
-# this function makes a calling request to a simplex RPC on the worker with IP worker_ip to the RPC named rpc_name
+# this function makes a calling request to a simplex RPC, and returns a handle which will block and return the result of the request on .join
 def call_simplex_rpc_async(url, args, kwargs):
 
 	response_event = ReturnEvent_async()
@@ -56,12 +55,24 @@ def call_simplex_rpc_async(url, args, kwargs):
 	def thread_fn(response_event):
 		# makes the calling request
 		status, text = POST(url=url , data={'msg': serialize((args, kwargs))})
-		response_event.put_return_value((status, text))
+		response_event.put_return_value(text)
 
-	request_thread = threading.Thread(target=thread_fn, args=(response_event, ))
+	request_thread = threading.Thread(target=thread_fn, args=(response_event, ), name='call_duplex_rpc_async.request_thread')
 	request_thread.start()
 
-	return SimplexCallHandle(response_event)
+	return AsyncCallHandle(response_event)
+
+# this function makes a calling request to a simplex RPC
+def call_simplex_rpc_sync(url, args, kwargs):
+
+	status, text = POST(url=url , data={'msg': serialize((args, kwargs))})
+	
+	if (text =='duplex'):
+		raise(BaseException('simplex call sent to duplex RPC'))
+
+	# deserializes return object from worker
+	return_obj = deserialize(text)
+	return error_handler(return_obj)
 
 class GenericSimplexStub:
 
@@ -86,8 +97,12 @@ class GenericSimplexStub:
 		return await call_simplex_rpc_coro(url, args, kwargs)
 
 	def sync_call(self, args, kwargs):
-		t = self.async_call(args, kwargs)
-		return t.join()
+		if not self.check_capability():
+			raise(BaseException('stub not initialized'))
+
+		url = 'http://'+str(self.remote_ip)+':'+str(comms_config.worker_port)+'/'+default_rpc_config['endpoint_prefix']+self.__name__
+
+		return call_simplex_rpc_sync(url, args, kwargs)
 
 	# returns a boolean indicating if the stub has all the information it needs to make calls or not
 	def check_capability(self):

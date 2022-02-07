@@ -109,11 +109,10 @@ def duplex_wrapper(fn, executor):
 
 			# returns the result via a POST request
 			url = 'http://'+calling_ip+':'+str(rvl_port)+'/_return_value_linker'
-			data = {'msg': serialize((call_id, return_object))}
+			data = {'result': serialize(return_object), 'id': serialize(call_id)}
 			
 			# TODO: this should be wrapped in a try/except for the case when the caller isn't listenning, this is a common case since a simplex stub would start the RPC but not listen for a response
-			requests.post(url=url, data=data)
-
+			x=requests.post(url=url, data=data)
 
 		params_str = route_req.form['msg']
 		calling_ip = route_req.remote_addr
