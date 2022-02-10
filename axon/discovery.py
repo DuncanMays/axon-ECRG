@@ -62,7 +62,7 @@ async def broadcast_discovery(node_type='*', port=comms_config.worker_port, num_
 		try:	
 			await all_reqs
 
-		except(asyncio.exceptions.CancelledError):
+		except(asyncio.CancelledError):
 			pass
 
 	return result_holder['result']
