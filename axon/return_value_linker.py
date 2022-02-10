@@ -111,14 +111,14 @@ class RVL():
 
 	def start_app(self):
 
-		def start_app(port):
+		def app_fn(port):
 			self.app.run(host='0.0.0.0', port=port, threaded=False)
 
 		# finds an available port
 		rvl_port = get_open_port(lower_bound=comms_config.RVL_port)
 		self.port = rvl_port
 		# starts a thread that the app will run in
-		self.app_thread = Thread(target=start_app, args=(rvl_port,), name='rvl_thread')
+		self.app_thread = Thread(target=app_fn, args=(rvl_port,), name='rvl_thread')
 		self.app_thread.daemon = True
 		self.app_thread.start()
 

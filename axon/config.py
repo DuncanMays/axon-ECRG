@@ -6,6 +6,12 @@ default_rpc_config = {
 	'executor': 'inline'
 }
 
+default_service_config = {
+	'comms_pattern': 'simplex',
+	'endpoint_prefix': 'default_value',
+	'executor': 'inline'
+}
+
 comms_config = {
 	'notice_board_port': 8002,
 	'request_timeout': 30,

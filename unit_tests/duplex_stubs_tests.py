@@ -90,7 +90,7 @@ async def test_SyncDuplexStub():
 def duplex_rpc(prefix, suffix=' test failed'):
 	return prefix+suffix
 
-worker_thread = threading.Thread(target=axon.worker.init)
+worker_thread = threading.Thread(target=axon.worker.init, name='client_test.worker_thread')
 worker_thread.daemon = True
 
 async def main():

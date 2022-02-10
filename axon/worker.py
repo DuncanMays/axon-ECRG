@@ -3,7 +3,7 @@
 
 from .utils import deserialize, serialize, get_self_ip
 from .comms_wrappers import simplex_wrapper, duplex_wrapper
-from .config import comms_config, default_rpc_config
+from .config import comms_config, default_rpc_config, default_service_config
 from .inline_executor import InlineExecutor
 
 from flask import Flask
@@ -13,7 +13,7 @@ import threading
 import inspect
 import copy
 
-# where the rpcs being offered are stored
+# where the services being offered are stored
 rpcs = []
 # the ip address of the worker
 ip_addr = get_self_ip()
@@ -36,7 +36,7 @@ def _get_profile():
 	return serialize(profile)
 
 # a default route to kill the worker in case a bug blocks SIGINT
-@app.route('/kill', methods=['GET'])
+@app.route('/_kill', methods=['GET'])
 def kill():
 	func = route_req.environ.get('werkzeug.server.shutdown')
 
@@ -62,7 +62,8 @@ def overwrite(target, source):
 
 	return target
 
-def get_executor(configuration, fn):
+# this returns the function that actually gets registered as a route in flask.
+def get_route_fn(configuration, fn):
 	# wraps fn in two layers
 	# the outer layer handles the communication pattern, being either simplex or duplex
 	# the inner layer handles the execution environment, be that a thread or a process
@@ -105,17 +106,13 @@ def rpc(**configuration):
 	# this is the function that will be applied to functions which the caller wishes to turn into RPCs
 	# accepts a function, which it will wrap in an executor function depending on the configuration passed to rcp, this wrapped function will be registered as a route
 	def init_rpc(fn):
-		name = fn.__name__ 
+		name = fn.__name__
 
-		rpc_desc = {
-			'configuration': configuration,
-			'name': name,
-			'signature': inspect.signature(fn)
-		}
-		rpcs.append(rpc_desc)
+		configuration['name'] = name
+		rpcs.append(configuration)
 
 		# wraps fn in the needed code to deserialize parameters from the request return its results, as well as run in a separate process/thread
-		route_fn = get_executor(configuration, fn)
+		route_fn = get_route_fn(configuration, fn)
 		# functions that flask registers as routes must have different names, even if they are registered at different endpoints. get_executor returns a function called 'wrapped_fn' every time, so we've got to change the name of the function here
 		route_fn.__name__ = name
 		# the endpoint of the route which exposes the function
@@ -128,10 +125,28 @@ def rpc(**configuration):
 
 	return init_rpc
 
+def expose_service(subject, name, **configuration):
+
+	# overwrites the default configuration with keys from caller input
+	configuration = overwrite(default_service_config, configuration)
+
+	# this is the prefix of the endpoint where the functions on subject will be exposed to distributed access
+	configuration['endpoint_prefix'] = name+'/'
+
+	# this function will turn other functions into RPCs
+	make_rpc = rpc(**configuration)
+
+	for fn in dir(subject):
+		# exposing callable objects to distributed access as RPC
+		subject_member = getattr(subject, fn)
+		if callable(subject_member):
+			make_rpc(subject_member)
+
+
 # starts the web app
 def init(wrkr_name='worker'):
 	global name
 
 	name = wrkr_name
-	# the web application that will serve the rpcs as routes
+	# the web application that will serve the services and rpcs as routes
 	app.run(host='0.0.0.0', port=comms_config.worker_port, threaded=False)

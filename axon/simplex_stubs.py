@@ -112,14 +112,6 @@ class GenericSimplexStub:
 		else:
 			return True
 
-class SyncSimplexStub(GenericSimplexStub):
-
-	def __init__(self, worker_ip='localhost', rpc_name=None):
-		GenericSimplexStub.__init__(self, worker_ip=worker_ip, rpc_name=rpc_name)
-
-	def __call__(self, *args, **kwargs):
-		return self.sync_call(args, kwargs)
-
 class AsyncSimplexStub(GenericSimplexStub):
 
 	def __init__(self, worker_ip='localhost', rpc_name=None):
@@ -135,3 +127,11 @@ class CoroSimplexStub(GenericSimplexStub):
 
 	async def __call__(self, *args, **kwargs):
 		return await self.coro_call(args, kwargs)
+
+class SyncSimplexStub(GenericSimplexStub):
+
+	def __init__(self, worker_ip='localhost', rpc_name=None):
+		GenericSimplexStub.__init__(self, worker_ip=worker_ip, rpc_name=rpc_name)
+
+	def __call__(self, *args, **kwargs):
+		return self.sync_call(args, kwargs)

@@ -61,6 +61,7 @@ def call_duplex_rpc_async(url, args, kwargs):
 async def call_duplex_rpc_coro(url, args, kwargs):
 	global rvl
 	
+	ensure_rvl_app()
 	await ensure_rvl_event_loop()
 
 	# we must register an event listenner with the return value linker, which will wait for the incomming result request
