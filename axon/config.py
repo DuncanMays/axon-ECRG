@@ -1,5 +1,7 @@
 from types import SimpleNamespace
 
+version = "0.1.4"
+
 default_rpc_config = {
 	'comms_pattern': 'simplex',
 	'endpoint_prefix': 'rpc/',

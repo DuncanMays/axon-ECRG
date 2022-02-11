@@ -2,12 +2,10 @@ import sys
 sys.path.append('..')
 
 import asyncio
-from axon import client
+import axon
 
-hello_world = client.get_simplex_rpc_stub('127.0.0.1', 'hello_world')
+hello_world = axon.simplex_stubs.SyncSimplexStub(worker_ip='localhost', rpc_name='hello_world')
 
-async def main():
-	result = await hello_world()
-	print(result)
+result = hello_world()
 
-asyncio.run(main())
+print(result)

@@ -25,22 +25,20 @@ worker.init()
 
 ```
 import asyncio
-from axon import client
+import axon
 
-hello_world = client.get_simplex_rpc_stub("127.0.0.1", "hello_world")
+hello_world = axon.simplex_stubs.SyncSimplexStub(worker_ip='localhost', rpc_name='hello_world')
 
-async def main():
-	result = await hello_world()
-	print(result)
+result = hello_world()
 
-asyncio.run(main())
+print(result)
 ```
 
 Replace '127.0.0.1' with the IP address of the worker, and you can call functions on other computers on your network.
 
 #### What does simplex mean?
 
-The function `get_simplex_rpc_stub` returns an RPC stub that calls the function `hello_world` on "127.0.0.1" with a single HTTP request. This could become a problem when the function being called might take longer than the timeout of an HTTP request. If the function calls other RPCs and stacks latencies, or performs a stateful operation on the worker that requires the aqcisition of a threadlock, the calling HTTP could timeout and crash.
+The call to `SyncSimplexStub` returns an RPC stub that calls the function `hello_world` on "127.0.0.1" with a single HTTP request. This could become a problem when the function being called might take longer than the timeout of an HTTP request. If the function calls other RPCs and stacks latencies, or performs a stateful operation on the worker that requires the aqcisition of a threadlock, the calling HTTP could timeout and crash.
 
 The solution then, is to use a separate HTTP request to return the result to the caller of the function. This pattern is called a duplex RPC, and can be performed with simple alterations:
 
