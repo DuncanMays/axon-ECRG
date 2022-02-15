@@ -27,7 +27,7 @@ worker.init()
 import asyncio
 import axon
 
-hello_world = axon.simplex_stubs.SyncSimplexStub(worker_ip='localhost', rpc_name='hello_world')
+hello_world = axon.stubs.SyncSimplexStub(worker_ip='localhost', rpc_name='hello_world')
 
 result = hello_world()
 
@@ -58,21 +58,16 @@ worker.init()
 ### Client
 
 ```
-import asyncio
-from axon import client
+import axon
 
-hello_world = client.get_duplex_rpc_stub("127.0.0.1", "hello_world")
+hello_world = axon.stubs.SyncDuplexStub(worker_ip='localhost', rpc_name='hello_world')
 
-async def main():
-	await client.start_client()
+result = hello_world()
 
-	result = await hello_world()
-	print(result)
-
-asyncio.run(main())
+print(result)
 ```
 
-Note that the call to `client.start_client()` is unneccessary but considered a best practice. To receive the incomming HTTP request containing the result of the function being called, the client must be started before the calling request is made. This is done automatically upon the first call to a duplex RPC, and so if not done explicitly it will add to the latency of the first call.
+To receive the incomming HTTP request containing the result of the function being called, the client must be started before the calling request is made. This is done automatically upon the first call to a duplex RPC, and so if not done explicitly it will add to the latency of the first call.
 
 #### What if I don't know if a function is duplex or simplex prior to calling it?
 
