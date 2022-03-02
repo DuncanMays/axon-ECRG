@@ -133,7 +133,7 @@ class GenericDuplexStub(GenericSimplexStub):
 		if not self.check_capability():
 			raise(BaseException('stub not initialized'))
 
-		url = 'http://'+str(self.remote_ip)+':'+str(comms_config.worker_port)+'/'+default_rpc_config['endpoint_prefix']+self.__name__
+		url = 'http://'+str(self.remote_ip)+':'+str(comms_config.worker_port)+'/'+self.endpoint_prefix+self.__name__
 		
 		return call_duplex_rpc_async(url, args, kwargs)
 
@@ -141,7 +141,7 @@ class GenericDuplexStub(GenericSimplexStub):
 		if not self.check_capability():
 			raise(BaseException('stub not initialized'))
 
-		url = 'http://'+str(self.remote_ip)+':'+str(comms_config.worker_port)+'/'+default_rpc_config['endpoint_prefix']+self.__name__
+		url = 'http://'+str(self.remote_ip)+':'+str(comms_config.worker_port)+'/'+self.endpoint_prefix+self.__name__
 
 		return await call_duplex_rpc_coro(url, args, kwargs)
 
@@ -149,7 +149,7 @@ class GenericDuplexStub(GenericSimplexStub):
 		if not self.check_capability():
 			raise(BaseException('stub not initialized'))
 
-		url = 'http://'+str(self.remote_ip)+':'+str(comms_config.worker_port)+'/'+default_rpc_config['endpoint_prefix']+self.__name__
+		url = 'http://'+str(self.remote_ip)+':'+str(comms_config.worker_port)+'/'+self.endpoint_prefix+self.__name__
 
 		return call_duplex_rpc_sync(url, args, kwargs)
 

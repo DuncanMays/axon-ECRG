@@ -1,7 +1,7 @@
 # the bit that listens idly and serves RPCs
 # and executor is the thing that takes a function, and executes it in a thread/process and returns the result as response or even another HTTP req entirely
 
-from .utils import deserialize, serialize, get_self_ip
+from .utils import deserialize, serialize, get_self_ip, overwrite
 from .comms_wrappers import simplex_wrapper, duplex_wrapper
 from .config import comms_config, default_rpc_config, default_service_config
 from .inline_executor import InlineExecutor
@@ -11,7 +11,8 @@ from flask import request as route_req
 from multiprocessing import Process
 import threading
 import inspect
-import copy
+import random
+import string
 
 # where the services being offered are stored
 rpcs = []
@@ -50,17 +51,6 @@ def kill():
 @app.route('/_type', methods=['GET'])
 def _type():
 	return node_type
-
-# accepts two dicts, target and source
-# in any shared keys between the two will be overwritten to source's value, and any keys in source will be copied to target, with thei values
-def overwrite(target, source):
-	# to avoid aliasing
-	target = copy.copy(target)
-
-	for key in source:
-		target[key] = source[key]
-
-	return target
 
 # this returns the function that actually gets registered as a route in flask.
 def get_route_fn(configuration, fn):
@@ -113,35 +103,19 @@ def rpc(**configuration):
 
 		# wraps fn in the needed code to deserialize parameters from the request return its results, as well as run in a separate process/thread
 		route_fn = get_route_fn(configuration, fn)
-		# functions that flask registers as routes must have different names, even if they are registered at different endpoints. get_executor returns a function called 'wrapped_fn' every time, so we've got to change the name of the function here
-		route_fn.__name__ = name
+		# functions that flask registers as routes must have different names, even if they are registered at different endpoints. get_executor returns a function called 'wrapped_fn' every time, so we've got to change the name of the function here.
+		# it is set to a random string firstly because the literal name of the function is arbitrary, but also because some services might have functions with the same names
+		route_fn.__name__ = ''.join(random.choices(string.ascii_letters, k=10))
 		# the endpoint of the route which exposes the function
 		endpoint = '/'+configuration['endpoint_prefix']+name
 
 		# registering the function as a route
+		# print(endpoint)
 		app.route(endpoint, methods=['POST'])(route_fn)
 
 		return fn
 
 	return init_rpc
-
-def expose_service(subject, name, **configuration):
-
-	# overwrites the default configuration with keys from caller input
-	configuration = overwrite(default_service_config, configuration)
-
-	# this is the prefix of the endpoint where the functions on subject will be exposed to distributed access
-	configuration['endpoint_prefix'] = name+'/'
-
-	# this function will turn other functions into RPCs
-	make_rpc = rpc(**configuration)
-
-	for fn in dir(subject):
-		# exposing callable objects to distributed access as RPC
-		subject_member = getattr(subject, fn)
-		if callable(subject_member):
-			make_rpc(subject_member)
-
 
 # starts the web app
 def init(wrkr_name='worker'):

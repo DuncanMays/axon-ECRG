@@ -6,7 +6,6 @@ import threading
 
 # this function checks if an error flag has been set and raises the corresponding error if it has
 def error_handler(return_obj):
-	# print(return_obj)
 	if (return_obj['errcode'] == 1):
 		# an error occured in worker, raise it
 		(error_info, error) = return_obj['result']
@@ -64,27 +63,29 @@ def call_simplex_rpc_async(url, args, kwargs):
 
 # this function makes a calling request to a simplex RPC
 def call_simplex_rpc_sync(url, args, kwargs):
-
 	status, text = POST(url=url , data={'msg': serialize((args, kwargs))})
 	
 	if (text =='duplex'):
 		raise(BaseException('simplex call sent to duplex RPC'))
 
 	# deserializes return object from worker
+	# print(url)
+	# print(text)
 	return_obj = deserialize(text)
 	return error_handler(return_obj)
 
 class GenericSimplexStub:
 
-	def __init__(self, worker_ip='localhost', rpc_name=None):
+	def __init__(self, worker_ip='localhost', rpc_name=None, endpoint_prefix=default_rpc_config['endpoint_prefix']):
 		self.remote_ip = worker_ip
 		self.__name__ = rpc_name
+		self.endpoint_prefix = endpoint_prefix
 
 	def async_call(self, args, kwargs):
 		if not self.check_capability():
 			raise(BaseException('stub not initialized'))
 
-		url = 'http://'+str(self.remote_ip)+':'+str(comms_config.worker_port)+'/'+default_rpc_config['endpoint_prefix']+self.__name__
+		url = 'http://'+str(self.remote_ip)+':'+str(comms_config.worker_port)+'/'+self.endpoint_prefix+self.__name__
 		
 		return call_simplex_rpc_async(url, args, kwargs)
 
@@ -92,7 +93,7 @@ class GenericSimplexStub:
 		if not self.check_capability():
 			raise(BaseException('stub not initialized'))
 
-		url = 'http://'+str(self.remote_ip)+':'+str(comms_config.worker_port)+'/'+default_rpc_config['endpoint_prefix']+self.__name__
+		url = 'http://'+str(self.remote_ip)+':'+str(comms_config.worker_port)+'/'+self.endpoint_prefix+self.__name__
 
 		return await call_simplex_rpc_coro(url, args, kwargs)
 
@@ -100,7 +101,7 @@ class GenericSimplexStub:
 		if not self.check_capability():
 			raise(BaseException('stub not initialized'))
 
-		url = 'http://'+str(self.remote_ip)+':'+str(comms_config.worker_port)+'/'+default_rpc_config['endpoint_prefix']+self.__name__
+		url = 'http://'+str(self.remote_ip)+':'+str(comms_config.worker_port)+'/'+self.endpoint_prefix+self.__name__
 
 		return call_simplex_rpc_sync(url, args, kwargs)
 
@@ -114,24 +115,24 @@ class GenericSimplexStub:
 
 class AsyncSimplexStub(GenericSimplexStub):
 
-	def __init__(self, worker_ip='localhost', rpc_name=None):
-		GenericSimplexStub.__init__(self, worker_ip=worker_ip, rpc_name=rpc_name)
+	def __init__(self, **kwargs):
+		GenericSimplexStub.__init__(self, **kwargs)
 
 	def __call__(self, *args, **kwargs):
 		return self.async_call(args, kwargs)
 
 class CoroSimplexStub(GenericSimplexStub):
 
-	def __init__(self, worker_ip='localhost', rpc_name=None):
-		GenericSimplexStub.__init__(self, worker_ip=worker_ip, rpc_name=rpc_name)
+	def __init__(self, **kwargs):
+		GenericSimplexStub.__init__(self, **kwargs)
 
 	async def __call__(self, *args, **kwargs):
 		return await self.coro_call(args, kwargs)
 
 class SyncSimplexStub(GenericSimplexStub):
 
-	def __init__(self, worker_ip='localhost', rpc_name=None):
-		GenericSimplexStub.__init__(self, worker_ip=worker_ip, rpc_name=rpc_name)
+	def __init__(self, **kwargs):
+		GenericSimplexStub.__init__(self, **kwargs)
 
 	def __call__(self, *args, **kwargs):
 		return self.sync_call(args, kwargs)
