@@ -43,10 +43,6 @@ class RemoteWorker():
 
 		self.setup_rpc_stubs(profile['rpcs'])
 
-	# def setup_stubs(self, rpcs):
-	# 	for rpc_desc in rpcs:
-			
-
 	def setup_rpc_stubs(self, rpcs_descs):
 		rpcs = {}
 

@@ -17,14 +17,6 @@ def ensure_rvl_app():
 	if not rvl.running:
 		rvl.start_app()
 
-# this function checks to see if the RVL has an event_loop, and if not, gives it one
-async def ensure_rvl_event_loop():
-	global rvl
-
-	if rvl.event_loop == None:
-		# the call to this coroutine will run on the same event loop as ensure_rvl_event_loop, and so the RVL will use the current event loop
-		await rvl.set_event_loop()
-
 # this function ensures the RVL is active and listening for the return value and then makes a calling request to a duplex RPC
 def call_duplex_rpc_async(url, args, kwargs):
 	global rvl
@@ -62,12 +54,12 @@ async def call_duplex_rpc_coro(url, args, kwargs):
 	global rvl
 	
 	ensure_rvl_app()
-	await ensure_rvl_event_loop()
 
 	# we must register an event listenner with the return value linker, which will wait for the incomming result request
 	# this uuid will identify the call, so the RVL can lookup the event
 	call_id = uuid.uuid4()
 	return_event = ReturnEvent_coro()
+	await return_event.init()
 	rvl.register(call_id, return_event)
 
 	# this object holds information about the function call that the worker will need to provide to the rvl upon completion

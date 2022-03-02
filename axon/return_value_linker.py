@@ -21,20 +21,41 @@ log.setLevel(logging.ERROR)
 log.disabled = True
 
 # this class works the same way as asyncio events, except it cannot be cleared
-# the important difference is that the arguements(s) given to set will be returned by wait
+# the important difference is that the arguements(s) given to set will be returned by await
 class ReturnEvent_coro():
 
 	def __init__(self):
 		self.event = asyncio.Event()
 		self.value = None
+		self.event_loop = None
+
+	async def init(self, loop=None):
+		if loop == None:
+			self.event_loop = asyncio.get_running_loop()
+		else:
+			self.event_loop = loop
 
 	async def get_return_value(self):
 		await self.event.wait()
 		return self.value
 
 	def put_return_value(self, value):
-		self.value = value
-		self.event.set()
+
+		# checks that the event loop exists and is running
+		if self.event_loop == None:
+			print('call ID:', uuid)
+			raise(BaseException('ReturnEvent_coro not initialized with event loop'))
+		elif not self.event_loop.is_running():
+			print('call ID:', uuid)
+			raise(BaseException('ReturnEvent_coro has inactive event loop'))
+
+		# schedules a callback on the event loop that initialized this ReturnEvent_coro to set the return value
+
+		def callback():
+			self.value = value
+			self.event.set()
+
+		self.event_loop.call_soon_threadsafe(callback)
 
 class ReturnEvent_async():
 
@@ -49,6 +70,7 @@ class ReturnEvent_async():
 		return self.value
 
 	def put_return_value(self, value):
+		
 		self.value = value
 		self.lock.release()
 
@@ -74,27 +96,10 @@ class RVL():
 			uuid = deserialize(route_req.form['id'])
 			# gets the return event, with which we may pass the return value to the caller of the function
 			return_event = self.stubs[uuid]
-
-			def callback():
-				# passes the return value back to the caller of the RPC
-				return_event.put_return_value(serialized_result)
-				# clears the record of the RPC call to prevent memory leak
-				del self.stubs[uuid]
-
-			if isinstance(return_event, ReturnEvent_coro):
-				# checks that the event loop exists and is running
-				if self.event_loop == None:
-					print('call ID:', uuid)
-					raise(BaseException('Received result from duplex coroutine RPC call, no RVL event loop had been set'))
-				elif not self.event_loop.is_running():
-					print('call ID:', uuid)
-					raise(BaseException('Received result from duplex coroutine RPC call, RVL event loop is inactive'))
-
-				# if the return event is a coroutine we need to schedule its execution on the event loop
-				self.event_loop.call_soon_threadsafe(callback)
-
-			else:
-				callback()
+			# passes the return value back to the caller of the RPC
+			return_event.put_return_value(serialized_result)
+			# clears the record of the RPC call to prevent memory leak
+			del self.stubs[uuid]
 
 			return 'result returned successfully'
 
@@ -102,12 +107,6 @@ class RVL():
 
 	def register(self, uuid, event):
 		self.stubs[uuid] = event
-
-	async def set_event_loop(self, loop=None):
-		if loop == None:
-			self.event_loop = asyncio.get_running_loop()
-		else:
-			self.event_loop = loop
 
 	def start_app(self):
 
