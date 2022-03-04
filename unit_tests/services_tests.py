@@ -55,7 +55,10 @@ async def test_basic_service_request():
 async def test_RemoteWorker_to_service():
 	print('test_RemoteWorker_to_service')
 
-	# worker = axon.client.ServiceStub('localhost', endpoint='test_endpoint_prefix/test')
+	worker = axon.client.ServiceStub('localhost', endpoint_prefix=endpoint+service_name)
+
+	await worker.test_fn()
+	await worker.child.test_fn()
 
 	# print(worker.rpcs)
 	# print(dir(worker.rpcs))

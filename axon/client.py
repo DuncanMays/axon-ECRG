@@ -1,7 +1,7 @@
 # the bit that exports worker profile class and uses the RVL
 # an RPC stub is the thing on the client that makes a calling request and waits for the response
 
-from .config import comms_config
+from .config import comms_config, default_service_config
 from .utils import deserialize, GET
 from .simplex_stubs import AsyncSimplexStub, CoroSimplexStub, SyncSimplexStub
 from .duplex_stubs import AsyncDuplexStub, CoroDuplexStub, SyncDuplexStub
@@ -64,26 +64,63 @@ class RemoteWorker():
 
 class ServiceStub():
 
-	def __init__(self, ip, endpoint):
-		self.ip_addr = ip
+	def __init__(self, ip_addr='localhost', endpoint_prefix=default_service_config['endpoint_prefix'], name='', profile=None):
+		
+		self.profile = None
+		self.ip_addr = ip_addr
+		self.endpoint_prefix = endpoint_prefix
+		self.name = name
 
-		url = 'http://'+str(self.ip_addr)+':'+str(comms_config.worker_port)+'/'+endpoint
-		_, profile_str = GET(url)
-		profile = deserialize(profile_str)
+		if (profile == None):
+			url = 'http://'+str(self.ip_addr)+':'+str(comms_config.worker_port)+'/'+self.endpoint_prefix+self.name
+			_, profile_str = GET(url)
+			profile = deserialize(profile_str)
 
-		# print(profile)
-		# self.set_profile(profile)
+		self.set_profile(profile)
 
+	# iterate over the object's children
+	# self is given attributes for each child, with the same keys as they have in profile
+	# children that are RPC config objects will be attributed to RPC stubs
+	# children that are themselves profiles will become ServiceStubs
 	def set_profile(self, profile):
-		pass
 
-		# iterate over the object's children
+		self.profile = profile
 
-		# self is given attributes for each child, with the same keys as they have in profile
+		for key in self.profile.keys():
+			if (key == '__profile_flag__' or key=='__class__'): continue
 
-		# children that are RPC config objects will be attributed to RPC stubs
+			# the serialized representation of a remote object
+			member = self.profile[key]
+			# will be set to an object that accesses the remote object represented by member
+			attribute = None
 
-		# children that are themselves profiles will become ServiceStubs themselves
+			if ('__profile_flag__' in member.keys()):
+				# member is a profile for a ServiceNode
+				if member['__profile_flag__']:
+					attribute = ServiceStub(ip_addr=self.ip_addr, endpoint_prefix=self.endpoint_prefix+'/'+key, name=self.name, profile=member)
+
+				else:
+					# this means something is very wrong
+					raise(BaseException('service profile with __profile_flag__ set to False'))
+
+			else:
+
+				# member is a configuration dict for an RPC
+				comms_pattern = member['comms_pattern']
+
+				if (comms_pattern == 'simplex'):
+					# print(self.endpoint_prefix+'/'+self.name)
+					attribute = CoroSimplexStub(worker_ip=self.ip_addr, endpoint_prefix=self.endpoint_prefix+'/', rpc_name=key)
+
+				elif (comms_pattern == 'duplex'):
+					attribute = CoroDuplexStub(worker_ip=self.ip_addr, endpoint_prefix=self.endpoint_prefix+'/', rpc_name=key)
+
+				else:
+					raise BaseException('unrecognised communication pattern:'+str(comms_pattern))
+
+
+			setattr(self, key, attribute)
+	
 
 
 

@@ -171,10 +171,26 @@ class ServiceNode():
 		# remember the configuration
 		self.children[key] = child_config
 
+	# returns the ServiceNode's profile, with information that's common to all children of the ServiceNode, like its IP address
+	def get_root_profile(self):
+		profile = self.get_profile()
+
+		root_profile['profile'] = profile
+		root_profile['ip_addr'] = self.ip_addr
+		root_profile['name'] = self.name
+		root_profile['endpoint_prefix'] = self.configuration['endpoint_prefix']
+		# this is a flag attribute that lets a ServiceStub know that a dict is a root profile for a ServiceNode
+		root_profile['__profile_flag__'] = False
+
+		return root_profile
+
 	# returns a JSON serializable dict tree with leaves of RPC configuration dicts
 	def get_profile(self):
 		
 		profile = {}
+
+		# this is a flag attribute that lets a ServiceStub know that a dict is a profile for a ServiceNode, not a configuration dict for an RPC
+		profile['__profile_flag__'] = True
 
 		for key in self.children.keys():
 			child = self.children[key]
