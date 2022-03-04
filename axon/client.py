@@ -61,3 +61,30 @@ class RemoteWorker():
 				raise BaseException('unrecognised communication pattern:'+str(comms_pattern))
 
 		self.rpcs = SimpleNamespace(**rpcs)
+
+class ServiceStub():
+
+	def __init__(self, ip, endpoint):
+		self.ip_addr = ip
+
+		url = 'http://'+str(self.ip_addr)+':'+str(comms_config.worker_port)+'/'+endpoint
+		_, profile_str = GET(url)
+		profile = deserialize(profile_str)
+
+		# print(profile)
+		# self.set_profile(profile)
+
+	def set_profile(self, profile):
+		pass
+
+		# iterate over the object's children
+
+		# self is given attributes for each child, with the same keys as they have in profile
+
+		# children that are RPC config objects will be attributed to RPC stubs
+
+		# children that are themselves profiles will become ServiceStubs themselves
+
+
+
+		

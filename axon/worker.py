@@ -9,6 +9,7 @@ from .inline_executor import InlineExecutor
 from flask import Flask
 from flask import request as route_req
 from multiprocessing import Process
+from copy import copy
 import threading
 import inspect
 import random
@@ -110,12 +111,83 @@ def rpc(**configuration):
 		endpoint = '/'+configuration['endpoint_prefix']+name
 
 		# registering the function as a route
-		# print(endpoint)
 		app.route(endpoint, methods=['POST'])(route_fn)
 
 		return fn
 
 	return init_rpc
+
+class ServiceNode():
+
+	def __init__(self, subject, name, **configuration):
+
+		self.subject = subject
+		self.name = name
+		self.children = {}
+
+		self.configuration = overwrite(default_service_config, configuration)
+
+		# iterates over members and either registers them as RPCs or recursively turns them into ServiceNodes
+		# for key, member in self.subject.__dict__.items():
+		for key in dir(self.subject):
+			member = getattr(self.subject, key)
+
+			# if the member is callable, make it an RPC
+			if callable(member):
+				self.init_RPC(key, member)
+
+			# else
+			elif hasattr(member, '__dict__'):
+				self.init_child(key, member)
+
+		# we now register a GET route at the ServiceNode's endpoint to expose its profile
+		
+		# the function that will be exposed as a route
+		def get_profile_str():
+			profile = self.get_profile()
+			return serialize(profile)
+
+		# functions that flask registers as routes must have different names, even if they are registered at different endpoints, so we've got to change the name of the function here.
+		# it is set to a random string firstly because the literal name of the function is arbitrary, but also because some services might have functions with the same names
+		get_profile_str.__name__ = ''.join(random.choices(string.ascii_letters, k=10))
+		endpoint = '/'+self.configuration['endpoint_prefix']+self.name
+
+		app.route(endpoint, methods=['GET'])(get_profile_str)
+
+	def init_child(self, key, child):
+		child_config = copy(self.configuration)
+		child_config['endpoint_prefix'] += str(self.name)+'/'
+
+		child = ServiceNode(child, key, **child_config)
+		self.children[key] = child
+
+	def init_RPC(self, key, fn):
+		child_config = copy(self.configuration)
+		child_config['endpoint_prefix'] += str(self.name)+'/'
+
+		# make it an RPC
+		make_rpc = rpc(**child_config)
+		make_rpc(fn)
+		# remember the configuration
+		self.children[key] = child_config
+
+	# returns a JSON serializable dict tree with leaves of RPC configuration dicts
+	def get_profile(self):
+		
+		profile = {}
+
+		for key in self.children.keys():
+			child = self.children[key]
+
+			# if the child is itself a ServiceNode, recursively get the profiles of its attributes
+			if isinstance(child, ServiceNode):
+				profile[key] = child.get_profile()
+
+			# if the attribute is an RPC, the profile element is its configuration
+			else:
+				profile[key] = child
+
+		return profile
 
 # starts the web app
 def init(wrkr_name='worker'):

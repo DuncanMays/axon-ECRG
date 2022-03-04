@@ -10,7 +10,7 @@ default_rpc_config = {
 
 default_service_config = {
 	'comms_pattern': 'simplex',
-	'endpoint_prefix': 'default_value',
+	'endpoint_prefix': '',
 	'executor': 'inline'
 }
 

@@ -20,17 +20,23 @@ class ServiceNode():
 
 			# if the member is callable, make it an RPC
 			if callable(member):
-				# make it an RPC
-				make_rpc = rpc(**configuration)
-				make_rpc(member)
-				# remember the configuration
-				self.children[key] = configuration
+				self.init_RPC(member, configuration)
 
-			# if the member is itself a class, recursively turn it into a ServiceNode
+			# else
 			elif hasattr(member, '__dict__'):
-				child_config = overwrite(configuration, {'endpoint_prefix': configuration['endpoint_prefix']+key+'/'})
-				child = ServiceNode(member, key, **child_config)
-				self.children[key] = child
+				self.init_child(key, member, configuration)
+
+	def init_child(self, key, member, configuration):
+		child_config = overwrite(configuration, {'endpoint_prefix': configuration['endpoint_prefix']+key+'/'})
+		child = ServiceNode(member, key, **child_config)
+		self.children[key] = child
+
+	def init_RPC(self, fn, configuration):
+		# make it an RPC
+		make_rpc = rpc(**configuration)
+		make_rpc(fn)
+		# remember the configuration
+		self.children[key] = configuration
 
 	# returns a JSON serializable dict tree with leaves of RPC configuration dicts
 	def get_profile(self):
