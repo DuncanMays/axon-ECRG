@@ -1,11 +1,13 @@
 import sys
 sys.path.append('..')
 
+from axon import client
 import asyncio
-import axon
 
-hello_world = axon.duplex_stubs.SyncDuplexStub(worker_ip='localhost', rpc_name='hello_world')
+stub = client.RemoteWorker('localhost')
 
-result = hello_world()
+async def main():
+	result = await stub.rpcs.print_return('hello', 'world')
+	print(result)
 
-print(result)
+asyncio.run(main())

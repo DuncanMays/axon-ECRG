@@ -60,9 +60,6 @@ async def test_RemoteWorker_to_service():
 	await worker.test_fn()
 	await worker.child.test_fn()
 
-	# print(worker.rpcs)
-	# print(dir(worker.rpcs))
-
 async def main():
 	worker_thread.start()
 	# gives the worker a little time to start
@@ -71,10 +68,6 @@ async def main():
 	await test_basic_service_request()
 
 	await test_RemoteWorker_to_service()
-	
-
-	# while True:
-	# 	time.sleep(10000)
 
 if __name__ == '__main__':
 	asyncio.run(main())

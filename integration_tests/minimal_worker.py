@@ -3,9 +3,17 @@ sys.path.append('..')
 
 from axon import worker
 
-@worker.rpc(comms_pattern='duplex')
-def hello_world():
-	print('hello')
-	return 'world'
+@worker.rpc()
+def print_return(a, b):
+	print(a)
+	return b
 
 worker.init()
+
+
+
+
+
+
+
+

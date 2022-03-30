@@ -78,10 +78,6 @@ class ServiceStub():
 
 		self.set_profile(profile)
 
-	# iterate over the object's children
-	# self is given attributes for each child, with the same keys as they have in profile
-	# children that are RPC config objects will be attributed to RPC stubs
-	# children that are themselves profiles will become ServiceStubs
 	def set_profile(self, profile):
 
 		self.profile = profile
@@ -109,7 +105,6 @@ class ServiceStub():
 				comms_pattern = member['comms_pattern']
 
 				if (comms_pattern == 'simplex'):
-					# print(self.endpoint_prefix+'/'+self.name)
 					attribute = CoroSimplexStub(worker_ip=self.ip_addr, endpoint_prefix=self.endpoint_prefix+'/', rpc_name=key)
 
 				elif (comms_pattern == 'duplex'):

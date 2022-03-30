@@ -119,11 +119,12 @@ def rpc(**configuration):
 
 class ServiceNode():
 
-	def __init__(self, subject, name, **configuration):
+	def __init__(self, subject, name, parent_ids=[], **configuration):
 
 		self.subject = subject
 		self.name = name
 		self.children = {}
+		self.parent_ids = parent_ids
 
 		self.configuration = overwrite(default_service_config, configuration)
 
@@ -138,7 +139,12 @@ class ServiceNode():
 
 			# else
 			elif hasattr(member, '__dict__'):
-				self.init_child(key, member)
+
+				if (len(self.parent_ids) < 3):
+					# if (key, member) isn't a circular reference, create a ServiceNode out of it as normal
+					self.init_child(key, member)
+
+					# if (key, member) is a circular reference, it will be ignored. This means that member will not be represented in profile and so the ServiceStub won't know about it
 
 		# we now register a GET route at the ServiceNode's endpoint to expose its profile
 		
@@ -155,10 +161,12 @@ class ServiceNode():
 		app.route(endpoint, methods=['GET'])(get_profile_str)
 
 	def init_child(self, key, child):
+		# the child's endpoint_prefix is the parent's prefix plus / and the child's name
 		child_config = copy(self.configuration)
 		child_config['endpoint_prefix'] += str(self.name)+'/'
 
-		child = ServiceNode(child, key, **child_config)
+		# create a ServiceNode out of it and register it as a child
+		child = ServiceNode(child, key, parent_ids=self.parent_ids+[id(self)], **child_config)
 		self.children[key] = child
 
 	def init_RPC(self, key, fn):
@@ -170,19 +178,6 @@ class ServiceNode():
 		make_rpc(fn)
 		# remember the configuration
 		self.children[key] = child_config
-
-	# returns the ServiceNode's profile, with information that's common to all children of the ServiceNode, like its IP address
-	def get_root_profile(self):
-		profile = self.get_profile()
-
-		root_profile['profile'] = profile
-		root_profile['ip_addr'] = self.ip_addr
-		root_profile['name'] = self.name
-		root_profile['endpoint_prefix'] = self.configuration['endpoint_prefix']
-		# this is a flag attribute that lets a ServiceStub know that a dict is a root profile for a ServiceNode
-		root_profile['__profile_flag__'] = False
-
-		return root_profile
 
 	# returns a JSON serializable dict tree with leaves of RPC configuration dicts
 	def get_profile(self):
