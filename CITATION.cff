@@ -1,0 +1,21 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: Axon
+message: >-
+  If you use this software, please cite it using
+  these metadata.
+type: software
+authors:
+  - given-names: Duncan
+    family-names: Mays
+    email: duncan.mays@queensu.ca
+    affiliation: Queen's University
+repository-code: 'https://github.com/DuncanMays/axon-ECRG'
+abstract: >-
+  Edge computing framework, developed and maintained
+  by the Edge Computing Research Group at Queen's
+  University.
+keywords:
+  - edge-computing
