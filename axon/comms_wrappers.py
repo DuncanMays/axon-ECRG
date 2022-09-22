@@ -42,7 +42,7 @@ def async_wrapper(fn):
 
 	return wrapped_fn
 
-# wraps fn in the needed for simplex communication pattern
+# wraps fn in the code needed for simplex communication pattern
 # adds code to deserialize parameters from the request and return its results through the response
 def simplex_wrapper(fn, executor):
 
@@ -51,7 +51,7 @@ def simplex_wrapper(fn, executor):
 		mp_manager = Manager()
 		result_holder = mp_manager.dict()
 
-		# this function will run in a separate thread, will execute the RPC and return the result with a POST request
+		# this function will run in an executor, will execute the RPC and return the result through a multiprocessing manager
 		def wrk_fn(fn, params_str, result_holder):
 
 			# deserializes parameters
@@ -70,6 +70,7 @@ def simplex_wrapper(fn, executor):
 
 		params_str = route_req.form['msg']
 
+		# for now an executor means something like a thread or process, not a literal python executor. We'll use __call__ instead of submit
 		fn_executor = executor(target=wrk_fn, args=(fn, params_str, result_holder))
 		fn_executor.deamon = True
 		fn_executor.start()

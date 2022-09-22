@@ -1,6 +1,7 @@
 from threading import Lock
 
-# this is so that no other inline functions will execute when an inline duplex RPC is running, since it must run in a separate thread
+# this is so that no other inline functions will execute when an inline duplex RPC is running
+# Inline duplex RPCs need to run in a separate thread because of WSGI, which mandates that a route stops executing once it has sent its response, preventing duplex RPCs from sending a return POST
 inline_lock = Lock()
 
 class InlineExecutor():

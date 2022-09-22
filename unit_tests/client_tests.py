@@ -7,12 +7,12 @@ import threading
 import time
 
 @axon.worker.rpc(comms_pattern='simplex')
-def simplex_rpc(prefix, suffix=' test failed'):
+def simplex_rpc(prefix, suffix='simplex test failed'):
 	time.sleep(1)
 	return prefix+suffix
 
 @axon.worker.rpc(comms_pattern='duplex')
-def duplex_rpc(prefix, suffix=' test failed'):
+def duplex_rpc(prefix, suffix='duplex test failed'):
 	time.sleep(1)
 	return prefix+suffix
 
@@ -24,8 +24,8 @@ async def test_RemoteWorker():
 
 	w = axon.client.RemoteWorker('localhost')
 
-	print(await w.rpcs.simplex_rpc('test ', suffix='passed'))
-	print(await w.rpcs.duplex_rpc('test ', suffix='passed'))
+	print(await w.rpcs.simplex_rpc('simplex test ', suffix='passed'))
+	print(await w.rpcs.duplex_rpc('duplex test ', suffix='passed'))
 
 async def main():
 	worker_thread.start()

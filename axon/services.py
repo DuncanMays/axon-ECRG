@@ -22,7 +22,7 @@ class ServiceNode():
 			if callable(member):
 				self.init_RPC(member, configuration)
 
-			# else
+			# this is for the case when the object is itself an object, not a function or a primative type
 			elif hasattr(member, '__dict__'):
 				self.init_child(key, member, configuration)
 
