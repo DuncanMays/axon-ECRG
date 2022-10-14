@@ -23,11 +23,12 @@ class TestClass():
 # the endpoint that our service will be located at
 endpoint = 'test_endpoint_prefix/'
 # the name of our service
-service_name = 'test_name'
+service_name = 'test_service'
 
 # defines an instance of TestClass and creates a service node out of it
-t = TestClass('arg', kwarg='kwarg', depth=2)
-s = axon.worker.ServiceNode(t, service_name, endpoint_prefix=endpoint)
+test_service_depth = 3
+t = TestClass('arg', kwarg='test_service_depth', depth=test_service_depth)
+s = axon.worker.ServiceNode(t, service_name, depth=test_service_depth, endpoint_prefix=endpoint)
 
 # creates a thread to run the worker in
 worker_thread = threading.Thread(target=axon.worker.init, name='client_test.worker_thread')
@@ -57,8 +58,12 @@ async def test_RemoteWorker_to_service():
 
 	worker = axon.client.ServiceStub('localhost', endpoint_prefix=endpoint+service_name)
 
-	await worker.test_fn()
-	await worker.child.test_fn()
+	for i in range(test_service_depth, 0, -1):
+		await worker.test_fn()
+
+		if (i != 1):
+			# if this is the last iteration, worker won't have a child and this line will raise an attribute error
+			worker = worker.child
 
 async def main():
 	worker_thread.start()

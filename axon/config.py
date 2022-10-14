@@ -1,6 +1,7 @@
 from types import SimpleNamespace
 
-version = "0.1.4"
+version = "0.1.5"
+default_service_depth = 1
 
 default_rpc_config = {
 	'comms_pattern': 'simplex',

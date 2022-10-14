@@ -90,10 +90,14 @@ class ServiceStub():
 			# will be set to an object that accesses the remote object represented by member
 			attribute = None
 
-			if ('__profile_flag__' in member.keys()):
+			if '__profile_flag__' in member:
 				# member is a profile for a ServiceNode
 				if member['__profile_flag__']:
-					attribute = ServiceStub(ip_addr=self.ip_addr, endpoint_prefix=self.endpoint_prefix+'/'+key, name=self.name, profile=member)
+					if '__call__' in member:
+						attribute = CallableServiceStub(member['__call__'], ip_addr=self.ip_addr, endpoint_prefix=self.endpoint_prefix+'/'+key, name=self.name, profile=member)
+
+					else:
+						attribute = ServiceStub(ip_addr=self.ip_addr, endpoint_prefix=self.endpoint_prefix+'/'+key, name=self.name, profile=member)
 
 				else:
 					# this means something is very wrong
@@ -117,6 +121,23 @@ class ServiceStub():
 			setattr(self, key, attribute)
 	
 
+class CallableServiceStub(ServiceStub):
 
+	def __init__(self, self_config, *args, **kwargs):
+		ServiceStub.__init__(self, *args, **kwargs)
 
+		# self_config is a configuration dict for an RPC
+		comms_pattern = self_config['comms_pattern']
+
+		if (comms_pattern == 'simplex'):
+			self.___call___ = CoroSimplexStub(worker_ip=self.ip_addr, endpoint_prefix=self.endpoint_prefix+'/', rpc_name='__call__')
+
+		elif (comms_pattern == 'duplex'):
+			self.___call___ = CoroDuplexStub(worker_ip=self.ip_addr, endpoint_prefix=self.endpoint_prefix+'/', rpc_name='__call__')
+
+		else:
+			raise BaseException('unrecognised communication pattern:'+str(comms_pattern)) 
+
+	async def __call__(self, *args, **kwargs):
+		return await self.___call___(*args, **kwargs)
 		

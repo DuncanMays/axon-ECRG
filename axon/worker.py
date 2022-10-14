@@ -3,7 +3,7 @@
 
 from .utils import deserialize, serialize, get_self_ip, overwrite
 from .comms_wrappers import simplex_wrapper, duplex_wrapper
-from .config import comms_config, default_rpc_config, default_service_config
+from .config import comms_config, default_rpc_config, default_service_config, default_service_depth
 from .inline_executor import InlineExecutor
 
 from flask import Flask
@@ -97,9 +97,10 @@ def rpc(**configuration):
 	# this is the function that will be applied to functions which the caller wishes to turn into RPCs
 	# accepts a function, which it will wrap in an executor function depending on the configuration passed to rcp, this wrapped function will be registered as a route
 	def init_rpc(fn):
-		name = fn.__name__
 
-		configuration['name'] = name
+		if not 'name' in configuration:
+			configuration['name'] = fn.__name__
+		
 		rpcs.append(configuration)
 
 		# wraps fn in the needed code to deserialize parameters from the request return its results, as well as run in a separate process/thread
@@ -108,7 +109,7 @@ def rpc(**configuration):
 		# it is set to a random string firstly because the literal name of the function is arbitrary, but also because some services might have functions with the same names
 		route_fn.__name__ = ''.join(random.choices(string.ascii_letters, k=10))
 		# the endpoint of the route which exposes the function
-		endpoint = '/'+configuration['endpoint_prefix']+name
+		endpoint = '/'+configuration['endpoint_prefix']+configuration['name']
 
 		# registering the function as a route
 		app.route(endpoint, methods=['POST'])(route_fn)
@@ -119,32 +120,38 @@ def rpc(**configuration):
 
 class ServiceNode():
 
-	def __init__(self, subject, name, parent_ids=[], **configuration):
-
+	def __init__(self, subject, name, depth=default_service_depth, **configuration):
 		self.subject = subject
 		self.name = name
 		self.children = {}
-		self.parent_ids = parent_ids
+		self.depth = depth
 
 		self.configuration = overwrite(default_service_config, configuration)
 
 		# iterates over members and either registers them as RPCs or recursively turns them into ServiceNodes
 		# for key, member in self.subject.__dict__.items():
 		for key in dir(self.subject):
+
+			# dir calls the overwritable __dir__ function on self.subject. This means it's unreliable in some cases
+			# this can mean the attribute is listed but does not exist, or even that calling the attribute throws an error
+			try:
+				if not hasattr(self.subject, key):
+					continue
+			except(BaseException):
+				continue
+
 			member = getattr(self.subject, key)
 
 			# if the member is callable, make it an RPC
 			if callable(member):
 				self.init_RPC(key, member)
 
-			# else
-			elif hasattr(member, '__dict__'):
+			# if the member has attributes, make it into a child ServiceNode
+			if hasattr(member, '__dict__'):
 
-				if (len(self.parent_ids) < 3):
-					# if (key, member) isn't a circular reference, create a ServiceNode out of it as normal
+				# limits recursion to a depth parameter
+				if (self.depth > 0):
 					self.init_child(key, member)
-
-					# if (key, member) is a circular reference, it will be ignored. This means that member will not be represented in profile and so the ServiceStub won't know about it
 
 		# we now register a GET route at the ServiceNode's endpoint to expose its profile
 		
@@ -166,12 +173,13 @@ class ServiceNode():
 		child_config['endpoint_prefix'] += str(self.name)+'/'
 
 		# create a ServiceNode out of it and register it as a child
-		child = ServiceNode(child, key, parent_ids=self.parent_ids+[id(self)], **child_config)
+		child = ServiceNode(child, key, depth=self.depth-1, **child_config)
 		self.children[key] = child
 
 	def init_RPC(self, key, fn):
 		child_config = copy(self.configuration)
 		child_config['endpoint_prefix'] += str(self.name)+'/'
+		child_config['name'] = key
 
 		# make it an RPC
 		make_rpc = rpc(**child_config)

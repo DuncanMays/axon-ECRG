@@ -44,11 +44,11 @@ def async_wrapper(fn):
 
 # wraps fn in the code needed for simplex communication pattern
 # adds code to deserialize parameters from the request and return its results through the response
+mp_manager = Manager()
 def simplex_wrapper(fn, executor):
 
 	def wrapped_fn():
 
-		mp_manager = Manager()
 		result_holder = mp_manager.dict()
 
 		# this function will run in an executor, will execute the RPC and return the result through a multiprocessing manager
