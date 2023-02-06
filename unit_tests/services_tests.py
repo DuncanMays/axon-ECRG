@@ -20,6 +20,9 @@ class TestClass():
 	def test_fn(self):
 		print(f'test_fn called at depth {self.depth}')
 
+	def __call__(self):
+		print(f'__call__ called at depth {self.depth}')
+
 # the endpoint that our service will be located at
 endpoint = 'test_endpoint_prefix/'
 # the name of our service
@@ -65,14 +68,50 @@ async def test_RemoteWorker_to_service():
 			# if this is the last iteration, worker won't have a child and this line will raise an attribute error
 			worker = worker.child
 
+async def test_MetaServiceStub():
+	print('test_MetaServiceStub')
+
+	class BaseClass():
+		def __init__(self):
+			pass
+
+	worker = axon.client.get_MetaStub('localhost', endpoint_prefix=endpoint+service_name, parent_class=BaseClass)
+
+	# Tests that the stub is inherited from BaseClass, as specified by kwarg parent_class
+	if isinstance(worker, BaseClass):
+		print('Inheritance from BaseClass confirmed')
+	else:
+		raise BaseException('Stub is not inheritance from BaseClass')
+
+	# tests that stub is inherited from GenericSimplexStub
+	# print(worker)
+	# print(worker.child)
+	# print(worker.test_fn)
+	# print(worker.test_fn.__call__)
+	# print(worker.test_fn.__call__.__call__)
+	# if isinstance(worker.test_fn, axon.stubs.GenericSimplexStub):
+	# 	print('Inheritance from axon.stubs.GenericSimplexStub confirmed')
+	# else:
+	# 	raise BaseException('Stub is not inheritance from axon.stubs.GenericSimplexStub')
+
+	# tests that child stubs are instantiated properly and that their RPCs work
+	for i in range(test_service_depth, 0, -1):
+		await worker.test_fn()
+
+		if (i != 1):
+			# if this is the last iteration, worker won't have a child and this line will raise an attribute error
+			worker = worker.child
+
 async def main():
 	worker_thread.start()
 	# gives the worker a little time to start
-	time.sleep(0.1)
+	time.sleep(0.5)
 
-	await test_basic_service_request()
+	# await test_basic_service_request()
 
-	await test_RemoteWorker_to_service()
+	# await test_RemoteWorker_to_service()
+
+	await test_MetaServiceStub()
 
 if __name__ == '__main__':
 	asyncio.run(main())

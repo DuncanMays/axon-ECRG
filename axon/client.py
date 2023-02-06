@@ -83,6 +83,9 @@ class ServiceStub():
 		self.profile = profile
 
 		for key in self.profile.keys():
+
+			# __profile_flag__ always maps to True and exists to distinguish between profiles and RPC configurations
+			# __class__ maps to a type, which we don't need here and comes with a whole can of worms tied in knots I don't understand
 			if (key == '__profile_flag__' or key=='__class__'): continue
 
 			# the serialized representation of a remote object
@@ -93,7 +96,9 @@ class ServiceStub():
 			if '__profile_flag__' in member:
 				# member is a profile for a ServiceNode
 				if member['__profile_flag__']:
+					# this should always execute since __profile_flag_always maps to True
 					if '__call__' in member:
+						# if the remote object represented by profile is callable, it will have a __call__ key. It might have useful attributes if it's callable, so we can't represent it with an attribute-less RPC stub. What we'll do instead is make the stub's __call__ attribute an RPC stub
 						attribute = CallableServiceStub(member['__call__'], ip_addr=self.ip_addr, endpoint_prefix=self.endpoint_prefix+'/'+key, name=self.name, profile=member)
 
 					else:
@@ -140,4 +145,98 @@ class CallableServiceStub(ServiceStub):
 
 	async def __call__(self, *args, **kwargs):
 		return await self.___call___(*args, **kwargs)
-		
+
+def get_MetaStub( ip_addr='localhost', endpoint_prefix=default_service_config['endpoint_prefix'], name='', profile=None, parent_class=object):
+	global count 
+
+	# the attributes of the returned object
+	attrs = {}
+
+	# gets the profile if none are provided
+	if (profile == None):
+		url = 'http://'+str(ip_addr)+':'+str(comms_config.worker_port)+'/'+endpoint_prefix+name
+		_, profile_str = GET(url)
+		profile = deserialize(profile_str)
+		# print(profile)
+
+	# once the profil is obtained, metaclass creation is left to get_MetaStub_helper
+	return get_MetaStub_helper(ip_addr, profile, parent_class)
+
+def get_MetaStub_helper(ip_addr, profile, parent_class):
+
+	keys = list(profile.keys())
+	parent_classes = (parent_class, )
+	attrs = {}
+
+	banned_keys = ['__profile_flag__', '__func__', '__self__', '__get__', '__set__', '__delete__'] + dir(object())
+
+	for key in keys:
+
+		if (key in banned_keys): continue
+
+		member = profile[key]
+
+		if '__profile_flag__' in member:
+			# member is a profile for a ServiceNode
+
+			if not member['__profile_flag__']:
+				# this block of code should never execute
+				raise(BaseException('service profile with __profile_flag__ set to False'))
+
+			if '__call__' in member:
+				# if the profile has a __call__ attribute, than the corresponding object on the server is callable, and so must be represented by an RPC stub, bound to the given network coordinates
+				print(f'key: {key}')
+				print(member['__call__'])
+				BoundStubClass = get_BoundStubClass(ip_addr, member['__call__'])
+				attrs[key] = get_MetaStub_helper(ip_addr, member, BoundStubClass)
+
+			else:
+				# else the stub simply inherits from object
+				attrs[key] = get_MetaStub_helper(ip_addr, member, object)
+
+		# elif key == '__call__':
+		# 	# member is the representation of a __call__ attribute and should be corresonded to by an RPC stub
+		# 	BoundStubClass = get_BoundStubClass(ip_addr, member)
+		# 	attrs[key] = get_MetaStub_helper(ip_addr, member, BoundStubClass)
+
+	# print('attrs: ', attrs)
+	MetaStub = type('MetaStub', parent_classes, attrs)
+	return MetaStub()
+
+def get_BoundStubClass(ip_addr, configuration):
+	comms_pattern = configuration['comms_pattern']
+	baseClass = None
+
+	if (comms_pattern == 'simplex'):
+		baseClass = CoroSimplexStub
+
+	elif (comms_pattern == 'duplex'):
+		baseClass = CoroDuplexStub
+
+	else:
+		raise BaseException(f'unrecognised comms_pattern: {comms_pattern}')
+	
+	# a class for stubs that are bound to a certain RPC
+	class BoundStubClass(baseClass):
+		def __init__(self):
+			baseClass.__init__(self, worker_ip=ip_addr, endpoint_prefix=configuration['endpoint_prefix']+'/', rpc_name='__call__')
+
+	return BoundStubClass
+
+def get_RPC_stub(ip_addr, configuration):
+	comms_pattern = configuration['comms_pattern']
+	stub = None
+
+	if (comms_pattern == 'simplex'):
+		stub = CoroSimplexStub(worker_ip=ip_addr, endpoint_prefix=configuration['endpoint_prefix']+'/', rpc_name='__call__')
+
+	elif (comms_pattern == 'duplex'):
+		stub = CoroDuplexStub(worker_ip=ip_addr, endpoint_prefix=configuration['endpoint_prefix']+'/', rpc_name='__call__')
+	
+	return stub
+
+def get_RPC_stub_2(ip_addr, configuration):
+	def return_fn(*args):
+		return 'this is a test RPC stub'
+
+	return return_fn
