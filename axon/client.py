@@ -170,6 +170,12 @@ def get_MetaStub_helper(ip_addr, profile, parent_class):
 
 	banned_keys = ['__profile_flag__', '__func__', '__self__', '__get__', '__set__', '__delete__'] + dir(object())
 
+	if '__call__' in keys:
+		# if the profile has a __call__ attribute, than the corresponding object on the server is callable, and so must be represented by an RPC stub, bound to the given network coordinates
+		BoundStubClass = get_BoundStubClass(ip_addr, profile['__call__'])
+		# this ensures the stub will inherit from a stub class that's bound to the configuration
+		parent_classes = (BoundStubClass, ) + parent_classes
+
 	for key in keys:
 
 		if (key in banned_keys): continue
@@ -183,23 +189,15 @@ def get_MetaStub_helper(ip_addr, profile, parent_class):
 				# this block of code should never execute
 				raise(BaseException('service profile with __profile_flag__ set to False'))
 
-			if '__call__' in member:
-				# if the profile has a __call__ attribute, than the corresponding object on the server is callable, and so must be represented by an RPC stub, bound to the given network coordinates
-				print(f'key: {key}')
-				print(member['__call__'])
-				BoundStubClass = get_BoundStubClass(ip_addr, member['__call__'])
-				attrs[key] = get_MetaStub_helper(ip_addr, member, BoundStubClass)
+			# if '__call__' in member:
+			# 	# if the profile has a __call__ attribute, than the corresponding object on the server is callable, and so must be represented by an RPC stub, bound to the given network coordinates
+			# 	BoundStubClass = get_BoundStubClass(ip_addr, member['__call__'])
+			# 	attrs[key] = get_MetaStub_helper(ip_addr, member, BoundStubClass)
 
 			else:
 				# else the stub simply inherits from object
 				attrs[key] = get_MetaStub_helper(ip_addr, member, object)
 
-		# elif key == '__call__':
-		# 	# member is the representation of a __call__ attribute and should be corresonded to by an RPC stub
-		# 	BoundStubClass = get_BoundStubClass(ip_addr, member)
-		# 	attrs[key] = get_MetaStub_helper(ip_addr, member, BoundStubClass)
-
-	# print('attrs: ', attrs)
 	MetaStub = type('MetaStub', parent_classes, attrs)
 	return MetaStub()
 

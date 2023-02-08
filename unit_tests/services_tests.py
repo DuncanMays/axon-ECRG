@@ -8,14 +8,13 @@ import time
 import json
 
 class TestClass():
-	def __init__(self, arg, kwarg='default', depth=1):
-		self.arg = arg
-		self.kwarg = kwarg
+	def __init__(self, depth=1):
 		self.depth = depth
-		self.child = None
 
 		if (depth>1):
-			self.child = TestClass(self.arg, kwarg=self.kwarg, depth=self.depth-1)
+			self.child = TestClass(depth=self.depth-1)
+		else:
+			self.child = None
 
 	def test_fn(self):
 		print(f'test_fn called at depth {self.depth}')
@@ -30,7 +29,7 @@ service_name = 'test_service'
 
 # defines an instance of TestClass and creates a service node out of it
 test_service_depth = 3
-t = TestClass('arg', kwarg='test_service_depth', depth=test_service_depth)
+t = TestClass(depth=test_service_depth)
 s = axon.worker.ServiceNode(t, service_name, depth=test_service_depth, endpoint_prefix=endpoint)
 
 # creates a thread to run the worker in
@@ -83,20 +82,18 @@ async def test_MetaServiceStub():
 	else:
 		raise BaseException('Stub is not inheritance from BaseClass')
 
-	# tests that stub is inherited from GenericSimplexStub
-	# print(worker)
-	# print(worker.child)
-	# print(worker.test_fn)
-	# print(worker.test_fn.__call__)
-	# print(worker.test_fn.__call__.__call__)
-	# if isinstance(worker.test_fn, axon.stubs.GenericSimplexStub):
-	# 	print('Inheritance from axon.stubs.GenericSimplexStub confirmed')
-	# else:
-	# 	raise BaseException('Stub is not inheritance from axon.stubs.GenericSimplexStub')
-
 	# tests that child stubs are instantiated properly and that their RPCs work
 	for i in range(test_service_depth, 0, -1):
 		await worker.test_fn()
+
+		# if i != test_service_depth:
+		await worker()
+
+		# tests that stub is inherited from GenericSimplexStub
+		if isinstance(worker.test_fn, axon.stubs.GenericSimplexStub):
+			print('Inheritance from axon.stubs.GenericSimplexStub confirmed')
+		else:
+			raise BaseException('Stub is not inheritance from axon.stubs.GenericSimplexStub')
 
 		if (i != 1):
 			# if this is the last iteration, worker won't have a child and this line will raise an attribute error
@@ -109,7 +106,7 @@ async def main():
 
 	# await test_basic_service_request()
 
-	# await test_RemoteWorker_to_service()
+	await test_RemoteWorker_to_service()
 
 	await test_MetaServiceStub()
 

@@ -142,16 +142,20 @@ class ServiceNode():
 
 			member = getattr(self.subject, key)
 
-			# if the member is callable, make it an RPC
-			if callable(member):
+			if (key == '__call__'):
+				# Any member accessed via __call__ attribute is represented in profile by an RPC config. This means that objects stored on __call__ attributes will not be represented in profile
 				self.init_RPC(key, member)
+			
+			elif hasattr(member, '__dict__'):
+				# Any member with a __dict__ attribute gets a profile, provided it as not been accessed via __call__
+				self.init_child(key, member)
 
-			# if the member has attributes, make it into a child ServiceNode
-			if hasattr(member, '__dict__'):
-
-				# limits recursion to a depth parameter
-				if (self.depth > 0):
-					self.init_child(key, member)
+			elif hasattr(member, '__call__'):
+				if (member.__name__ == '__test_fn__'):
+					print(member)
+				
+				# If a member has a __call__ attribute but no __dict__ attribute and has not been accessed by __call__, it should also be represented by an RPC config
+				self.init_RPC(key, member)
 
 		# we now register a GET route at the ServiceNode's endpoint to expose its profile
 		
@@ -168,6 +172,9 @@ class ServiceNode():
 		app.route(endpoint, methods=['GET'])(get_profile_str)
 
 	def init_child(self, key, child):
+		# limits recursion to a depth parameter
+		if (self.depth <= 0): return
+
 		# the child's endpoint_prefix is the parent's prefix plus / and the child's name
 		child_config = copy(self.configuration)
 		child_config['endpoint_prefix'] += str(self.name)+'/'
