@@ -63,11 +63,16 @@ class ExpertService():
 		self.optimizer.zero_grad()
 
 
-expert_service = ExpertService()
-
 if (__name__ == '__main__'):
 
-	axon.worker.ServiceNode(expert_service, 'expert_service', depth=1)
+	expert_service_1 = ExpertService()
+	axon.worker.ServiceNode(expert_service_1, 'expert_service_1', depth=1)
+
+	expert_service_2 = ExpertService()
+	axon.worker.ServiceNode(expert_service_2, 'expert_service_2', depth=1)
+
+	expert_service_3 = ExpertService()
+	axon.worker.ServiceNode(expert_service_3, 'expert_service_3', depth=1)
 
 	print('starting worker')
 	axon.worker.init()

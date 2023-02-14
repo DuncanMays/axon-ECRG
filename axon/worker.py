@@ -151,10 +151,7 @@ class ServiceNode():
 				self.init_child(key, member)
 
 			elif hasattr(member, '__call__'):
-				if (member.__name__ == '__test_fn__'):
-					print(member)
-				
-				# If a member has a __call__ attribute but no __dict__ attribute and has not been accessed by __call__, it should also be represented by an RPC config
+				# Any member with a __call__ attribute but no __dict__ attribute is represented in profile by an RPC config
 				self.init_RPC(key, member)
 
 		# we now register a GET route at the ServiceNode's endpoint to expose its profile

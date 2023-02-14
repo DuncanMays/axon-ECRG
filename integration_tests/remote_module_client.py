@@ -22,11 +22,11 @@ class FnStub(torch.autograd.Function):
 
 		ctx.backward_handle = expert_handle	
 
-		return expert_handle.apply_expert.___call___.sync_call((ctx.id, x, ), {})
+		return expert_handle.apply_expert.sync_call((ctx.id, x, ), {})
 
 	@staticmethod
 	def backward(ctx, g):
-		return None, ctx.backward_handle.apply_gradients.___call___.sync_call((ctx.id, g, ), {})
+		return None, ctx.backward_handle.apply_gradients.sync_call((ctx.id, g, ), {})
 
 class Remote_Expert(torch.nn.Module):
 
@@ -34,7 +34,7 @@ class Remote_Expert(torch.nn.Module):
 		super(Remote_Expert, self).__init__()
 
 		self.ip = expert_ip
-		self.handle = axon.client.ServiceStub(expert_ip, endpoint_prefix=expert_name)
+		self.handle = axon.client.get_ServiceStub(expert_ip, endpoint_prefix=expert_name)
 
 	def forward(self, x):
 		return FnStub.apply(self.handle, x)
@@ -44,9 +44,9 @@ async def main():
 	input_tensor = torch.randn([32, 600], dtype=torch.float32, requires_grad=True).to('cuda:0')
 	output_tensor = torch.zeros([32, 100], dtype=torch.float32).to('cuda:0')
 
-	expert_module_1 = Remote_Expert('192.168.2.209', 'expert_service')
-	expert_module_2 = Remote_Expert('192.168.2.210', 'expert_service')
-	expert_module_3 = Remote_Expert('192.168.2.222', 'expert_service')
+	expert_module_1 = Remote_Expert('localhost', 'expert_service_1')
+	expert_module_2 = Remote_Expert('localhost', 'expert_service_2')
+	expert_module_3 = Remote_Expert('localhost', 'expert_service_3')
 
 	print('configuring experts')
 	configure_coros = []

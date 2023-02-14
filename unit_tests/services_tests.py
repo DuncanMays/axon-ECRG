@@ -55,18 +55,6 @@ async def test_basic_service_request():
 	await stub.coro_call((), {})
 	stub.sync_call((), {})
 
-async def test_RemoteWorker_to_service():
-	print('test_RemoteWorker_to_service')
-
-	worker = axon.client.ServiceStub('localhost', endpoint_prefix=endpoint+service_name)
-
-	for i in range(test_service_depth, 0, -1):
-		await worker.test_fn()
-
-		if (i != 1):
-			# if this is the last iteration, worker won't have a child and this line will raise an attribute error
-			worker = worker.child
-
 async def test_MetaServiceStub():
 	print('test_MetaServiceStub')
 
@@ -74,9 +62,9 @@ async def test_MetaServiceStub():
 		def __init__(self):
 			pass
 
-	worker = axon.client.get_MetaStub('localhost', endpoint_prefix=endpoint+service_name, parent_class=BaseClass)
+	worker = axon.client.get_ServiceStub('localhost', endpoint_prefix=endpoint+service_name, top_stub_type=BaseClass)
 
-	# Tests that the stub is inherited from BaseClass, as specified by kwarg parent_class
+	# Tests that the stub is inherited from BaseClass, as specified by kwarg top_stub_type
 	if isinstance(worker, BaseClass):
 		print('Inheritance from BaseClass confirmed')
 	else:
@@ -85,9 +73,31 @@ async def test_MetaServiceStub():
 	# tests that child stubs are instantiated properly and that their RPCs work
 	for i in range(test_service_depth, 0, -1):
 		await worker.test_fn()
+		# await worker()
 
-		# if i != test_service_depth:
-		await worker()
+		if isinstance(worker.test_fn, axon.stubs.GenericSimplexStub):
+			print('RPC inheritance from axon.stubs.GenericSimplexStub confirmed')
+		else:
+			raise BaseException('RPC stub is not inheritance from axon.stubs.GenericSimplexStub')
+
+		if isinstance(worker, axon.stubs.GenericSimplexStub):
+			print('Callable stub inheritance from axon.stubs.GenericSimplexStub confirmed')
+		else:
+			raise BaseException('Callable stub is not inheritance from axon.stubs.GenericSimplexStub')
+
+		if (i != 1):
+			# if this is the last iteration, worker won't have a child and this line will raise an attribute error
+			worker = worker.child
+
+async def test_SyncStub():
+	print('test_SyncStub')
+
+	worker = axon.client.get_ServiceStub('localhost', endpoint_prefix=endpoint+service_name, stub_type=axon.client.SyncSimplexStub)
+
+	# tests that child stubs are instantiated properly and that their RPCs work
+	for i in range(test_service_depth, 0, -1):
+		worker.test_fn()
+		worker()
 
 		# tests that stub is inherited from GenericSimplexStub
 		if isinstance(worker.test_fn, axon.stubs.GenericSimplexStub):
@@ -106,9 +116,9 @@ async def main():
 
 	# await test_basic_service_request()
 
-	await test_RemoteWorker_to_service()
-
 	await test_MetaServiceStub()
+
+	await test_SyncStub()
 
 if __name__ == '__main__':
 	asyncio.run(main())
