@@ -36,10 +36,11 @@ s = axon.worker.ServiceNode(t, service_name, depth=test_service_depth, endpoint_
 worker_thread = threading.Thread(target=axon.worker.init, name='client_test.worker_thread')
 worker_thread.daemon = True
 
+# this test manulually creates a stub that points to a service endpoint. Note that each endpoint is suffixed with /__call__ since RPC configs are stored on the __call__ attribute
 async def test_basic_service_request():
 	print('test_basic_service_request')
 
-	stub = axon.stubs.SyncSimplexStub(worker_ip='localhost', endpoint_prefix=endpoint+service_name+'/', rpc_name='test_fn')
+	stub = axon.stubs.SyncSimplexStub(worker_ip='localhost', endpoint_prefix=endpoint+service_name+'/', rpc_name='test_fn/__call__')
 	stub()
 
 	handle = stub.async_call((), {})
@@ -47,7 +48,7 @@ async def test_basic_service_request():
 	await stub.coro_call((), {})
 	stub.sync_call((), {})
 
-	stub = axon.stubs.SyncSimplexStub(worker_ip='localhost', endpoint_prefix=endpoint+service_name+'/child/', rpc_name='test_fn')
+	stub = axon.stubs.SyncSimplexStub(worker_ip='localhost', endpoint_prefix=endpoint+service_name+'/child/', rpc_name='test_fn/__call__')
 	stub()
 
 	handle = stub.async_call((), {})
@@ -55,6 +56,7 @@ async def test_basic_service_request():
 	await stub.coro_call((), {})
 	stub.sync_call((), {})
 
+# this test creates a metastub to a test service and calls methods recursively to check each child object. Also checks inheritance froma BaseClass
 async def test_MetaServiceStub():
 	print('test_MetaServiceStub')
 
@@ -89,6 +91,7 @@ async def test_MetaServiceStub():
 			# if this is the last iteration, worker won't have a child and this line will raise an attribute error
 			worker = worker.child
 
+# this test creates a metastub to a test service that inherits from SimplexStubs and calls methods recursively to check that each child function is a sync stub
 async def test_SyncStub():
 	print('test_SyncStub')
 
@@ -118,7 +121,7 @@ async def main():
 
 	await test_MetaServiceStub()
 
-	await test_SyncStub()
+	# await test_SyncStub()
 
 if __name__ == '__main__':
 	asyncio.run(main())

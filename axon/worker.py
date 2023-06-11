@@ -118,6 +118,12 @@ def rpc(**configuration):
 
 	return init_rpc
 
+# def rpc(**configuration):
+# 	pass
+# 	# take an RPC configuration and return a function which registers its parameter as an RPC
+# 	# Registering as an RPC means that its parameter is added as an attribute to the RPC attribute on a global service object
+# 	# This is done such that the passed configuration applies to that RPC
+
 class ServiceNode():
 
 	def __init__(self, subject, name, depth=default_service_depth, **configuration):
@@ -132,12 +138,14 @@ class ServiceNode():
 		# for key, member in self.subject.__dict__.items():
 		for key in dir(self.subject):
 
-			# dir calls the overwritable __dir__ function on self.subject. This means it's unreliable in some cases
+			# dir calls the overwritable __dir__ function on self.subject. This means it's unreliable in some cases, since developers can specify what it returns.
 			# this can mean the attribute is listed but does not exist, or even that calling the attribute throws an error
 			try:
 				if not hasattr(self.subject, key):
 					continue
+
 			except(BaseException):
+				# sometimes merely accessing an attribute can throw an error
 				continue
 
 			member = getattr(self.subject, key)
@@ -148,7 +156,7 @@ class ServiceNode():
 			
 			elif hasattr(member, '__dict__'):
 				# Any member with a __dict__ attribute gets a profile, provided it as not been accessed via __call__
-				self.init_child(key, member)
+				self.add_child(key, member)
 
 			elif hasattr(member, '__call__'):
 				# Any member with a __call__ attribute but no __dict__ attribute is represented in profile by an RPC config
@@ -168,12 +176,14 @@ class ServiceNode():
 
 		app.route(endpoint, methods=['GET'])(get_profile_str)
 
-	def init_child(self, key, child):
+	def add_child(self, key, child, **child_config):
 		# limits recursion to a depth parameter
 		if (self.depth <= 0): return
 
+		# The child config overwrites the parent's config, meaning by default children inherit configuration from their parents
+		child_config = overwrite(self.configuration, child_config)
+
 		# the child's endpoint_prefix is the parent's prefix plus / and the child's name
-		child_config = copy(self.configuration)
 		child_config['endpoint_prefix'] += str(self.name)+'/'
 
 		# create a ServiceNode out of it and register it as a child

@@ -34,6 +34,7 @@ def serialize(obj):
 
 # pickle operates on bytes, but http operates on strings, so we've gotta convert pickles to and from a string
 def deserialize(obj_str):
+	# print(obj_str)
 	obj_bytes = codecs.decode(obj_str.encode(), "base64")
 	return pickle.loads(obj_bytes)
 

@@ -69,6 +69,7 @@ def call_simplex_rpc_sync(url, args, kwargs):
 		raise(BaseException('simplex call sent to duplex RPC'))
 
 	# deserializes return object from worker
+	# print(text)
 	return_obj = deserialize(text)
 	return error_handler(return_obj)
 
