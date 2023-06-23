@@ -36,6 +36,7 @@ def serialize(obj):
 def deserialize(obj_str):
 	# print(obj_str)
 	obj_bytes = codecs.decode(obj_str.encode(), "base64")
+	# print(pickle.loads(obj_bytes))
 	return pickle.loads(obj_bytes)
 
 def get_active_workers():

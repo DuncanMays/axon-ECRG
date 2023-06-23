@@ -30,7 +30,10 @@ service_name = 'test_service'
 # defines an instance of TestClass and creates a service node out of it
 test_service_depth = 3
 t = TestClass(depth=test_service_depth)
-s = axon.worker.ServiceNode(t, service_name, depth=test_service_depth, endpoint_prefix=endpoint)
+
+simplex_service = axon.worker.ServiceNode(t, service_name, depth=test_service_depth, endpoint_prefix=endpoint)
+
+duplex_service = axon.worker.ServiceNode(t, 'duplex_service', depth=test_service_depth, endpoint_prefix=endpoint, comms_pattern='duplex')
 
 # creates a thread to run the worker in
 worker_thread = threading.Thread(target=axon.worker.init, name='client_test.worker_thread')
@@ -48,13 +51,21 @@ async def test_basic_service_request():
 	await stub.coro_call((), {})
 	stub.sync_call((), {})
 
-	stub = axon.stubs.SyncSimplexStub(worker_ip='localhost', endpoint_prefix=endpoint+service_name+'/child/', rpc_name='test_fn/__call__')
+	stub = axon.stubs.SyncDuplexStub(worker_ip='localhost', endpoint_prefix=endpoint+'duplex_service/', rpc_name='test_fn/__call__')
 	stub()
 
-	handle = stub.async_call((), {})
-	handle.join()
-	await stub.coro_call((), {})
-	stub.sync_call((), {})
+	# handle = stub.async_call((), {})
+	# handle.join()
+	# await stub.coro_call((), {})
+	# stub.sync_call((), {})
+
+	# stub = axon.stubs.SyncSimplexStub(worker_ip='localhost', endpoint_prefix=endpoint+service_name+'/child/', rpc_name='test_fn/__call__')
+	# stub()
+
+	# handle = stub.async_call((), {})
+	# handle.join()
+	# await stub.coro_call((), {})
+	# stub.sync_call((), {})
 
 # this test creates a metastub to a test service and calls methods recursively to check each child object. Also checks inheritance froma BaseClass
 async def test_MetaServiceStub():
@@ -117,11 +128,11 @@ async def main():
 	# gives the worker a little time to start
 	time.sleep(0.5)
 
-	# await test_basic_service_request()
+	await test_basic_service_request()
 
 	await test_MetaServiceStub()
 
-	# await test_SyncStub()
+	await test_SyncStub()
 
 if __name__ == '__main__':
 	asyncio.run(main())

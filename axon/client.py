@@ -8,57 +8,6 @@ from .duplex_stubs import AsyncDuplexStub, CoroDuplexStub, SyncDuplexStub
 
 from types import SimpleNamespace
 
-def get_worker_profile(ip_addr):
-	url = 'http://'+str(ip_addr)+':'+str(comms_config.worker_port)+'/_get_profile'
-	_, profile_str = GET(url)
-	return deserialize(profile_str)
-
-class RemoteWorker():
-
-	def __init__(self, profile_or_ip):
-		self.ip_addr = None
-		self.rpcs = None
-
-		profile = None
-
-		# profile_or_ip is either an ip address or a worker profile, here we test to see which one
-		try:
-			profile_or_ip['ip_addr']
-			# profile_or_ip has a member ip_addr, and so must be a profile
-			profile = profile_or_ip
-
-		except(TypeError):
-			# profile_or_ip is an ip address
-			profile = get_worker_profile(profile_or_ip)
-
-		# sets up all the rfc stubs
-		self.setup(profile)
-
-	def setup(self, profile):
-		self.ip_addr = profile['ip_addr']
-		self.name = profile['name']
-
-		self.setup_rpc_stubs(profile['rpcs'])
-
-	def setup_rpc_stubs(self, rpcs_descs):
-		rpcs = {}
-
-		for rpc_desc in rpcs_descs:
-			
-			comms_pattern = rpc_desc['comms_pattern']
-			name = rpc_desc['name']
-
-			if (comms_pattern == 'simplex'):
-				rpcs[name] = CoroSimplexStub(worker_ip=self.ip_addr, rpc_name=name)
-
-			elif (comms_pattern == 'duplex'):
-				rpcs[name] = CoroDuplexStub(worker_ip=self.ip_addr, rpc_name=name)
-
-			else:
-				raise BaseException('unrecognised communication pattern:'+str(comms_pattern))
-
-		self.rpcs = SimpleNamespace(**rpcs)
-
 def get_ServiceStub(ip_addr='localhost', endpoint_prefix=default_service_config['endpoint_prefix'], name='', profile=None, stub_type=CoroSimplexStub, top_stub_type=object):
 	global count 
 
@@ -85,6 +34,7 @@ def get_ServiceStub_helper(ip_addr, profile, stub_type, top_stub_type):
 	if '__call__' in keys:
 		# if the profile has a __call__ attribute, than the corresponding object on the server is callable and has a __dict__ attribute, and so must be represented by an RPC stub bound to the given network coordinates
 		BoundStubClass = get_BoundStubClass(stub_type, ip_addr, profile['__call__'])
+		print(profile['__call__']['comms_pattern'])
 		# this ensures the stub will inherit from a stub class that's bound to the configuration
 		parent_classes = (BoundStubClass, ) + parent_classes
 
@@ -96,6 +46,7 @@ def get_ServiceStub_helper(ip_addr, profile, stub_type, top_stub_type):
 
 		if '__profile_flag__' in member:
 			# member is a profile for a ServiceNode
+			print(key)
 			attrs[key] = get_ServiceStub_helper(ip_addr, member, stub_type, object)
 
 		else:
@@ -131,3 +82,61 @@ def get_RPC_stub_2(ip_addr, configuration):
 		return 'this is a test RPC stub'
 
 	return return_fn
+
+def get_worker_profile(ip_addr):
+	url = 'http://'+str(ip_addr)+':'+str(comms_config.worker_port)+'/_get_profile'
+	_, profile_str = GET(url)
+	return deserialize(profile_str)
+
+class RemoteWorker():
+
+	def __init__(self, profile_or_ip):
+		self.ip_addr = None
+		self.rpcs = None
+
+		profile = None
+
+		# profile_or_ip is either an ip address or a worker profile, here we test to see which one
+		try:
+			profile_or_ip['ip_addr']
+			# profile_or_ip has a member ip_addr, and so must be a profile
+			profile = profile_or_ip
+
+		except(TypeError):
+			# profile_or_ip is an ip address
+			profile = get_worker_profile(profile_or_ip)
+
+		# sets up all the rfc stubs
+		self.setup(profile)
+
+	def setup(self, profile):
+		self.ip_addr = profile['ip_addr']
+		self.name = profile['name']
+
+		# print('----------------------------------------------------------------')
+		# print(profile['rpcs'].keys())
+		# print(profile['rpcs']['fn.name'])
+		# print('----------------------------------------------------------------')
+
+		# this will need to be a lookup on a services key to a number of service profiles
+		# self.setup_rpc_stubs(profile['rpcs'])
+		self.rpcs = get_ServiceStub(self.ip_addr, endpoint_prefix='rpcs/', name='rpcs', profile=profile['rpcs'])
+
+	def setup_rpc_stubs(self, rpcs_descs):
+		rpcs = {}
+
+		for rpc_desc in rpcs_descs:
+			
+			comms_pattern = rpc_desc['comms_pattern']
+			name = rpc_desc['name']
+
+			if (comms_pattern == 'simplex'):
+				rpcs[name] = CoroSimplexStub(worker_ip=self.ip_addr, rpc_name=name)
+
+			elif (comms_pattern == 'duplex'):
+				rpcs[name] = CoroDuplexStub(worker_ip=self.ip_addr, rpc_name=name)
+
+			else:
+				raise BaseException('unrecognised communication pattern:'+str(comms_pattern))
+
+		self.rpcs = SimpleNamespace(**rpcs)

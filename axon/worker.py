@@ -32,8 +32,13 @@ def _get_profile():
 	profile = {
 		'name': name,
 		'ip_addr': ip_addr,
-		'rpcs': rpcs
+		'rpcs': RPC_node.get_profile()
 	}
+
+	# print('----------------------------------------------------------------')
+	# print(profile['rpcs']['simplex_rpc']['__call__']['comms_pattern'])
+	# print(profile['rpcs']['duplex_rpc']['__call__']['comms_pattern'])
+	# print('----------------------------------------------------------------')
 
 	return serialize(profile)
 
@@ -87,7 +92,7 @@ def get_route_fn(configuration, fn):
 	return wrapped_fn
 
 # this function returns a function which will be applied to functions which the caller wishes to turn into RPCs
-def rpc(**configuration):
+def make_RPC_skeleton(**configuration):
 	# accepts options for the RPC, simplex/duplex, and running environment
 	# sets up the function that registers the route
 
@@ -117,12 +122,6 @@ def rpc(**configuration):
 		return fn
 
 	return init_rpc
-
-# def rpc(**configuration):
-# 	pass
-# 	# take an RPC configuration and return a function which registers its parameter as an RPC
-# 	# Registering as an RPC means that its parameter is added as an attribute to the RPC attribute on a global service object
-# 	# This is done such that the passed configuration applies to that RPC
 
 class ServiceNode():
 
@@ -196,7 +195,7 @@ class ServiceNode():
 		child_config['name'] = key
 
 		# make it an RPC
-		make_rpc = rpc(**child_config)
+		make_rpc = make_RPC_skeleton(**child_config)
 		make_rpc(fn)
 		# remember the configuration
 		self.children[key] = child_config
@@ -221,6 +220,16 @@ class ServiceNode():
 				profile[key] = child
 
 		return profile
+
+# a ServiceNode that holds all RPCs associated by this worker instance
+RPC_node = ServiceNode(object(), 'rpcs')
+
+# the RPC decorator adds the associated function to the RPC_node ServiceNode
+def rpc(**configuration):
+	def add_to_RPC_node(fn):
+		RPC_node.add_child(fn.__name__, fn, **configuration)
+
+	return add_to_RPC_node
 
 # starts the web app
 def init(wrkr_name='worker'):

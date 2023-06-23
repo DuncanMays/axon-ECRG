@@ -1,6 +1,7 @@
 from sys import path
 path.append('..')
 import axon
+from ServiceNode_tests import TestClass
 
 import asyncio
 import threading
@@ -16,6 +17,9 @@ def duplex_rpc(prefix, suffix='duplex test failed'):
 	time.sleep(1)
 	return prefix+suffix
 
+t = TestClass()
+s = axon.worker.ServiceNode(t, 'test')
+
 worker_thread = threading.Thread(target=axon.worker.init, name='client_test.worker_thread')
 worker_thread.daemon = True
 
@@ -25,7 +29,24 @@ async def test_RemoteWorker():
 	w = axon.client.RemoteWorker('localhost')
 
 	print(await w.rpcs.simplex_rpc('simplex test ', suffix='passed'))
-	print(await w.rpcs.duplex_rpc('duplex test ', suffix='passed'))
+	
+	print('----------------------------------------------------')
+	# the service node has a dupplex comms pattern
+	print('should be duplex')
+	print(axon.worker.RPC_node.children['duplex_rpc'].children['__call__']['comms_pattern'])
+	print('should be True')
+	print(isinstance(w.rpcs.duplex_rpc, axon.duplex_stubs.CoroDuplexStub))
+	print('should be False')
+	print(isinstance(w.rpcs.duplex_rpc, axon.simplex_stubs.CoroSimplexStub))
+	# that means the profile must be wrong? The profile sent over the network from worker is apperently correct. The ServiceStub implementation must have a bug in it
+	print('should be True')
+	print(isinstance(w.rpcs.simplex_rpc, axon.simplex_stubs.CoroSimplexStub))
+	print('----------------------------------------------------')
+
+	# print(await w.rpcs.duplex_rpc('duplex test ', suffix='passed'))
+
+
+	# we also need to test that the service at /test works right
 
 async def main():
 	worker_thread.start()
