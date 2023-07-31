@@ -35,15 +35,20 @@ async def test_RemoteWorker():
 	print('should be duplex')
 	print(axon.worker.RPC_node.children['duplex_rpc'].children['__call__']['comms_pattern'])
 	print('should be True')
-	print(isinstance(w.rpcs.duplex_rpc, axon.duplex_stubs.CoroDuplexStub))
-	print('should be False')
-	print(isinstance(w.rpcs.duplex_rpc, axon.simplex_stubs.CoroSimplexStub))
-	# that means the profile must be wrong? The profile sent over the network from worker is apperently correct. The ServiceStub implementation must have a bug in it
+	print(isinstance(w.rpcs.duplex_rpc, axon.stubs.CoroStub))
 	print('should be True')
-	print(isinstance(w.rpcs.simplex_rpc, axon.simplex_stubs.CoroSimplexStub))
+	print(isinstance(w.rpcs.simplex_rpc, axon.stubs.CoroStub))
+	print('should be simplex')
+	print(w.rpcs.simplex_rpc.comms_pattern)
+	print('should be duplex')
+	print(w.rpcs.duplex_rpc.comms_pattern)
+	# print('should be duplex')
+	# print(w.rpcs.duplex_rpc.__call__.comms_pattern)
+	print('should be False')
+	print(isinstance(w.rpcs.duplex_rpc.__call__, axon.stubs.CoroStub))
 	print('----------------------------------------------------')
 
-	# print(await w.rpcs.duplex_rpc('duplex test ', suffix='passed'))
+	print(await w.rpcs.duplex_rpc('duplex test ', suffix='passed'))
 
 
 	# we also need to test that the service at /test works right

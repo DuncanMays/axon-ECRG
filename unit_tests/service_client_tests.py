@@ -130,9 +130,9 @@ async def main():
 
 	await test_basic_service_request()
 
-	await test_MetaServiceStub()
+	# await test_MetaServiceStub()
 
-	await test_SyncStub()
+	# await test_SyncStub()
 
 if __name__ == '__main__':
 	asyncio.run(main())

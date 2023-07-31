@@ -5,10 +5,11 @@ from .config import comms_config, default_service_config
 from .utils import deserialize, GET
 from .simplex_stubs import AsyncSimplexStub, CoroSimplexStub, SyncSimplexStub
 from .duplex_stubs import AsyncDuplexStub, CoroDuplexStub, SyncDuplexStub
+from .generic_stubs import AsyncStub, CoroStub, SyncStub
 
 from types import SimpleNamespace
 
-def get_ServiceStub(ip_addr='localhost', endpoint_prefix=default_service_config['endpoint_prefix'], name='', profile=None, stub_type=CoroSimplexStub, top_stub_type=object):
+def get_ServiceStub(ip_addr='localhost', endpoint_prefix=default_service_config['endpoint_prefix'], name='', profile=None, stub_type=CoroStub, top_stub_type=object):
 	global count 
 
 	# the attributes of the returned object
@@ -25,18 +26,9 @@ def get_ServiceStub(ip_addr='localhost', endpoint_prefix=default_service_config[
 
 def get_ServiceStub_helper(ip_addr, profile, stub_type, top_stub_type):
 
-	keys = list(profile.keys())
-	parent_classes = (top_stub_type, )
 	attrs = {}
-
-	banned_keys = ['__profile_flag__', '__func__', '__self__', '__get__', '__set__', '__delete__'] + dir(object())
-
-	if '__call__' in keys:
-		# if the profile has a __call__ attribute, than the corresponding object on the server is callable and has a __dict__ attribute, and so must be represented by an RPC stub bound to the given network coordinates
-		BoundStubClass = get_BoundStubClass(stub_type, ip_addr, profile['__call__'])
-		print(profile['__call__']['comms_pattern'])
-		# this ensures the stub will inherit from a stub class that's bound to the configuration
-		parent_classes = (BoundStubClass, ) + parent_classes
+	keys = list(profile.keys())
+	banned_keys = ['__call__', '__profile_flag__', '__func__', '__self__', '__get__', '__set__', '__delete__'] + dir(object())
 
 	for key in keys:
 
@@ -46,12 +38,19 @@ def get_ServiceStub_helper(ip_addr, profile, stub_type, top_stub_type):
 
 		if '__profile_flag__' in member:
 			# member is a profile for a ServiceNode
-			print(key)
 			attrs[key] = get_ServiceStub_helper(ip_addr, member, stub_type, object)
 
 		else:
 			# If a member is not a profile, then it must be an RPC config, and so correspond to a callable object on the worker with no __dict__attribute
 			attrs[key] = stub_type(worker_ip=ip_addr, endpoint_prefix=member['endpoint_prefix']+'/', rpc_name=key)
+
+	parent_classes = (top_stub_type, )
+
+	if '__call__' in keys:
+		# if the profile has a __call__ attribute, than the corresponding object on the server is callable and has a __dict__ attribute, and so must be represented by an RPC stub bound to the given network coordinates
+		BoundStubClass = get_BoundStubClass(stub_type, ip_addr, profile['__call__'])
+		# this ensures the stub will inherit from a stub class that's bound to the configuration
+		parent_classes = (BoundStubClass, ) + parent_classes
 
 	ServiceStub = type('ServiceStub', parent_classes, attrs)
 	return ServiceStub()
@@ -61,7 +60,7 @@ def get_BoundStubClass(stub_type, ip_addr, configuration):
 	# a class for stubs that are bound to a certain RPC
 	class BoundStubClass(stub_type):
 		def __init__(self):
-			stub_type.__init__(self, worker_ip=ip_addr, endpoint_prefix=configuration['endpoint_prefix']+'/', rpc_name='__call__')
+			stub_type.__init__(self, worker_ip=ip_addr, endpoint_prefix=configuration['endpoint_prefix']+'/', rpc_name='__call__', comms_pattern=configuration['comms_pattern'])
 
 	return BoundStubClass
 
