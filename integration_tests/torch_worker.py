@@ -15,7 +15,8 @@ class TestClass(torch.nn.Module):
 
 a = TestClass()
 
-axon.worker.expose_service(a, 'torch_module')
+# axon.worker.expose_service(a, 'torch_module')
+axon.worker.ServiceNode(a, 'torch_module')
 
 if (__name__ == '__main__'):
 	axon.worker.init()

@@ -2,6 +2,8 @@ from .utils import overwrite
 from .config import default_service_config, default_rpc_config
 from .worker import rpc
 
+# This is possibly a piece of lint, service_client_tests.py does not import it and it hasn't been kept curent as it does not check for errors when accessing attributes
+
 class ServiceNode():
 
 	def __init__(self, subject, name, **configuration):

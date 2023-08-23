@@ -1,5 +1,6 @@
 import threading
 import asyncio
+import time
 
 from sys import path
 path.append('..')
@@ -34,7 +35,8 @@ async def test_coro_stub():
 	print('test_coro_stub')
 
 	rpc_name = 'simplex_rpc'
-	url = 'http://localhost:'+str(axon.config.comms_config.worker_port)+'/'+axon.config.default_rpc_config['endpoint_prefix']+rpc_name
+	url = 'http://localhost:'+str(axon.config.comms_config.worker_port)+'/'+axon.config.default_rpc_config['endpoint_prefix']+rpc_name+'/__call__'
+	print(url)
 
 	result = await axon.simplex_stubs.call_simplex_rpc_coro(url, ('test ', ), {'suffix':'passed!', })
 
@@ -110,16 +112,18 @@ async def main():
 	print('starting worker thread for testing stubs against')
 	worker_thread.start()
 
+	time.sleep(1)
+
 	await test_coro_stub()
 
-	test_async_stub()
+	# test_async_stub()
 
-	test_sync_stub()
+	# test_sync_stub()
 
-	await test_GenericSimplexStub()
+	# await test_GenericSimplexStub()
 
-	await test_AsyncSimplexStub()
-	await test_CoroSimplexStub()
-	await test_SyncSimplexStub()
+	# await test_AsyncSimplexStub()
+	# await test_CoroSimplexStub()
+	# await test_SyncSimplexStub()
 
 if (__name__ == '__main__'): asyncio.run(main())

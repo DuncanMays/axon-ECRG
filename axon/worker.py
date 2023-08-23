@@ -32,8 +32,13 @@ def _get_profile():
 	profile = {
 		'name': name,
 		'ip_addr': ip_addr,
-		'rpcs': rpcs
+		'rpcs': RPC_node.get_profile()
 	}
+
+	# print('----------------------------------------------------------------')
+	# print(profile['rpcs']['simplex_rpc']['__call__']['comms_pattern'])
+	# print(profile['rpcs']['duplex_rpc']['__call__']['comms_pattern'])
+	# print('----------------------------------------------------------------')
 
 	return serialize(profile)
 
@@ -87,7 +92,7 @@ def get_route_fn(configuration, fn):
 	return wrapped_fn
 
 # this function returns a function which will be applied to functions which the caller wishes to turn into RPCs
-def rpc(**configuration):
+def make_RPC_skeleton(**configuration):
 	# accepts options for the RPC, simplex/duplex, and running environment
 	# sets up the function that registers the route
 
@@ -132,26 +137,29 @@ class ServiceNode():
 		# for key, member in self.subject.__dict__.items():
 		for key in dir(self.subject):
 
-			# dir calls the overwritable __dir__ function on self.subject. This means it's unreliable in some cases
+			# dir calls the overwritable __dir__ function on self.subject. This means it's unreliable in some cases, since developers can specify what it returns.
 			# this can mean the attribute is listed but does not exist, or even that calling the attribute throws an error
 			try:
 				if not hasattr(self.subject, key):
 					continue
+
 			except(BaseException):
+				# sometimes merely accessing an attribute can throw an error
 				continue
 
 			member = getattr(self.subject, key)
 
-			# if the member is callable, make it an RPC
-			if callable(member):
+			if (key == '__call__'):
+				# Any member accessed via __call__ attribute is represented in profile by an RPC config. This means that objects stored on __call__ attributes will not be represented in profile
 				self.init_RPC(key, member)
+			
+			elif hasattr(member, '__dict__'):
+				# Any member with a __dict__ attribute gets a profile, provided it as not been accessed via __call__
+				self.add_child(key, member)
 
-			# if the member has attributes, make it into a child ServiceNode
-			if hasattr(member, '__dict__'):
-
-				# limits recursion to a depth parameter
-				if (self.depth > 0):
-					self.init_child(key, member)
+			elif hasattr(member, '__call__'):
+				# Any member with a __call__ attribute but no __dict__ attribute is represented in profile by an RPC config
+				self.init_RPC(key, member)
 
 		# we now register a GET route at the ServiceNode's endpoint to expose its profile
 		
@@ -167,9 +175,14 @@ class ServiceNode():
 
 		app.route(endpoint, methods=['GET'])(get_profile_str)
 
-	def init_child(self, key, child):
+	def add_child(self, key, child, **child_config):
+		# limits recursion to a depth parameter
+		if (self.depth <= 0): return
+
+		# The child config overwrites the parent's config, meaning by default children inherit configuration from their parents
+		child_config = overwrite(self.configuration, child_config)
+
 		# the child's endpoint_prefix is the parent's prefix plus / and the child's name
-		child_config = copy(self.configuration)
 		child_config['endpoint_prefix'] += str(self.name)+'/'
 
 		# create a ServiceNode out of it and register it as a child
@@ -182,7 +195,7 @@ class ServiceNode():
 		child_config['name'] = key
 
 		# make it an RPC
-		make_rpc = rpc(**child_config)
+		make_rpc = make_RPC_skeleton(**child_config)
 		make_rpc(fn)
 		# remember the configuration
 		self.children[key] = child_config
@@ -207,6 +220,16 @@ class ServiceNode():
 				profile[key] = child
 
 		return profile
+
+# a ServiceNode that holds all RPCs associated by this worker instance
+RPC_node = ServiceNode(object(), 'rpcs')
+
+# the RPC decorator adds the associated function to the RPC_node ServiceNode
+def rpc(**configuration):
+	def add_to_RPC_node(fn):
+		RPC_node.add_child(fn.__name__, fn, **configuration)
+
+	return add_to_RPC_node
 
 # starts the web app
 def init(wrkr_name='worker'):

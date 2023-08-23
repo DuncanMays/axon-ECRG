@@ -147,24 +147,24 @@ class GenericDuplexStub(GenericSimplexStub):
 
 class SyncDuplexStub(GenericDuplexStub):
 
-	def __init__(self, worker_ip='localhost', rpc_name=None):
-		GenericSimplexStub.__init__(self, worker_ip=worker_ip, rpc_name=rpc_name)
+	def __init__(self, **kwargs):
+		GenericSimplexStub.__init__(self, **kwargs)
 
 	def __call__(self, *args, **kwargs):
 		return self.sync_call(args, kwargs)
 
 class AsyncDuplexStub(GenericDuplexStub):
 
-	def __init__(self, worker_ip='localhost', rpc_name=None):
-		GenericSimplexStub.__init__(self, worker_ip=worker_ip, rpc_name=rpc_name)
+	def __init__(self, **kwargs):
+		GenericSimplexStub.__init__(self, **kwargs)
 
 	def __call__(self, *args, **kwargs):
 		return self.async_call(args, kwargs)
 
 class CoroDuplexStub(GenericDuplexStub):
 
-	def __init__(self, worker_ip='localhost', rpc_name=None):
-		GenericSimplexStub.__init__(self, worker_ip=worker_ip, rpc_name=rpc_name)
+	def __init__(self, **kwargs):
+		GenericSimplexStub.__init__(self, **kwargs)
 
 	async def __call__(self, *args, **kwargs):
 		return await self.coro_call(args, kwargs)

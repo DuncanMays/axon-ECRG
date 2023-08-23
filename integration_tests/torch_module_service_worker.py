@@ -25,21 +25,21 @@ class FnService():
 
 	def __init__(self, net):
 		self.net = net
-		self.saved_tensors = None
+		self.saved_tensors = {}
 
-	def apply(self, x):
+	def apply(self, ctx_id, x):
 		print('apply')
 
 		with torch.enable_grad():
 			y = self.net(x)
 
-		self.saved_tensors = (x, y)
+		self.saved_tensors[ctx_id] = (x, y)
 
 		return y.clone()
 
-	def apply_gradients(self, g):
-		print('apply_gradients')
-		(x, y) = self.saved_tensors
+	def apply_gradients(self, ctx_id, g):
+		(x, y) = self.saved_tensors[ctx_id]
+		del self.saved_tensors[ctx_id]
 		y.backward(g)
 		return x.grad
 
