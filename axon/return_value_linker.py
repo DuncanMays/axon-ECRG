@@ -90,7 +90,6 @@ class RVL():
 
 		# adds a route that will listen for incoming result requests from duplex RPCs
 		def lookup():
-
 			# the ID and result of the function call
 			serialized_result = route_req.form['result']
 			uuid = deserialize(route_req.form['id'])

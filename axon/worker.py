@@ -29,16 +29,16 @@ node_type = 'worker'
 def _get_profile():
 	global name, ip_addr, rpcs
 
+	service_profiles = {}
+	for key in registered_ServiceNodes:
+		service_profiles[key] = registered_ServiceNodes[key].get_profile()
+
 	profile = {
 		'name': name,
 		'ip_addr': ip_addr,
-		'rpcs': RPC_node.get_profile()
+		'rpcs': RPC_node.get_profile(),
+		'services': service_profiles,
 	}
-
-	# print('----------------------------------------------------------------')
-	# print(profile['rpcs']['simplex_rpc']['__call__']['comms_pattern'])
-	# print(profile['rpcs']['duplex_rpc']['__call__']['comms_pattern'])
-	# print('----------------------------------------------------------------')
 
 	return serialize(profile)
 
@@ -122,6 +122,14 @@ def make_RPC_skeleton(**configuration):
 		return fn
 
 	return init_rpc
+
+registered_ServiceNodes = {}
+
+def register_ServiceNode(subject, name, depth=default_service_depth, **configuration):
+
+	s = ServiceNode(subject, name, depth=default_service_depth, **configuration)
+	registered_ServiceNodes[name] = s
+	return s
 
 class ServiceNode():
 

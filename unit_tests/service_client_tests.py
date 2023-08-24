@@ -7,6 +7,8 @@ import asyncio
 import time
 import json
 
+default_service_depth = axon.config.default_service_depth
+
 class TestClass():
 	def __init__(self, depth=1):
 		self.depth = depth
@@ -43,29 +45,48 @@ worker_thread.daemon = True
 async def test_basic_service_request():
 	print('test_basic_service_request')
 
-	stub = axon.stubs.SyncSimplexStub(worker_ip='localhost', endpoint_prefix=endpoint+service_name+'/', rpc_name='test_fn/__call__')
-	stub()
+	# tests that ServiceStubs, including child stubs, are instantiated properly and that their RPCs work
+	full_endpoint = endpoint+service_name+'/'
+	for i in range(default_service_depth, 0, -1):
+		print('testing simplex RPC')
 
-	handle = stub.async_call((), {})
-	handle.join()
-	await stub.coro_call((), {})
-	stub.sync_call((), {})
+		stub = axon.stubs.SyncStub(worker_ip='localhost', endpoint_prefix=full_endpoint, rpc_name='test_fn/__call__')
+		
+		stub()
+		handle = stub.async_call((), {})
+		handle.join()
+		await stub.coro_call((), {})
+		stub.sync_call((), {})
 
-	stub = axon.stubs.SyncDuplexStub(worker_ip='localhost', endpoint_prefix=endpoint+'duplex_service/', rpc_name='test_fn/__call__')
-	stub()
+		if isinstance(stub, axon.stubs.GenericStub):
+			print('RPC inheritance from axon.stubs.GenericStub confirmed')
+		else:
+			raise BaseException(f'RPC stub is not inheritance from axon.stubs.GenericStub, but from {type(stub)}')
 
-	# handle = stub.async_call((), {})
-	# handle.join()
-	# await stub.coro_call((), {})
-	# stub.sync_call((), {})
+		# next iteration, the stub will point at the child service
+		full_endpoint = full_endpoint + 'child/'
 
-	# stub = axon.stubs.SyncSimplexStub(worker_ip='localhost', endpoint_prefix=endpoint+service_name+'/child/', rpc_name='test_fn/__call__')
-	# stub()
 
-	# handle = stub.async_call((), {})
-	# handle.join()
-	# await stub.coro_call((), {})
-	# stub.sync_call((), {})
+	# tests that ServiceStubs, including child stubs, are instantiated properly and that their RPCs work
+	full_endpoint = endpoint+'duplex_service/'
+	for i in range(default_service_depth, 0, -1):
+		print('testing duplex RPC')
+
+		stub = axon.stubs.SyncStub(worker_ip='localhost', endpoint_prefix=full_endpoint, comms_pattern='duplex', rpc_name='test_fn/__call__')
+		
+		stub()
+		handle = stub.async_call((), {})
+		handle.join()
+		await stub.coro_call((), {})
+		stub.sync_call((), {})
+
+		if isinstance(stub, axon.stubs.GenericStub):
+			print('RPC inheritance from axon.stubs.GenericStub confirmed')
+		else:
+			raise BaseException(f'RPC stub is not inheritance from axon.stubs.GenericStub, but from {type(stub)}')
+
+		# next iteration, the stub will point at the child service
+		full_endpoint = full_endpoint + 'child/'
 
 # this test creates a metastub to a test service and calls methods recursively to check each child object. Also checks inheritance froma BaseClass
 async def test_MetaServiceStub():
@@ -88,15 +109,15 @@ async def test_MetaServiceStub():
 		await worker.test_fn()
 		# await worker()
 
-		if isinstance(worker.test_fn, axon.stubs.GenericSimplexStub):
-			print('RPC inheritance from axon.stubs.GenericSimplexStub confirmed')
+		if isinstance(worker.test_fn, axon.stubs.GenericStub):
+			print('RPC inheritance from axon.stubs.GenericStub confirmed')
 		else:
-			raise BaseException('RPC stub is not inheritance from axon.stubs.GenericSimplexStub')
+			raise BaseException('RPC stub is not inheritance from axon.stubs.GenericStub')
 
-		if isinstance(worker, axon.stubs.GenericSimplexStub):
-			print('Callable stub inheritance from axon.stubs.GenericSimplexStub confirmed')
+		if isinstance(worker, axon.stubs.GenericStub):
+			print('Callable stub inheritance from axon.stubs.GenericStub confirmed')
 		else:
-			raise BaseException('Callable stub is not inheritance from axon.stubs.GenericSimplexStub')
+			raise BaseException('Callable stub is not inheritance from axon.stubs.GenericStub')
 
 		if (i != 1):
 			# if this is the last iteration, worker won't have a child and this line will raise an attribute error
@@ -106,7 +127,7 @@ async def test_MetaServiceStub():
 async def test_SyncStub():
 	print('test_SyncStub')
 
-	worker = axon.client.get_ServiceStub('localhost', endpoint_prefix=endpoint+service_name, stub_type=axon.client.SyncSimplexStub)
+	worker = axon.client.get_ServiceStub('localhost', endpoint_prefix=endpoint+service_name, stub_type=axon.client.SyncStub)
 
 	# tests that child stubs are instantiated properly and that their RPCs work
 	for i in range(test_service_depth, 0, -1):
@@ -114,10 +135,10 @@ async def test_SyncStub():
 		worker()
 
 		# tests that stub is inherited from GenericSimplexStub
-		if isinstance(worker.test_fn, axon.stubs.GenericSimplexStub):
-			print('Inheritance from axon.stubs.GenericSimplexStub confirmed')
+		if isinstance(worker.test_fn, axon.stubs.GenericStub):
+			print('Inheritance from axon.stubs.GenericStub confirmed')
 		else:
-			raise BaseException('Stub is not inheritance from axon.stubs.GenericSimplexStub')
+			raise BaseException('Stub is not inheritance from axon.stubs.GenericStub')
 
 		if (i != 1):
 			# if this is the last iteration, worker won't have a child and this line will raise an attribute error
@@ -130,9 +151,9 @@ async def main():
 
 	await test_basic_service_request()
 
-	# await test_MetaServiceStub()
+	await test_MetaServiceStub()
 
-	# await test_SyncStub()
+	await test_SyncStub()
 
 if __name__ == '__main__':
 	asyncio.run(main())
