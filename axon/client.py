@@ -105,21 +105,21 @@ class RemoteWorker():
 			# profile_or_ip is an ip address
 			profile = get_worker_profile(profile_or_ip)
 
-		# sets up all the rfc stubs
+		# sets up all the rpc stubs
 		self.setup(profile)
 
 	def setup(self, profile):
 		self.ip_addr = profile['ip_addr']
 		self.name = profile['name']
 
-		# print('----------------------------------------------------------------')
-		# print(profile['rpcs'].keys())
-		# print(profile['rpcs']['fn.name'])
-		# print('----------------------------------------------------------------')
-
 		# this will need to be a lookup on a services key to a number of service profiles
 		# self.setup_rpc_stubs(profile['rpcs'])
 		self.rpcs = get_ServiceStub(self.ip_addr, endpoint_prefix='rpcs/', name='rpcs', profile=profile['rpcs'])
+
+
+		for service_name in profile['services'].keys():
+			s = get_ServiceStub(self.ip_addr, endpoint_prefix=f'{service_name}/', name=service_name, profile=profile['services'][service_name])
+			setattr(self, service_name, s)
 
 	def setup_rpc_stubs(self, rpcs_descs):
 		rpcs = {}
