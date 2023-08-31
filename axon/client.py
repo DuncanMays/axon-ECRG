@@ -1,7 +1,7 @@
 # the bit that exports worker profile class and uses the RVL
 # an RPC stub is the thing on the client that makes a calling request and waits for the response
 
-from .config import comms_config, default_service_config
+from .config import comms_config, default_service_config, default_rpc_config
 from .utils import deserialize, GET
 from .simplex_stubs import AsyncSimplexStub, CoroSimplexStub, SyncSimplexStub
 from .duplex_stubs import AsyncDuplexStub, CoroDuplexStub, SyncDuplexStub
@@ -114,7 +114,7 @@ class RemoteWorker():
 
 		# this will need to be a lookup on a services key to a number of service profiles
 		# self.setup_rpc_stubs(profile['rpcs'])
-		self.rpcs = get_ServiceStub(self.ip_addr, endpoint_prefix='rpcs/', name='rpcs', profile=profile['rpcs'])
+		self.rpcs = get_ServiceStub(self.ip_addr, endpoint_prefix=default_rpc_config['endpoint_prefix']+'/', name=default_rpc_config['endpoint_prefix'], profile=profile['rpcs'])
 
 
 		for service_name in profile['services'].keys():

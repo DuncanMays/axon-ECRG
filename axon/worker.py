@@ -230,7 +230,7 @@ class ServiceNode():
 		return profile
 
 # a ServiceNode that holds all RPCs associated by this worker instance
-RPC_node = ServiceNode(object(), 'rpcs')
+RPC_node = ServiceNode(object(), default_rpc_config['endpoint_prefix'])
 
 # the RPC decorator adds the associated function to the RPC_node ServiceNode
 def rpc(**configuration):

@@ -14,7 +14,8 @@ def GET(url, timeout=comms_config.request_timeout):
 	return resp.status_code, resp.text
 
 async def async_GET(url, timeout=comms_config.request_timeout):
-	async with aiohttp.ClientSession(conn_timeout=timeout) as session:
+	timeout_inst = aiohttp.ClientTimeout(total=timeout)
+	async with aiohttp.ClientSession(conn_timeout=timeout_inst) as session:
 		async with session.get(url) as resp:
 			return resp.status, await resp.text()
 
@@ -23,7 +24,8 @@ def POST(url, data=None, timeout=comms_config.request_timeout):
 	return resp.status_code, resp.text
 
 async def async_POST(url, data=None, timeout=comms_config.request_timeout):
-	async with aiohttp.ClientSession(conn_timeout=timeout) as session:
+	timeout_inst = aiohttp.ClientTimeout(total=timeout)
+	async with aiohttp.ClientSession(timeout=timeout_inst) as session:
 		async with session.post(url, data=data) as resp:
 			return resp.status, await resp.text()
 
