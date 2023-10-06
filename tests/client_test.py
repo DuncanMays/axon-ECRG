@@ -6,9 +6,8 @@ import pytest
 import asyncio
 import time
 
-default_service_depth = axon.config.default_service_depth
-
-async def check_properties():
+@pytest.mark.asyncio
+async def test_RemoteWorker():
 	print('test_RemoteWorker')
 
 	w = axon.client.RemoteWorker('localhost')
@@ -20,7 +19,7 @@ async def check_properties():
 	stub = w.simplex_service
 
 	# tests that child stubs are instantiated properly and that their RPCs work
-	for i in range(default_service_depth, 0, -1):
+	for i in range(axon.config.default_service_depth, 0, -1):
 		await w.simplex_service.test_fn()
 
 		if isinstance(w.simplex_service.test_fn, axon.stubs.GenericStub):
@@ -33,12 +32,3 @@ async def check_properties():
 		if (i != 1):
 			# if this is the last iteration, worker won't have a child and this line will raise an attribute error
 			w.simplex_service = w.simplex_service.child
-
-@pytest.mark.asyncio
-async def test_RemoteWorker():
-	# worker_thread.start()
-
-	# waits for the worker's flask app to start
-	await asyncio.sleep(0.5)
-
-	await check_properties()

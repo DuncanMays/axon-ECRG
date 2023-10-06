@@ -9,15 +9,14 @@ import pytest
 async def test_ReturnEvent_coro():
 	print('test_ReturnEvent_coro')
 
-	event_loop = asyncio.get_running_loop()
 	event = return_value_linker.ReturnEvent_coro()
 	await event.init()
 
-	def thread_fn(event_loop):
+	def thread_fn():
 		print('putting return value')
 		event.put_return_value('great success!')
 
-	t = threading.Thread(target=thread_fn, args=(event_loop, ), name='axon/tests/return_value_linker_test/test_ReturnEvent_coro')
+	t = threading.Thread(target=thread_fn, name='axon/tests/return_value_linker_test/test_ReturnEvent_coro')
 	t.daemon = True
 	t.start()
 
