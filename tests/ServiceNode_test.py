@@ -4,14 +4,14 @@ path.append('..')
 import axon
 import time
 
-class TestClass():
+class DummyClass():
 
 	def __init__(self, depth=3):
 		self.child = None
 		self.depth = depth
 
 		if (depth>0):
-			self.child = TestClass(depth=depth-1)
+			self.child = DummyClass(depth=depth-1)
 
 	def test_fn(self):
 		print('test fn called at depth: '+str(self.depth))
@@ -19,7 +19,7 @@ class TestClass():
 
 def test_add_child_child_config():
 
-	t = TestClass()
+	t = DummyClass()
 	s = axon.worker.ServiceNode(t, 'test')
 
 	def simplex_rpc(self):
@@ -35,3 +35,9 @@ def test_add_child_child_config():
 	assert(s.children['duplex_child'].children['__call__']['comms_pattern'] == 'duplex')
 
 	print('test_add_child_child_config passed!')
+
+def main():
+	test_add_child_child_config()
+
+if (__name__=='__main__'):
+	main()
