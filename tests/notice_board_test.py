@@ -3,7 +3,6 @@ from threading import Thread
 
 import sys
 sys.path.append('..')
-# sys.path.append('./')
 import axon
 
 # the notice board will be run in a separate thread so we can run a client in the main thread to test it

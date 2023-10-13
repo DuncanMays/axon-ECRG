@@ -1,7 +1,8 @@
 from sys import path
-path.append('./')
-path.append('./unit_tests')
-import axon
+# path.append('..')
+# path.append('/home/duncan/Documents/git/axon-ECRG')
+from axon import axon
+
 import pytest
 import asyncio
 import time
