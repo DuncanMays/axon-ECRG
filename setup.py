@@ -19,3 +19,4 @@ setup(
 	packages=['axon'],
 	install_requires=['flask', 'uuid', 'requests', 'aiohttp'],
 )
+

@@ -3,8 +3,6 @@
 
 from .config import comms_config, default_service_config, default_rpc_config
 from .utils import deserialize, GET
-from .simplex_stubs import AsyncSimplexStub, CoroSimplexStub, SyncSimplexStub
-from .duplex_stubs import AsyncDuplexStub, CoroDuplexStub, SyncDuplexStub
 from .generic_stubs import AsyncStub, CoroStub, SyncStub
 
 from types import SimpleNamespace
@@ -64,24 +62,6 @@ def get_BoundStubClass(stub_type, ip_addr, configuration):
 
 	return BoundStubClass
 
-def get_RPC_stub(ip_addr, configuration):
-	comms_pattern = configuration['comms_pattern']
-	stub = None
-
-	if (comms_pattern == 'simplex'):
-		stub = CoroSimplexStub(worker_ip=ip_addr, endpoint_prefix=configuration['endpoint_prefix']+'/', rpc_name='__call__')
-
-	elif (comms_pattern == 'duplex'):
-		stub = CoroDuplexStub(worker_ip=ip_addr, endpoint_prefix=configuration['endpoint_prefix']+'/', rpc_name='__call__')
-	
-	return stub
-
-def get_RPC_stub_2(ip_addr, configuration):
-	def return_fn(*args):
-		return 'this is a test RPC stub'
-
-	return return_fn
-
 def get_worker_profile(ip_addr):
 	url = 'http://'+str(ip_addr)+':'+str(comms_config.worker_port)+'/_get_profile'
 	_, profile_str = GET(url)
@@ -125,17 +105,6 @@ class RemoteWorker():
 		rpcs = {}
 
 		for rpc_desc in rpcs_descs:
-			
-			comms_pattern = rpc_desc['comms_pattern']
-			name = rpc_desc['name']
-
-			if (comms_pattern == 'simplex'):
-				rpcs[name] = CoroSimplexStub(worker_ip=self.ip_addr, rpc_name=name)
-
-			elif (comms_pattern == 'duplex'):
-				rpcs[name] = CoroDuplexStub(worker_ip=self.ip_addr, rpc_name=name)
-
-			else:
-				raise BaseException('unrecognised communication pattern:'+str(comms_pattern))
+			rpcs[name] = CoroStub(worker_ip=self.ip_addr, rpc_name=rpc_desc['name'], comms_pattern=rpc_desc['comms_pattern'])
 
 		self.rpcs = SimpleNamespace(**rpcs)

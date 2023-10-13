@@ -4,7 +4,7 @@ import asyncio
 import time
 
 from sys import path
-path.append('./')
+path.append('..')
 
 import axon
 
@@ -19,7 +19,7 @@ def test_error_wrappers():
 	return_obj = wrapped_fn((), {})
 
 	try:
-		axon.simplex_stubs.error_handler(return_obj)
+		axon.transport.error_handler(return_obj)
 	except(BaseException):
 		print('test passed')
 
@@ -32,7 +32,7 @@ class TestSimplex():
 		rpc_name = 'simplex_rpc'
 		url = 'http://localhost:'+str(axon.config.comms_config.worker_port)+'/'+axon.config.default_rpc_config['endpoint_prefix']+rpc_name+'/__call__'
 
-		result = await axon.simplex_stubs.call_simplex_rpc_coro(url, ('test ', ), {'suffix':'passed!', })
+		result = await axon.transport.call_simplex_rpc_coro(url, ('test ', ), {'suffix':'passed!', })
 
 		print(result)
 
@@ -42,7 +42,7 @@ class TestSimplex():
 		rpc_name = 'simplex_rpc'
 		url = 'http://localhost:'+str(axon.config.comms_config.worker_port)+'/'+axon.config.default_rpc_config['endpoint_prefix']+rpc_name+'/__call__'
 
-		resultHandle = axon.simplex_stubs.call_simplex_rpc_async(url, ('test ', ), {'suffix':'passed!', })
+		resultHandle = axon.transport.call_simplex_rpc_async(url, ('test ', ), {'suffix':'passed!', })
 
 		print(resultHandle.join())
 
@@ -52,7 +52,7 @@ class TestSimplex():
 		rpc_name = 'simplex_rpc'
 		url = 'http://localhost:'+str(axon.config.comms_config.worker_port)+'/'+axon.config.default_rpc_config['endpoint_prefix']+rpc_name+'/__call__'
 
-		print(axon.simplex_stubs.call_simplex_rpc_sync(url, ('test ', ), {'suffix':'passed!', }))
+		print(axon.transport.call_simplex_rpc_sync(url, ('test ', ), {'suffix':'passed!', }))
 
 class TestDuplex():
 
@@ -63,7 +63,7 @@ class TestDuplex():
 		rpc_name = 'duplex_rpc'
 		url = 'http://localhost:'+str(axon.config.comms_config.worker_port)+'/'+axon.config.default_rpc_config['endpoint_prefix']+rpc_name+'/__call__'
 
-		result = await axon.duplex_stubs.call_duplex_rpc_coro(url, ('test ', ), {'suffix':'passed!', })
+		result = await axon.transport.call_duplex_rpc_coro(url, ('test ', ), {'suffix':'passed!', })
 
 		print(result)
 	
@@ -73,7 +73,7 @@ class TestDuplex():
 		rpc_name = 'duplex_rpc'
 		url = 'http://localhost:'+str(axon.config.comms_config.worker_port)+'/'+axon.config.default_rpc_config['endpoint_prefix']+rpc_name+'/__call__'
 
-		resultHandle = axon.duplex_stubs.call_duplex_rpc_async(url, ('test ', ), {'suffix':'passed!', })
+		resultHandle = axon.transport.call_duplex_rpc_async(url, ('test ', ), {'suffix':'passed!', })
 
 		print(resultHandle.join())
 
@@ -83,6 +83,6 @@ class TestDuplex():
 		rpc_name = 'duplex_rpc'
 		url = 'http://localhost:'+str(axon.config.comms_config.worker_port)+'/'+axon.config.default_rpc_config['endpoint_prefix']+rpc_name+'/__call__'
 
-		result = axon.duplex_stubs.call_duplex_rpc_sync(url, ('test ', ), {'suffix':'passed!', })
+		result = axon.transport.call_duplex_rpc_sync(url, ('test ', ), {'suffix':'passed!', })
 
 		print(result)
