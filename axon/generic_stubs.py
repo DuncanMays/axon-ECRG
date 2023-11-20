@@ -1,6 +1,4 @@
 from .config import comms_config, default_rpc_config
-# from .simplex_stubs import call_simplex_rpc_coro, call_simplex_rpc_async, call_simplex_rpc_sync
-# from .duplex_stubs import call_duplex_rpc_coro, call_duplex_rpc_async, call_duplex_rpc_sync
 from .transport import call_simplex_rpc_coro, call_simplex_rpc_async, call_simplex_rpc_sync, call_duplex_rpc_coro, call_duplex_rpc_async, call_duplex_rpc_sync
 
 class GenericStub():

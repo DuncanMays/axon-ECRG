@@ -65,7 +65,7 @@ async def test_basic_service_request():
 		# next iteration, the stub will point at the child service
 		full_endpoint = full_endpoint + 'child/'
 
-# this test creates a metastub to a test service and calls methods recursively to check each child object. Also checks inheritance froma BaseClass
+# this test creates a metastub to a test service and calls methods recursively to check each child object. Also checks inheritance from a BaseClass
 @pytest.mark.asyncio
 async def test_MetaServiceStub():
 	print('test_MetaServiceStub')
@@ -85,7 +85,7 @@ async def test_MetaServiceStub():
 	# tests that child stubs are instantiated properly and that their RPCs work
 	for i in range(test_service_depth, 0, -1):
 		await worker.test_fn()
-		# await worker()
+		await worker()
 
 		if isinstance(worker.test_fn, axon.stubs.GenericStub):
 			print('RPC inheritance from axon.stubs.GenericStub confirmed')
