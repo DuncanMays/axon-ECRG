@@ -5,10 +5,24 @@ import threading
 import inspect
 
 from .utils import serialize, deserialize
-from .transport import error_handler
+# from .transport import error_handler
 
 req_executor = futures.ThreadPoolExecutor(max_workers=100)
 http = urllib3.PoolManager()
+
+# this function checks if an error flag has been set and raises the corresponding error if it has
+def error_handler(return_obj):
+	if (return_obj['errcode'] == 1):
+		# an error occured in worker, raise it
+		(error_info, error) = return_obj['result']
+
+		print('the following error occured in worker:')
+		print(error_info)
+		raise(error)
+
+	else:
+		# returns the result
+		return return_obj['result']
 
 class AsyncResultHandle():
 

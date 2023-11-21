@@ -3,11 +3,11 @@
 
 from .config import comms_config, default_service_config, default_rpc_config
 from .utils import deserialize, GET
-from .generic_stubs import AsyncStub, CoroStub, SyncStub
+from .generic_stubs import GenericStub, SyncStub
 
 from types import SimpleNamespace
 
-def get_ServiceStub(ip_addr='localhost', endpoint_prefix=default_service_config['endpoint_prefix'], name='', profile=None, stub_type=CoroStub, top_stub_type=object):
+def get_ServiceStub(ip_addr='localhost', endpoint_prefix=default_service_config['endpoint_prefix'], name='', profile=None, stub_type=GenericStub, top_stub_type=object):
 	global count 
 
 	# the attributes of the returned object
@@ -58,7 +58,8 @@ def get_BoundStubClass(stub_type, ip_addr, configuration):
 	# a class for stubs that are bound to a certain RPC
 	class BoundStubClass(stub_type):
 		def __init__(self):
-			stub_type.__init__(self, worker_ip=ip_addr, endpoint_prefix=configuration['endpoint_prefix']+'/', rpc_name='__call__', comms_pattern=configuration['comms_pattern'])
+			# stub_type.__init__(self, worker_ip=ip_addr, endpoint_prefix=configuration['endpoint_prefix']+'/', rpc_name='__call__', comms_pattern=configuration['comms_pattern'])
+			stub_type.__init__(self, worker_ip=ip_addr, endpoint_prefix=configuration['endpoint_prefix']+'/', rpc_name='__call__')
 
 	return BoundStubClass
 
@@ -105,6 +106,6 @@ class RemoteWorker():
 		rpcs = {}
 
 		for rpc_desc in rpcs_descs:
-			rpcs[name] = CoroStub(worker_ip=self.ip_addr, rpc_name=rpc_desc['name'], comms_pattern=rpc_desc['comms_pattern'])
+			rpcs[name] = GenericStub(worker_ip=self.ip_addr, rpc_name=rpc_desc['name'], comms_pattern=rpc_desc['comms_pattern'])
 
 		self.rpcs = SimpleNamespace(**rpcs)
