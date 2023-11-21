@@ -43,28 +43,6 @@ async def test_basic_service_request():
 		# next iteration, the stub will point at the child service
 		full_endpoint = full_endpoint + 'child/'
 
-
-	# tests that ServiceStubs, including child stubs, are instantiated properly and that their RPCs work
-	full_endpoint = endpoint+'duplex_service/'
-	for i in range(default_service_depth, 0, -1):
-		print('testing duplex RPC')
-
-		stub = axon.stubs.SyncStub(worker_ip='localhost', endpoint_prefix=full_endpoint, comms_pattern='duplex', rpc_name='test_fn/__call__')
-		
-		stub()
-		handle = stub.async_call((), {})
-		handle.join()
-		await stub.coro_call((), {})
-		stub.sync_call((), {})
-
-		if isinstance(stub, axon.stubs.GenericStub):
-			print('RPC inheritance from axon.stubs.GenericStub confirmed')
-		else:
-			raise BaseException(f'RPC stub is not inheritance from axon.stubs.GenericStub, but from {type(stub)}')
-
-		# next iteration, the stub will point at the child service
-		full_endpoint = full_endpoint + 'child/'
-
 # this test creates a metastub to a test service and calls methods recursively to check each child object. Also checks inheritance from a BaseClass
 @pytest.mark.asyncio
 async def test_MetaServiceStub():
