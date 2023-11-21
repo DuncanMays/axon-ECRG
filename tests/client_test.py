@@ -21,18 +21,10 @@ async def test_RemoteWorker():
 	# tests that child stubs are instantiated properly and that their RPCs work
 	for i in range(axon.config.default_service_depth, 0, -1):
 		await w.simplex_service()
-
-		w.simplex_service.sync_call((), {})
-		handle = w.simplex_service.async_call((), {})
-		handle.join()
-		await w.simplex_service.coro_call((), {})
+		w.simplex_service().join()
 
 		await w.simplex_service.test_fn()
-
-		w.simplex_service.test_fn.sync_call((), {})
-		handle = w.simplex_service.test_fn.async_call((), {})
-		handle.join()
-		await w.simplex_service.test_fn.coro_call((), {})
+		w.simplex_service.test_fn().join()
 
 		if isinstance(w.simplex_service, axon.stubs.GenericStub):
 			print('Callable Stub inheritance from axon.stubs.GenericStub confirmed')
