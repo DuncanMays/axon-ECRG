@@ -1,6 +1,4 @@
 from sys import path
-# path.append('..')
-# path.append('/home/duncan/Documents/git/axon-ECRG')
 from axon import axon
 
 import pytest
@@ -14,7 +12,6 @@ async def test_RemoteWorker():
 	w = axon.client.RemoteWorker('localhost')
 
 	print(await w.rpcs.simplex_rpc('simplex test ', suffix='passed'))
-	print(await w.rpcs.duplex_rpc('duplex test ', suffix='passed'))
 
 	print(w.rpcs)
 

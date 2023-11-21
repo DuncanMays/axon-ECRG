@@ -2,6 +2,7 @@ from types import SimpleNamespace
 
 version = "0.1.6"
 default_service_depth = 3
+NUM_OPEN_REQS = 512
 
 default_rpc_config = {
 	'comms_pattern': 'simplex',

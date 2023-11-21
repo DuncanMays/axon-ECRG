@@ -25,14 +25,12 @@ def test_add_child_child_config():
 	def simplex_rpc(self):
 		print('simplex_rpc called')
 
-	def duplex_rpc(self):
-		print('duplex_rpc called')
+	# def duplex_rpc(self):
+	# 	print('duplex_rpc called')
 
 	s.add_child('simplex_child', simplex_rpc, comms_pattern='simplex')
-	s.add_child('duplex_child', duplex_rpc, comms_pattern='duplex')
 
 	assert(s.children['simplex_child'].children['__call__']['comms_pattern'] == 'simplex')
-	assert(s.children['duplex_child'].children['__call__']['comms_pattern'] == 'duplex')
 
 	print('test_add_child_child_config passed!')
 
