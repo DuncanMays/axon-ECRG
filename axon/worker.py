@@ -2,9 +2,10 @@
 # and executor is the thing that takes a function, and executes it in a thread/process and returns the result as response or even another HTTP req entirely
 
 from .utils import deserialize, serialize, get_self_ip, overwrite
-from .comms_wrappers import simplex_wrapper, duplex_wrapper
+from .comms_wrappers import simplex_wrapper
 from .config import comms_config, default_rpc_config, default_service_config, default_service_depth
 from .inline_executor import InlineExecutor
+from .transport_worker import register_RPC
 
 from flask import Flask
 from flask import request as route_req
@@ -15,19 +16,16 @@ import inspect
 import random
 import string
 
-# where the services being offered are stored
-rpcs = []
 # the ip address of the worker
 ip_addr = get_self_ip()
 # the app that listens for incomming http requests
 app = Flask(__name__)
 name = 'worker'
-node_type = 'worker'
 
 # a default route to serve up what rpcs this worker offers, and their configuration
 @app.route('/_get_profile', methods=['GET'])
 def _get_profile():
-	global name, ip_addr, rpcs
+	global name, ip_addr
 
 	service_profiles = {}
 	for key in registered_ServiceNodes:
@@ -42,36 +40,13 @@ def _get_profile():
 
 	return serialize(profile)
 
-# a default route to kill the worker in case a bug blocks SIGINT
-@app.route('/_kill', methods=['GET'])
-def kill():
-	func = route_req.environ.get('werkzeug.server.shutdown')
-
-	if func is None:
-		raise RuntimeError('Not running with the Werkzeug Server')
-
-	func()
-	return 'shutting down'
-
-# a default route to provide basic info about the axon node, namely, that it's a worker
-@app.route('/_type', methods=['GET'])
-def _type():
-	return node_type
-
 # this returns the function that actually gets registered as a route in flask.
 def get_route_fn(configuration, fn):
 	# wraps fn in two layers
 	# the outer layer handles the communication pattern, being either simplex or duplex
 	# the inner layer handles the execution environment, be that a thread or a process
 
-	comms_pattern = configuration['comms_pattern']
-	comms_wrapper = None
-	if (comms_pattern == 'simplex'):
-		comms_wrapper = simplex_wrapper
-	elif (comms_pattern == 'duplex'):
-		comms_wrapper = duplex_wrapper
-	else:
-		raise BaseException('unrecognized comms_pattern: '+str(comms_pattern))
+	comms_wrapper = simplex_wrapper
 
 	try:
 		executor = configuration['executor']
@@ -105,8 +80,6 @@ def make_RPC_skeleton(**configuration):
 
 		if not 'name' in configuration:
 			configuration['name'] = fn.__name__
-		
-		rpcs.append(configuration)
 
 		# wraps fn in the needed code to deserialize parameters from the request return its results, as well as run in a separate process/thread
 		route_fn = get_route_fn(configuration, fn)
@@ -203,8 +176,12 @@ class ServiceNode():
 		child_config['name'] = key
 
 		# make it an RPC
+		
 		make_rpc = make_RPC_skeleton(**child_config)
 		make_rpc(fn)
+
+		# register_RPC(fn, **child_config)
+
 		# remember the configuration
 		self.children[key] = child_config
 
