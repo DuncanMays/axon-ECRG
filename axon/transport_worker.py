@@ -46,17 +46,16 @@ def register_RPC(fn, **configuration):
 
 	def route_fn():
 
+		# fn needs to be assigned to a variable in the function scope because otherwise assignment statements,: fn = fn, will throw fn is referenced before assignment
+		target_fn = fn
+
 		args, kwargs = deserialize(route_req.form['msg'])
 
-		# print('=================================================================================')
-		# print(fn)
-		# print('=================================================================================')
+		if inspect.iscoroutinefunction(target_fn): target_fn = async_wrapper(target_fn)
 
-		if inspect.iscoroutinefunction(fn): fn = async_wrapper(fn)
+		target_fn = error_wrapper(target_fn)
 
-		fn = error_wrapper(fn)
-
-		result = fn(*args, **kwargs)
+		result = target_fn(args, kwargs)
 
 		return serialize(result)
 
