@@ -73,9 +73,9 @@ def call_rpc_helper(url, data):
 	resp = http.request('POST', url, fields=data)
 	return_obj = deserialize(resp.data.decode())
 	return error_handler(return_obj)
-	# return return_obj
 
 def call_rpc(url, args, kwargs):
+	# print(url)
 	future = req_executor.submit(call_rpc_helper, url, {'msg': serialize((args, kwargs))})
 	return AsyncResultHandle(future)
 

@@ -2,6 +2,7 @@
 
 import threading
 import axon
+import time
 
 @axon.worker.rpc()
 def simplex_rpc(prefix, suffix='simplex test failed'):
@@ -30,6 +31,10 @@ test_service_depth = 3
 t_simplex = TestClass(depth=test_service_depth)
 
 simplex_service = axon.worker.register_ServiceNode(t_simplex, 'simplex_service', depth=test_service_depth, endpoint_prefix=endpoint)
+
+# print('==================================================================')
+
+# time.sleep(100)
 
 worker_thread = threading.Thread(target=axon.worker.init, daemon=True, name='axon/tests/__init__.py')
 worker_thread.start()

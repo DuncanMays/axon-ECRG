@@ -16,6 +16,7 @@ def get_ServiceStub(ip_addr='localhost', endpoint_prefix=default_service_config[
 	# gets the profile if none are provided
 	if (profile == None):
 		url = 'http://'+str(ip_addr)+':'+str(comms_config.worker_port)+'/'+endpoint_prefix+name
+		print(url)
 		_, profile_str = GET(url)
 		profile = deserialize(profile_str)
 
