@@ -5,7 +5,9 @@ from .utils import deserialize, serialize, get_self_ip, overwrite
 from .comms_wrappers import simplex_wrapper
 from .config import comms_config, default_rpc_config, default_service_config, default_service_depth
 from .inline_executor import InlineExecutor
-from .transport_worker import register_RPC
+
+# from .transport_worker import register_RPC, _init
+from .comms_wrappers import async_wrapper, error_wrapper
 
 from flask import Flask
 from flask import request as route_req
@@ -95,6 +97,32 @@ def make_RPC_skeleton(**configuration):
 		return fn
 
 	return init_rpc
+
+def register_RPC(fn, **configuration):
+
+	configuration = overwrite(default_rpc_config, configuration)
+	if not 'name' in configuration:
+		configuration['name'] = fn.__name__
+
+	def route_fn():
+
+		# fn needs to be assigned to a variable in the function scope because otherwise assignment statements,: fn = fn, will throw fn is referenced before assignment
+		target_fn = fn
+
+		args, kwargs = deserialize(route_req.form['msg'])
+
+		if inspect.iscoroutinefunction(target_fn): target_fn = async_wrapper(target_fn)
+
+		target_fn = error_wrapper(target_fn)
+
+		result = target_fn(args, kwargs)
+
+		return serialize(result)
+
+	route_fn.__name__ = ''.join(random.choices(string.ascii_letters, k=10))
+	endpoint = '/'+configuration['endpoint_prefix']+configuration['name']
+	print(endpoint)
+	app.route(endpoint, methods=['POST'])(route_fn)
 
 registered_ServiceNodes = {}
 

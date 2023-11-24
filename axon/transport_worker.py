@@ -7,8 +7,6 @@ import inspect
 import random
 import string
 
-app = Flask(__name__)
-
 # catches any errors in fn, and handles them properly
 def error_wrapper(fn):
 
@@ -38,7 +36,7 @@ def async_wrapper(fn):
 
 	return wrapped_fn
 
-def register_RPC(fn, **configuration):
+def register_RPC(app, fn, **configuration):
 
 	configuration = overwrite(default_rpc_config, configuration)
 	if not 'name' in configuration:
@@ -61,6 +59,7 @@ def register_RPC(fn, **configuration):
 
 	route_fn.__name__ = ''.join(random.choices(string.ascii_letters, k=10))
 	endpoint = '/'+configuration['endpoint_prefix']+configuration['name']
+	# print(endpoint)
 	app.route(endpoint, methods=['POST'])(route_fn)
 
 # def rpc(**configuration):
@@ -71,7 +70,7 @@ def register_RPC(fn, **configuration):
 # 	return inner_rpc
 
 # starts the web app
-def init(wrkr_name='worker'):
+def _init(wrkr_name='worker'):
 
 	global name
 
