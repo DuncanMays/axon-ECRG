@@ -2,8 +2,9 @@
 # an RPC stub is the thing on the client that makes a calling request and waits for the response
 
 from .config import comms_config, default_service_config, default_rpc_config
-from .utils import deserialize, GET
+from .utils import deserialize
 from .generic_stubs import GenericStub, SyncStub
+from .transport_client import GET
 
 from types import SimpleNamespace
 
@@ -27,6 +28,7 @@ def get_ServiceStub_helper(ip_addr, profile, stub_type, top_stub_type):
 
 	attrs = {}
 	keys = list(profile.keys())
+	parent_classes = (top_stub_type, )
 	banned_keys = ['__call__', '__profile_flag__', '__func__', '__self__', '__get__', '__set__', '__delete__'] + dir(object())
 
 	for key in keys:
@@ -43,8 +45,6 @@ def get_ServiceStub_helper(ip_addr, profile, stub_type, top_stub_type):
 			# If a member is not a profile, then it must be an RPC config, and so correspond to a callable object on the worker with no __dict__attribute
 			attrs[key] = stub_type(worker_ip=ip_addr, endpoint_prefix=member['endpoint_prefix']+'/', rpc_name=key)
 
-	parent_classes = (top_stub_type, )
-
 	if '__call__' in keys:
 		# if the profile has a __call__ attribute, than the corresponding object on the server is callable and has a __dict__ attribute, and so must be represented by an RPC stub bound to the given network coordinates
 		BoundStubClass = get_BoundStubClass(stub_type, ip_addr, profile['__call__'])
@@ -59,7 +59,6 @@ def get_BoundStubClass(stub_type, ip_addr, configuration):
 	# a class for stubs that are bound to a certain RPC
 	class BoundStubClass(stub_type):
 		def __init__(self):
-			# stub_type.__init__(self, worker_ip=ip_addr, endpoint_prefix=configuration['endpoint_prefix']+'/', rpc_name='__call__', comms_pattern=configuration['comms_pattern'])
 			stub_type.__init__(self, worker_ip=ip_addr, endpoint_prefix=configuration['endpoint_prefix']+'/', rpc_name='__call__')
 
 	return BoundStubClass

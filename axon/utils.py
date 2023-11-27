@@ -9,26 +9,6 @@ import time
 import socket
 import copy
 
-def GET(url, timeout=comms_config.request_timeout):
-	resp = requests.get(url, timeout=timeout)
-	return resp.status_code, resp.text
-
-async def async_GET(url, timeout=comms_config.request_timeout):
-	timeout_inst = aiohttp.ClientTimeout(total=timeout)
-	async with aiohttp.ClientSession(conn_timeout=timeout_inst) as session:
-		async with session.get(url) as resp:
-			return resp.status, await resp.text()
-
-def POST(url, data=None, timeout=comms_config.request_timeout):
-	resp = requests.post(url=url, data=data, timeout=timeout)
-	return resp.status_code, resp.text
-
-async def async_POST(url, data=None, timeout=comms_config.request_timeout):
-	timeout_inst = aiohttp.ClientTimeout(total=timeout)
-	async with aiohttp.ClientSession(timeout=timeout_inst) as session:
-		async with session.post(url, data=data) as resp:
-			return resp.status, await resp.text()
-
 # pickle operates on bytes, but http operates on strings, so we've gotta convert pickles to and from a string
 def serialize(obj):
 	pickled = pickle.dumps(obj)

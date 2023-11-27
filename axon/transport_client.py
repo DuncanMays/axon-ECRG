@@ -5,7 +5,6 @@ import threading
 import inspect
 
 from .utils import serialize, deserialize
-# from .transport import error_handler
 
 req_executor = futures.ThreadPoolExecutor(max_workers=100)
 http = urllib3.PoolManager()
@@ -75,7 +74,6 @@ def call_rpc_helper(url, data):
 	return error_handler(return_obj)
 
 def call_rpc(url, args, kwargs):
-	# print(url)
 	future = req_executor.submit(call_rpc_helper, url, {'msg': serialize((args, kwargs))})
 	return AsyncResultHandle(future)
 

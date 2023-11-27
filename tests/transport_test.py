@@ -14,7 +14,7 @@ def test_error_wrappers():
 	def test_fn():
 		raise(BaseException('this is the exception that is raised if everything works'))
 
-	wrapped_fn = axon.comms_wrappers.error_wrapper(test_fn)
+	wrapped_fn = axon.worker.error_wrapper(test_fn)
 
 	return_obj = wrapped_fn((), {})
 
