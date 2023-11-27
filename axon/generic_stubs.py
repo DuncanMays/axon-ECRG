@@ -1,5 +1,4 @@
 from .config import comms_config, default_rpc_config
-# from .transport import call_simplex_rpc_coro, call_simplex_rpc_async, call_simplex_rpc_sync
 from .transport_client import call_rpc
 
 class GenericStub():

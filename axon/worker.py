@@ -2,24 +2,24 @@
 # and executor is the thing that takes a function, and executes it in a thread/process and returns the result as response or even another HTTP req entirely
 
 from .utils import deserialize, serialize, get_self_ip, overwrite
-from .comms_wrappers import simplex_wrapper
 from .config import comms_config, default_rpc_config, default_service_config, default_service_depth
-from .inline_executor import InlineExecutor
-
-# from .transport_worker import register_RPC, _init
-from .comms_wrappers import async_wrapper, error_wrapper
 
 from flask import Flask
 from flask import request as route_req
-from multiprocessing import Process
 from copy import copy
-import threading
 import inspect
 import random
 import string
+import traceback
+import sys
+import logging
 
 # the ip address of the worker
 ip_addr = get_self_ip()
+cli = sys.modules['flask.cli']
+cli.show_server_banner = lambda *x: None
+log = logging.getLogger('werkzeug')
+log.disabled = True
 # the app that listens for incomming http requests
 app = Flask(__name__)
 name = 'worker'
@@ -42,61 +42,34 @@ def _get_profile():
 
 	return serialize(profile)
 
-# this returns the function that actually gets registered as a route in flask.
-def get_route_fn(configuration, fn):
-	# wraps fn in two layers
-	# the outer layer handles the communication pattern, being either simplex or duplex
-	# the inner layer handles the execution environment, be that a thread or a process
+# catches any errors in fn, and handles them properly
+def error_wrapper(fn):
 
-	comms_wrapper = simplex_wrapper
+	def wrapped_fn(args, kwargs):
+		return_object = {
+			'errcode': 0,
+			'result': None,
+		}
 
-	try:
-		executor = configuration['executor']
-	except(KeyError):
-		raise(KeyError('executor not specified in RPC configuration'))
+		try:
+			# execute the given function
+			return_object['result'] = fn(*args, **kwargs)
 
-	if (executor == 'inline'):
-		executor = InlineExecutor
-	elif (executor == 'Process'):
-		executor = Process
-	elif((executor == 'Thread')):
-		executor = threading.Thread
-	else:
-		raise(BaseException('unrecognized executor configuration:', executor))
+		except:
 
-	wrapped_fn = comms_wrapper(fn, executor)
+			return_object['errcode'] = 1
+			return_object['result'] = (traceback.format_exc(), sys.exc_info()[1])
+
+		return return_object
 
 	return wrapped_fn
 
-# this function returns a function which will be applied to functions which the caller wishes to turn into RPCs
-def make_RPC_skeleton(**configuration):
-	# accepts options for the RPC, simplex/duplex, and running environment
-	# sets up the function that registers the route
+def async_wrapper(fn):
 
-	# overwrites the default configuration with keys from caller input
-	configuration = overwrite(default_rpc_config, configuration)
+	def wrapped_fn(params):
+		return asyncio.run(fn(params))
 
-	# this is the function that will be applied to functions which the caller wishes to turn into RPCs
-	# accepts a function, which it will wrap in an executor function depending on the configuration passed to rcp, this wrapped function will be registered as a route
-	def init_rpc(fn):
-
-		if not 'name' in configuration:
-			configuration['name'] = fn.__name__
-
-		# wraps fn in the needed code to deserialize parameters from the request return its results, as well as run in a separate process/thread
-		route_fn = get_route_fn(configuration, fn)
-		# functions that flask registers as routes must have different names, even if they are registered at different endpoints. get_executor returns a function called 'wrapped_fn' every time, so we've got to change the name of the function here.
-		# it is set to a random string firstly because the literal name of the function is arbitrary, but also because some services might have functions with the same names
-		route_fn.__name__ = ''.join(random.choices(string.ascii_letters, k=10))
-		# the endpoint of the route which exposes the function
-		endpoint = '/'+configuration['endpoint_prefix']+configuration['name']
-
-		# registering the function as a route
-		app.route(endpoint, methods=['POST'])(route_fn)
-
-		return fn
-
-	return init_rpc
+	return wrapped_fn
 
 def register_RPC(fn, **configuration):
 
@@ -121,7 +94,6 @@ def register_RPC(fn, **configuration):
 
 	route_fn.__name__ = ''.join(random.choices(string.ascii_letters, k=10))
 	endpoint = '/'+configuration['endpoint_prefix']+configuration['name']
-	print(endpoint)
 	app.route(endpoint, methods=['POST'])(route_fn)
 
 registered_ServiceNodes = {}
@@ -205,10 +177,10 @@ class ServiceNode():
 
 		# make it an RPC
 		
-		make_rpc = make_RPC_skeleton(**child_config)
-		make_rpc(fn)
+		# make_rpc = make_RPC_skeleton(**child_config)
+		# make_rpc(fn)
 
-		# register_RPC(fn, **child_config)
+		register_RPC(fn, **child_config)
 
 		# remember the configuration
 		self.children[key] = child_config
@@ -245,9 +217,9 @@ def rpc(**configuration):
 	return add_to_RPC_node
 
 # starts the web app
-def init(wrkr_name='worker'):
+def init(wrkr_name='worker', port=comms_config.worker_port):
 	global name
 
 	name = wrkr_name
 	# the web application that will serve the services and rpcs as routes
-	app.run(host='0.0.0.0', port=comms_config.worker_port, threaded=False)
+	app.run(host='0.0.0.0', port=port, threaded=False)
