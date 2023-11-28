@@ -9,7 +9,7 @@ import time
 async def test_RemoteWorker():
 	print('test_RemoteWorker')
 
-	w = axon.client.RemoteWorker('localhost')
+	w = axon.client.get_RemoteWorker('localhost')
 
 	print(await w.rpcs.simplex_rpc('simplex test ', suffix='passed'))
 
