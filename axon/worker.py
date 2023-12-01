@@ -88,9 +88,16 @@ def register_RPC(fn, **configuration):
 
 		target_fn = error_wrapper(target_fn)
 
-		result = target_fn(args, kwargs)
+		executor = configuration['executor']
 
-		return serialize(result)
+		# print(executor)
+		# result = executor.submit(target_fn, args, kwargs)
+
+		# return_val = result.result()
+
+		return_val = target_fn(args, kwargs)
+
+		return serialize(return_val)
 
 	route_fn.__name__ = ''.join(random.choices(string.ascii_letters, k=10))
 	endpoint = '/'+configuration['endpoint_prefix']+configuration['name']
@@ -175,11 +182,6 @@ class ServiceNode():
 		child_config['endpoint_prefix'] += str(self.name)+'/'
 		child_config['name'] = key
 
-		# make it an RPC
-		
-		# make_rpc = make_RPC_skeleton(**child_config)
-		# make_rpc(fn)
-
 		register_RPC(fn, **child_config)
 
 		# remember the configuration
@@ -202,7 +204,9 @@ class ServiceNode():
 
 			# if the attribute is an RPC, the profile element is its configuration
 			else:
-				profile[key] = child
+				child_copy = copy(child)
+				del child_copy['executor']
+				profile[key] = child_copy
 
 		return profile
 
@@ -222,4 +226,4 @@ def init(wrkr_name='worker', port=comms_config.worker_port):
 
 	name = wrkr_name
 	# the web application that will serve the services and rpcs as routes
-	app.run(host='0.0.0.0', port=port, threaded=False)
+	app.run(host='0.0.0.0', port=port, threaded=True)
