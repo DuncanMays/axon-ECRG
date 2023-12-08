@@ -1,4 +1,5 @@
 from threading import Lock
+from concurrent.futures import Future
 
 class InlineExecutor():
 
@@ -6,7 +7,9 @@ class InlineExecutor():
 		self.inline_lock = Lock()
 
 	def submit(self, target, args, kwargs):
-		result = None
+		result_future = Future()
+
 		with self.inline_lock:
-			result = target(args, kwargs)
-		return result
+			result_future.set_result(target(args, kwargs))
+
+		return result_future
