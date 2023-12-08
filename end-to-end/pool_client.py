@@ -4,6 +4,6 @@ import axon
 
 stub = axon.client.get_RemoteWorker('localhost')
 
-stub.rpcs.print_this('Hi there!').join()
-stub.rpcs.print_this('Hi there!').join()
-
+num_calls = 10
+call_handles = [stub.rpcs.print_this(i) for i in range(num_calls)]
+results = [c.join() for c in call_handles]
