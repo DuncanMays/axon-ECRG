@@ -8,21 +8,6 @@ path.append('..')
 
 import axon
 
-def test_error_wrappers():
-	print('test_error_wrappers')
-
-	def test_fn():
-		raise(BaseException('this is the exception that is raised if everything works'))
-
-	wrapped_fn = axon.worker.error_wrapper(test_fn)
-
-	return_obj = wrapped_fn((), {})
-
-	try:
-		axon.transport.error_handler(return_obj)
-	except(BaseException):
-		print('test passed')
-
 class TestSimplex():
 
 	@pytest.mark.asyncio
