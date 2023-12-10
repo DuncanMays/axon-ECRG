@@ -7,7 +7,9 @@ from .config import comms_config, default_rpc_config, default_service_config, de
 from flask import Flask
 from flask import request as route_req
 from copy import copy
+from threading import Lock
 from concurrent.futures import ProcessPoolExecutor as PPE
+from threading import Thread
 import inspect
 import random
 import string
@@ -45,48 +47,21 @@ def _get_profile():
 
 	return serialize(profile)
 
-event_loop = None
-async def get_event_loop():
-	global event_loop
+loop, event_loop_thread = None, None
+def start_event_loop_thread():
+	global loop, event_loop_thread
+	loop = asyncio.new_event_loop()
+	asyncio.set_event_loop(loop)
+	event_loop_thread = Thread(target=loop.run_forever, daemon=True)
+	event_loop_thread.start()
 
-	if (event_loop == None):
-		event_loop = asyncio.get_event_loop()
+start_event_loop_thread()
+inline_lock = Lock()
+def invoke_RPC(target_fn, param_str, in_parallel=True):
+	global loop, event_loop_thread
 
-	if event_loop.is_closed():
-		event_loop = asyncio.get_running_loop()
-
-	return event_loop
-
-# catches any errors in fn, and handles them properly
-def error_wrapper(fn):
-
-	def wrapped_fn(args, kwargs):
-		return_object = {
-			'errcode': 0,
-			'result': None,
-		}
-
-		try:
-			# execute the given function
-			return_object['result'] = fn(*args, **kwargs)
-
-		except:
-
-			return_object['errcode'] = 1
-			return_object['result'] = (traceback.format_exc(), sys.exc_info()[1])
-
-		return return_object
-
-	return wrapped_fn
-
-def async_wrapper(fn):
-
-	def wrapped_fn(params):
-		return asyncio.run(fn(params))
-
-	return wrapped_fn
-
-async def async_executor_target(target_fn, param_str):
+	if (event_loop_thread == None) or not (event_loop_thread.is_alive()):
+		start_event_loop_thread()
 
 	if isinstance(target_fn, bytes) or isinstance(target_fn, str):
 		target_fn = pickle.loads(target_fn)
@@ -99,50 +74,24 @@ async def async_executor_target(target_fn, param_str):
 	}
 
 	try:
-		return_object['result'] = await target_fn(*args, **kwargs)
+		result = None
+
+		if not in_parallel:
+			with inline_lock:
+				result = target_fn(*args, **kwargs)
+		else:
+			result = target_fn(*args, **kwargs)
+
+		if inspect.iscoroutine(result):
+			result = asyncio.run_coroutine_threadsafe(result, loop).result()
+
+		return_object['result'] = result
 
 	except:
 		return_object['errcode'] = 1
 		return_object['result'] = (traceback.format_exc(), sys.exc_info()[1])
 
 	return serialize(return_object)
-
-def register_coroutine(executor, fn):
-
-	async def invoke_coroutine():
-		param_str = route_req.form['msg']
-		loop = await get_event_loop()
-		result = await loop.run_in_executor(executor, async_executor_target, fn, param_str)
-		result = await result
-		return result
-
-	return invoke_coroutine
-
-def executor_target(target_fn, param_str):
-
-	if isinstance(target_fn, bytes) or isinstance(target_fn, str):
-		target_fn = pickle.loads(target_fn)
-
-	args, kwargs = deserialize(param_str)
-
-	target_fn = error_wrapper(target_fn)
-
-	result = target_fn(args, kwargs)
-
-	if inspect.iscoroutine(result['result']): 
-		result['result'] = asyncio.run(result['result'])
-
-	return serialize(result)
-
-def register_function(executor, fn):
-
-	def invoke_function():
-		param_str = route_req.form['msg']
-		result = executor.submit(executor_target, fn, param_str)
-		result = result.result()
-		return result
-
-	return invoke_function
 
 def register_RPC(fn, **configuration):
 
@@ -152,12 +101,14 @@ def register_RPC(fn, **configuration):
 		configuration['name'] = fn.__name__
 
 	executor = configuration['executor']
-	is_coroutine = configuration['is_coroutine']
 
 	if isinstance(executor, PPE):
 		fn = cloudpickle.dumps(fn)
 
-	route_fn = register_function(executor, fn)
+	def route_fn():
+		param_str = route_req.form['msg']
+		future = executor.submit(invoke_RPC, fn, param_str)
+		return future.result()
 
 	# flask requires that each route function has a unique name
 	route_fn.__name__ = ''.join(random.choices(string.ascii_letters, k=10))
@@ -200,7 +151,7 @@ class ServiceNode():
 
 			if (key == '__call__'):
 				# Any member accessed via __call__ attribute is represented in profile by an RPC config. This means that objects stored on __call__ attributes will not be represented in profile
-				self.init_RPC(key, member, inspect.iscoroutinefunction(self.subject))
+				self.init_RPC(key, member)
 			
 			elif hasattr(member, '__dict__'):
 				# Any member with a __dict__ attribute gets a profile, provided it as not been accessed via __call__
@@ -208,7 +159,7 @@ class ServiceNode():
 
 			elif hasattr(member, '__call__'):
 				# Any member with a __call__ attribute but no __dict__ attribute is represented in profile by an RPC config
-				self.init_RPC(key, member, inspect.iscoroutinefunction(member))
+				self.init_RPC(key, member)
 
 		# we now register a GET route at the ServiceNode's endpoint to expose its profile
 		
@@ -239,11 +190,10 @@ class ServiceNode():
 		self.children[key] = child
 		return child
 
-	def init_RPC(self, key, fn, is_coroutine):
+	def init_RPC(self, key, fn):
 		child_config = copy(self.configuration)
 		child_config['endpoint_prefix'] += str(self.name)+'/'
 		child_config['name'] = key
-		child_config['is_coroutine'] = is_coroutine
 
 		register_RPC(fn, **child_config)
 
