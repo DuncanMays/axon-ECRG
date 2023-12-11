@@ -2,7 +2,7 @@ from types import SimpleNamespace
 from .inline_executor import InlineExecutor
 inline_executor = InlineExecutor()
 
-version = "0.1.7"
+version = "0.1.8"
 default_service_depth = 3
 NUM_OPEN_REQS = 512
 
@@ -21,7 +21,6 @@ default_service_config = {
 comms_config = {
 	'notice_board_port': 8002,
 	'request_timeout': 30,
-	'RVL_port': 8001,
 	'worker_port': 8000
 }
 
