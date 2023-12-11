@@ -3,7 +3,7 @@
 
 from .config import comms_config, default_service_config, default_rpc_config
 from .utils import deserialize
-from .generic_stubs import GenericStub, SyncStub
+from .stubs import GenericStub, SyncStub
 from .transport_client import GET
 
 from types import SimpleNamespace
@@ -17,7 +17,6 @@ def get_ServiceStub(ip_addr='localhost', port=comms_config.worker_port,  endpoin
 	# gets the profile if none are provided
 	if (profile == None):
 		url = 'http://'+str(ip_addr)+':'+str(comms_config.worker_port)+'/'+endpoint_prefix+name
-		print(url)
 		_, profile_str = GET(url)
 		profile = deserialize(profile_str)
 
@@ -72,26 +71,28 @@ def get_worker_profile(ip_addr, port=comms_config.worker_port):
 
 class RemoteWorker():
 
-	def __init__(self, profile):
+	def __init__(self, profile, stub_type=GenericStub):
+		self.stub_type = stub_type
 		self.ip_addr = profile['ip_addr']
 		self.port = profile['port']
 		self.name = profile['name']
+		print(self.stub_type)
 
 		# this will need to be a lookup on a services key to a number of service profiles
-		self.rpcs = get_ServiceStub(self.ip_addr, port=self.port, endpoint_prefix=default_rpc_config['endpoint_prefix']+'/', name=default_rpc_config['endpoint_prefix'], profile=profile['rpcs'])
+		self.rpcs = get_ServiceStub(self.ip_addr, port=self.port, endpoint_prefix=default_rpc_config['endpoint_prefix']+'/', name=default_rpc_config['endpoint_prefix'], profile=profile['rpcs'], stub_type=self.stub_type)
 
 		for service_name in profile['services'].keys():
-			s = get_ServiceStub(self.ip_addr, port=self.port, endpoint_prefix=f'{service_name}/', name=service_name, profile=profile['services'][service_name])
+			s = get_ServiceStub(self.ip_addr, port=self.port, endpoint_prefix=f'{service_name}/', name=service_name, profile=profile['services'][service_name], stub_type=self.stub_type)
 			setattr(self, service_name, s)
 
 	def setup_rpc_stubs(self, rpcs_descs):
 		rpcs = {}
 
 		for rpc_desc in rpcs_descs:
-			rpcs[name] = GenericStub(worker_ip=self.ip_addr, port=self.port, rpc_name=rpc_desc['name'], comms_pattern=rpc_desc['comms_pattern'])
+			rpcs[name] = stub_type(worker_ip=self.ip_addr, port=self.port, rpc_name=rpc_desc['name'], comms_pattern=rpc_desc['comms_pattern'])
 
 		self.rpcs = SimpleNamespace(**rpcs)
 
-def get_RemoteWorker(ip_addr, port=comms_config.worker_port):
+def get_RemoteWorker(ip_addr, port=comms_config.worker_port, stub_type=GenericStub):
 	profile = get_worker_profile(ip_addr, port)
-	return RemoteWorker(profile)
+	return RemoteWorker(profile, stub_type=stub_type)
