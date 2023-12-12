@@ -195,7 +195,7 @@ worker.register_ServiceNode(s, 'SignUpService')
 worker.init()
 ```
 
-The idea is that the SignUpService runs at a known IP address, say '192.168.2.10', that way workers are aware of. Then each worker will sign in on startup so that clients can get their IP addresses. 
+The idea is that the `SignUpService` runs at a known IP address, say '192.168.2.10', that way workers are aware of. Then each worker will sign in on startup so that clients can get their IP addresses. 
 
 ```
 import axon
