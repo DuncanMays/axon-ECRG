@@ -1,6 +1,6 @@
 # Axon
 
-A general-purpose RPC-proxy framework developed to facilitate machine learning research at Queen’s University in Kingston, Ontario. It focusses on fast development, being easy-to-use, and it does its best to not get in the programmer’s way. One of Axon's goals is to make programming distributed systems as similar as possible to programming code that only runs locally. Axon does this by creating distributed equivalents of familiar concepts, such as functions and classes.
+Axon is a general-purpose RPC-proxy framework developed to facilitate machine learning research at Queen’s University in Kingston, Ontario. It focusses on fast development, being easy-to-use, and it does its best to stay out of the programmer’s way. One of Axon's goals is to make programming distributed systems as similar as possible to programming code that only runs locally. Axon does this by creating distributed equivalents of familiar concepts, such as functions and classes.
 
 ## Installation
 
@@ -9,6 +9,8 @@ A general-purpose RPC-proxy framework developed to facilitate machine learning r
 ## QuickStart
 
 ### Worker
+
+Expose a function to distributed access with the `rpc` decorator:
 
 ```
 from axon import worker
@@ -23,6 +25,8 @@ worker.init()
 
 ### Client
 
+RPCs can be called with `RemoteWorker` objects:
+
 ```
 from axon import client
 
@@ -33,11 +37,11 @@ result = hw_worker.rpcs.hello_world().join()
 print(result)
 ```
 
-Replace 'localhost' with the IP address of the worker, and you can call functions on other computers on your network.
+Replace 'localhost' with the IP address of the remote host, and you can call functions on other computers on your network.
 
 ## Asyncio
 
-Axon RPC requests return an `AsyncResultHandle` that allow for concurrent code execution during a request and parallel execution of requests. The result of the call is obtained by calling `.join()`, for example:
+Axon RPC requests return an `AsyncResultHandle` that allows for concurrent code execution during a request and parallel execution of requests. The result of the RPC invocation is obtained by calling `.join()` on the handle, for example:
 
 ```
 from axon import client
@@ -46,7 +50,7 @@ hw_worker = client.get_RemoteWorker('localhost')
 
 result = hw_worker.rpcs.hello_world()
 
-print("Don't forget to drink your ovalmaltine!"")
+print("Hi there!")
 
 print(result.join())
 ```
@@ -81,7 +85,7 @@ print(result)
 
 ## Services
 
-Axon allows developers to expose instances of classes, not just functions, to remote access. Use register_ServiceNode to serve object instances:
+With axon you can expose instances of classes, not just functions, to remote access. Use register_ServiceNode to serve object instances:
 
 ```
 from axon import worker
@@ -115,7 +119,7 @@ stub = client.get_ServiceStub('localhost', endpoint_prefix='rpc')
 print(stub.hello_world().join())
 ```
 
-Services can be connected with a RemoteWorker object just like RPCs:
+The same configuration options like `stub_type` can be used in `get_ServiceStub`. Services can be connected with a RemoteWorker object just like RPCs, though they're on an attribute matching the string passed to the `register_ServiceNode` call on worker:
 
 ```
 from axon import client
@@ -168,49 +172,51 @@ BaseException: your code sucks!!!
 
 ## Worker Discovery
 
-How do I find workers on my network? It can be a logistical challenge to keep track of the IP addresses of the workers on your network. To help with this task, axon comes with a discovery module that can be used to discover workers and other entities. If I had two workers on my network I could find their IP addresses you running the following command in a python terminal:
+It can be a logistical challenge to keep track of the IP addresses of the workers on your network. Fortunetely this problem can be solved with a simple service, the `SignUpService`:
 
-`axon.discovery.broadcast_discovery(num_hosts=2, timeout=3)`
+```
+from axon import worker
 
-This would return the following array of IP addresses:
+class SignUpService():
+    def __init__(self):
+            self.ips = []
 
-`['192.168.2.19', '192.168.2.26']`
+    def sign_in(self, ip):
+            self.ips.append(ip)
 
-The function `broadcast_discovery` will search for axon entities that are listenning on the default port, and will return a list of the IP addresses of all the entities it finds. By default it spends 10 seconds searching, but this can be set with the timeout option. If you know how many workers are on your network, you can tell axon to stop looking after it finds a certain number of hosts with the num_hosts option, saving the time it takes to wait for the timeout.
+    def sign_out(self, ip):
+            self.ips.remove(ip)
 
-Discovering workers via broadcasts is inneficient and causes a lot of network noise. The right way to discover workers is with a notice board, which workers can sign into to show that they're willing to participate in the network, and clients can query to discover the IP adresses of workers. Using a notice board means you only need to remember one IP address, the notice board's, instead of the IP address if every active worker. Starting a notice board is as simple as:
+    def get_ips(self):
+            return self.ips
+
+s = SignUpService()
+worker.register_ServiceNode(s, 'SignUpService')
+worker.init()
+```
+
+The idea is that the SignUpService runs at a known IP address, say '192.168.2.10', that way workers are aware of. Then each worker will sign in on startup so that clients can get their IP addresses. 
 
 ```
 import axon
 
-nb = axon.discovery.NoticeBoard()
+s = axon.client.get_ServiceStub('192.168.2.19', endpoint_prefix='SignUpService')
+self_ip = axon.utils.get_self_ip()
+s.sign_in(self_ip).join()
 
-nb.start()
+@axon.worker.rpc()
+def print_msg(msg):
+	print(msg)
+
+axon.worker.init()
 ```
 
-Workers can sign in and out of a notice board with the `sign_in` and `sign_out` functions from the discovery module, and clients can query it for active workers with the `get_ips` function. A helpful function is:
+This has the advantage that both workers and clients only need to know one IP address, yet can discover eachother's IPs and communicate. Clients can obtain the IP addresses of all workers that have signed in:
 
 ```
-import axon, requests
+import axon
 
-nb_ip = '192.168.2.19'
+s = axon.client.get_ServiceStub('192.168.2.19', endpoint_prefix='SignUpService')
 
-async def start_up():
-	try:
-		axon.discovery.sign_in(ip=nb_ip)
-
-	except(requests.exceptions.ConnectionError):
-		print('no notice board at:', nb_ip)
-
-		ip_list = await axon.discovery.broadcast_discovery(num_hosts=1, port=axon.config.comms_config.notice_board_port)
-
-		if (len(ip_list) == 0):
-			print('no notice board on network, sign in unsuccessful')
-
-		else:
-			nb_ip = ip_list.pop()
-			print('notice board at a new ip:', nb_ip)
-			axon.discovery.sign_in(ip=nb_ip)
+worker_ips = s.get_ips().join()
 ```
-
-which will try signing into a notice board at a recorded IP, but in case of failure will look for a notice board on the network, and then either sign into it or give up depending on weather or not it finds one. Notice that the notice board runs on a different port from workers, and so we must specify `port=axon.config.comms_config.notice_board_port` in the call to broadcast_discovery. This is done so that the notice board can run on the same machine as a worker.
