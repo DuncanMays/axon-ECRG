@@ -76,7 +76,6 @@ class RemoteWorker():
 		self.ip_addr = profile['ip_addr']
 		self.port = profile['port']
 		self.name = profile['name']
-		print(self.stub_type)
 
 		# this will need to be a lookup on a services key to a number of service profiles
 		self.rpcs = get_ServiceStub(self.ip_addr, port=self.port, endpoint_prefix=default_rpc_config['endpoint_prefix']+'/', name=default_rpc_config['endpoint_prefix'], profile=profile['rpcs'], stub_type=self.stub_type)
