@@ -87,6 +87,7 @@ def ensure_rvl_app():
 
 # this function ensures the RVL is active and listening for the return value and then makes a calling request to a duplex RPC
 def call_duplex_rpc_async(url, args, kwargs):
+
 	global rvl
 
 	# checks that the RVL is active, and if not, starts one

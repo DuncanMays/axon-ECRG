@@ -1,6 +1,6 @@
 # Axon
 
-Edge computing framework developed and maintained by the Edge Computing Research Group at Queen's University.
+Axon is a general-purpose RPC-proxy framework developed to facilitate machine learning research at Queen’s University in Kingston, Ontario. It focusses on fast development, being easy-to-use, and it does its best to stay out of the programmer’s way. One of Axon's goals is to make programming distributed systems as similar as possible to programming code that only runs locally. Axon does this by creating distributed equivalents of familiar concepts, such as functions and classes.
 
 ## Installation
 
@@ -10,6 +10,8 @@ Edge computing framework developed and maintained by the Edge Computing Research
 
 ### Worker
 
+Expose a function to distributed access with the `rpc` decorator:
+
 ```
 from axon import worker
 
@@ -23,139 +25,198 @@ worker.init()
 
 ### Client
 
-```
-import asyncio
-import axon
-
-hello_world = axon.stubs.SyncSimplexStub(worker_ip='localhost', rpc_name='hello_world')
-
-result = hello_world()
-
-print(result)
-```
-
-Replace '127.0.0.1' with the IP address of the worker, and you can call functions on other computers on your network.
-
-#### What does simplex mean?
-
-The call to `SyncSimplexStub` returns an RPC stub that calls the function `hello_world` on "127.0.0.1" with a single HTTP request. This could become a problem when the function being called might take longer than the timeout of an HTTP request. If the function calls other RPCs and stacks latencies, or performs a stateful operation on the worker that requires the aqcisition of a threadlock, the calling HTTP could timeout and crash.
-
-The solution then, is to use a separate HTTP request to return the result to the caller of the function. This pattern is called a duplex RPC, and can be performed with simple alterations:
-
-### Worker
+RPCs can be called with `RemoteWorker` objects:
 
 ```
-from axon import worker
-
-@worker.rpc(comms_pattern="duplex")
-def hello_world():
-	print("hello")
-	return "world"
-
-worker.init()
-```
-
-### Client
-
-```
-import axon
-
-hello_world = axon.stubs.SyncDuplexStub(worker_ip='localhost', rpc_name='hello_world')
-
-result = hello_world()
-
-print(result)
-```
-
-To receive the incomming HTTP request containing the result of the function being called, the client must be started before the calling request is made. This is done automatically upon the first call to a duplex RPC, and so if not done explicitly it will add to the latency of the first call.
-
-#### What if I don't know if a function is duplex or simplex prior to calling it?
-
-The reccommended way of calling RPCs is through a RemoteWorker object. This will automatically distinguish between simplex and duplex RPCs, without any involvement from the caller. RemoteWorkers can be instantiated with the IP address of the worker they are associated with, and are meant to be a local represenation of that worker.
-
-### Worker
-
-```
-from axon import worker
-
-@worker.rpc()
-def fn_1(a):
-	print(a)
-	return 'this is a simplex function'
-
-@worker.rpc(comms_pattern='duplex')
-def fn_2(a):
-	print(a)
-	return 'this is a duplex function'
-
-worker.init()
-```
-
-### Client
-
-```
-import asyncio
 from axon import client
 
-remote_worker = client.RemoteWorker('127.0.0.1')
+hw_worker = client.get_RemoteWorker('localhost')
+
+result = hw_worker.rpcs.hello_world().join()
+
+print(result)
+```
+
+Replace 'localhost' with the IP address of the remote host, and you can call functions on other computers on your network.
+
+## Asyncio
+
+Axon RPC requests return an `AsyncResultHandle` that allows for concurrent code execution during a request and parallel execution of requests. The result of the RPC invocation is obtained by calling `.join()` on the handle, for example:
+
+```
+from axon import client
+
+hw_worker = client.get_RemoteWorker('localhost')
+
+result = hw_worker.rpcs.hello_world()
+
+print("Hi there!")
+
+print(result.join())
+```
+
+The `AsyncResultHandle` class can also be awaited using asyncio! Import asyncio and run axon requests inside coroutines using async/await syntax:
+
+```
+from axon import client
+import asyncio
 
 async def main():
-	result = await remote_worker.rpcs.fn_1('hello')
-	print(result)
-
-	result = await remote_worker.rpcs.fn_2('world')
+	hw_worker = client.get_RemoteWorker('localhost')
+	result = await hw_worker.rpcs.hello_world()
 	print(result)
 
 asyncio.run(main())
 ```
 
-RPCs can also be run in their own thread or a Process by passing `executor='Thread'` or `executor='Process'` to the rcp decorator. Be warned that this feature is on the chopping block, to be replaced by literal `ThreadPool` or `ProcessPool` executors rather than threads and processes instantiated per call.
+## Synchronous Stubs
 
-#### How do I find workers on my network?
-
-It can be a logistical challenge to keep track of the IP addresses of the workers on your network. To help with this task, axon comes with a discovery module that can be used to discover workers and other entities. If I had two workers on my network I could find their IP addresses you running the following command in a python terminal:
-
-`axon.discovery.broadcast_discovery(num_hosts=2, timeout=3)`
-
-This would return the following array of IP addresses:
-
-`['192.168.2.19', '192.168.2.26']`
-
-The function `broadcast_discovery` will search for axon entities that are listenning on the default port, and will return a list of the IP addresses of all the entities it finds. By default it spends 10 seconds searching, but this can be set with the timeout option. If you know how many workers are on your network, you can tell axon to stop looking after it finds a certain number of hosts with the num_hosts option, saving the time it takes to wait for the timeout.
-
-Discovering workers via broadcasts is inneficient and causes a lot of network noise. The right way to discover workers is with a notice board, which workers can sign into to show that they're willing to participate in the network, and clients can query to discover the IP adresses of workers. Using a notice board means you only need to remember one IP address, the notice board's, instead of the IP address if every active worker. Starting a notice board is as simple as:
+If concurrency is not necessary, you may also request axon RPCs synchronously by passing in a different stub type:
 
 ```
 import axon
 
-nb = axon.discovery.NoticeBoard()
+hw_worker = axon.client.get_RemoteWorker('localhost', stub_type=axon.stubs.SyncStub)
 
-nb.start()
+result = hw_worker.rpcs.hello_world()
+
+print(result)
 ```
 
-Workers can sign in and out of a notice board with the `sign_in` and `sign_out` functions from the discovery module, and clients can query it for active workers with the `get_ips` function. A helpful function is:
+## Services
+
+With axon you can expose instances of classes, not just functions, to remote access. Use register_ServiceNode to serve object instances:
 
 ```
-import axon, requests
+from axon import worker
 
-nb_ip = '192.168.2.19'
+class TestClass():
 
-async def start_up():
-	try:
-		axon.discovery.sign_in(ip=nb_ip)
+	def print_msg(self, msg):
+		print(msg)
 
-	except(requests.exceptions.ConnectionError):
-		print('no notice board at:', nb_ip)
-
-		ip_list = await axon.discovery.broadcast_discovery(num_hosts=1, port=axon.config.comms_config.notice_board_port)
-
-		if (len(ip_list) == 0):
-			print('no notice board on network, sign in unsuccessful')
-
-		else:
-			nb_ip = ip_list.pop()
-			print('notice board at a new ip:', nb_ip)
-			axon.discovery.sign_in(ip=nb_ip)
+worker.register_ServiceNode(TestClass(), 'test_service')
+worker.init()
 ```
 
-which will try signing into a notice board at a recorded IP, but in case of failure will look for a notice board on the network, and then either sign into it or give up depending on weather or not it finds one. Notice that the notice board runs on a different port from workers, and so we must specify `port=axon.config.comms_config.notice_board_port` in the call to broadcast_discovery. This is done so that the notice board can run on the same machine as a worker.
+And then call services with:
+
+```
+from axon import client
+
+stub = client.get_ServiceStub('localhost', endpoint_prefix='test_service')
+
+stub.print_msg('hello!').join()
+```
+
+RPCs are also just a service:
+
+```
+from axon import client
+
+stub = client.get_ServiceStub('localhost', endpoint_prefix='rpc')
+
+print(stub.hello_world().join())
+```
+
+The same configuration options like `stub_type` can be used in `get_ServiceStub`. Services can be connected with a RemoteWorker object just like RPCs, though they're on an attribute matching the string passed to the `register_ServiceNode` call on worker:
+
+```
+from axon import client
+
+hw_worker = client.get_RemoteWorker('localhost')
+
+result = hw_worker.test_service.print_msg().join()
+```
+
+## Error Propegation
+
+Errors in the worker propagate back to the client that invoke the error, and are thrown at the line making the RPC call. For example, a worker that throws:
+
+```
+from axon import worker
+
+@worker.rpc()
+def raise_error():
+	raise BaseException('your code sucks!!!')
+
+worker.init()
+```
+
+Would result in the following error message in client:
+
+```
+the following error occured in worker:
+Traceback (most recent call last):
+  File "/home/axon/worker.py", line 77, in invoke_RPC
+    result = target_fn(*args, **kwargs)
+  File "<stdin>", line 2, in raise_error
+BaseException: your code sucks!!!
+
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+  File "/home/axon/transport_client.py", line 40, in join
+    self.value = self.future.result()
+  File "/home/python3.8/concurrent/futures/_base.py", line 439, in result
+    return self.__get_result()
+  File "/home/python3.8/concurrent/futures/_base.py", line 388, in __get_result
+    raise self._exception
+  File "/home/python3.8/concurrent/futures/thread.py", line 57, in run
+    result = self.fn(*self.args, **self.kwargs)
+  File "/home/axon/transport_client.py", line 74, in call_rpc_helper
+    return error_handler(return_obj)
+  File "/home/axon/transport_client.py", line 20, in error_handler
+    raise(error)
+BaseException: your code sucks!!!
+```
+
+## Worker Discovery
+
+It can be a logistical challenge to keep track of the IP addresses of the workers on your network. Fortunetely this problem can be solved with a simple service, the `SignUpService`:
+
+```
+from axon import worker
+
+class SignUpService():
+    def __init__(self):
+            self.ips = []
+
+    def sign_in(self, ip):
+            self.ips.append(ip)
+
+    def sign_out(self, ip):
+            self.ips.remove(ip)
+
+    def get_ips(self):
+            return self.ips
+
+s = SignUpService()
+worker.register_ServiceNode(s, 'SignUpService')
+worker.init()
+```
+
+The idea is that the `SignUpService` runs at a known IP address, say '192.168.2.10', that way workers are aware of. Then each worker will sign in on startup so that clients can get their IP addresses. 
+
+```
+import axon
+
+s = axon.client.get_ServiceStub('192.168.2.19', endpoint_prefix='SignUpService')
+self_ip = axon.utils.get_self_ip()
+s.sign_in(self_ip).join()
+
+@axon.worker.rpc()
+def print_msg(msg):
+	print(msg)
+
+axon.worker.init()
+```
+
+This has the advantage that both workers and clients only need to know one IP address, yet can discover eachother's IPs and communicate. Clients can obtain the IP addresses of all workers that have signed in:
+
+```
+import axon
+
+s = axon.client.get_ServiceStub('192.168.2.19', endpoint_prefix='SignUpService')
+
+worker_ips = s.get_ips().join()
+```
