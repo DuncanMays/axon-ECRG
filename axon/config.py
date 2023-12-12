@@ -2,7 +2,7 @@ from types import SimpleNamespace
 from .inline_executor import InlineExecutor
 inline_executor = InlineExecutor()
 
-version = "0.1.8"
+version = "0.2.0"
 default_service_depth = 3
 NUM_OPEN_REQS = 512
 
