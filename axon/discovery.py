@@ -1,4 +1,4 @@
-from .utils import GET, POST
+from .transport_client import GET, POST
 from .config import comms_config
 from .utils import serialize, deserialize, get_self_ip
 from .notice_board_app import NoticeBoard

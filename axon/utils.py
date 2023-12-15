@@ -9,24 +9,6 @@ import time
 import socket
 import copy
 
-def GET(url, timeout=comms_config.request_timeout):
-	resp = requests.get(url, timeout=timeout)
-	return resp.status_code, resp.text
-
-async def async_GET(url, timeout=comms_config.request_timeout):
-	async with aiohttp.ClientSession(conn_timeout=timeout) as session:
-		async with session.get(url) as resp:
-			return resp.status, await resp.text()
-
-def POST(url, data=None, timeout=comms_config.request_timeout):
-	resp = requests.post(url=url, data=data, timeout=timeout)
-	return resp.status_code, resp.text
-
-async def async_POST(url, data=None, timeout=comms_config.request_timeout):
-	async with aiohttp.ClientSession(conn_timeout=timeout) as session:
-		async with session.post(url, data=data) as resp:
-			return resp.status, await resp.text()
-
 # pickle operates on bytes, but http operates on strings, so we've gotta convert pickles to and from a string
 def serialize(obj):
 	pickled = pickle.dumps(obj)
@@ -80,7 +62,7 @@ def get_open_port(lower_bound=8000, upper_bound=9000):
 	sock.close()
 	raise BaseException('No available ports in between '+str(lower_bound)+' and '+str(upper_bound))
 
-	# accepts two dicts, target and source
+# accepts two dicts, target and source
 # in any shared keys between the two will be overwritten to source's value, and any keys in source will be copied to target, with thei values
 def overwrite(target, source):
 	# to avoid aliasing

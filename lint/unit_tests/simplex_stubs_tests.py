@@ -22,21 +22,11 @@ def test_error_wrappers():
 	except(BaseException):
 		print('test passed')
 
-# gotta set up a worker to test the stubs on
-
-@axon.worker.rpc()
-def simplex_rpc(prefix, suffix=' test failed'):
-	return prefix+suffix
-
-worker_thread = threading.Thread(target=axon.worker.init)
-worker_thread.daemon = True
-
 async def test_coro_stub():
 	print('test_coro_stub')
 
 	rpc_name = 'simplex_rpc'
 	url = 'http://localhost:'+str(axon.config.comms_config.worker_port)+'/'+axon.config.default_rpc_config['endpoint_prefix']+rpc_name+'/__call__'
-	print(url)
 
 	result = await axon.simplex_stubs.call_simplex_rpc_coro(url, ('test ', ), {'suffix':'passed!', })
 
@@ -46,7 +36,7 @@ def test_async_stub():
 	print('test_async_stub')
 
 	rpc_name = 'simplex_rpc'
-	url = 'http://localhost:'+str(axon.config.comms_config.worker_port)+'/'+axon.config.default_rpc_config['endpoint_prefix']+rpc_name
+	url = 'http://localhost:'+str(axon.config.comms_config.worker_port)+'/'+axon.config.default_rpc_config['endpoint_prefix']+rpc_name+'/__call__'
 
 	resultHandle = axon.simplex_stubs.call_simplex_rpc_async(url, ('test ', ), {'suffix':'passed!', })
 
@@ -56,7 +46,7 @@ def test_sync_stub():
 	print('test_sync_stub')
 
 	rpc_name = 'simplex_rpc'
-	url = 'http://localhost:'+str(axon.config.comms_config.worker_port)+'/'+axon.config.default_rpc_config['endpoint_prefix']+rpc_name
+	url = 'http://localhost:'+str(axon.config.comms_config.worker_port)+'/'+axon.config.default_rpc_config['endpoint_prefix']+rpc_name+'/__call__'
 
 	print(axon.simplex_stubs.call_simplex_rpc_sync(url, ('test ', ), {'suffix':'passed!', }))
 
@@ -106,6 +96,15 @@ async def test_SyncSimplexStub():
 	print(await stub.coro_call(('test ', ), {'suffix':'passed!', }))
 	print(stub.sync_call(('test ', ), {'suffix':'passed!', }))
 
+# gotta set up a worker to test the stubs on
+
+@axon.worker.rpc()
+def simplex_rpc(prefix, suffix=' test failed'):
+	return prefix+suffix
+
+worker_thread = threading.Thread(target=axon.worker.init, daemon=True)
+worker_thread.daemon = True
+
 async def main():
 	test_error_wrappers()
 
@@ -116,9 +115,9 @@ async def main():
 
 	await test_coro_stub()
 
-	# test_async_stub()
+	test_async_stub()
 
-	# test_sync_stub()
+	test_sync_stub()
 
 	# await test_GenericSimplexStub()
 
