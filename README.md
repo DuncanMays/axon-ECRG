@@ -170,6 +170,8 @@ Traceback (most recent call last):
 BaseException: your code sucks!!!
 ```
 
+If your worker is at a public IP, be careful sending error traces back to remote users. These error traces can reveal important information about your system, like the name of your home folder and details about the structure of the service. Errors should be caught and only sterile errors without any private information should be sent back to client.
+
 ## Worker Discovery
 
 It can be a logistical challenge to keep track of the IP addresses of the workers on your network. Fortunetely this problem can be solved with a simple service, the `SignUpService`:
