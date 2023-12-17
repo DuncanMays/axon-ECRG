@@ -1,11 +1,7 @@
 from .config import comms_config
 
 import pickle
-import requests
-import aiohttp
-import asyncio
 import codecs
-import time
 import socket
 import copy
 
