@@ -2,20 +2,15 @@ from types import SimpleNamespace
 from .inline_executor import InlineExecutor
 inline_executor = InlineExecutor()
 
-version = "0.2.0"
+version = "0.2.1"
 default_service_depth = 3
+default_rpc_endpoint = 'rpc/'
 NUM_OPEN_REQS = 512
 
-default_rpc_config = {
-	'comms_pattern': 'simplex',
-	'endpoint_prefix': 'rpc/',
-	'executor': inline_executor
-}
-
 default_service_config = {
-	'comms_pattern': 'simplex',
 	'endpoint_prefix': '',
-	'executor': inline_executor
+	'executor': inline_executor,
+	'tl': None
 }
 
 comms_config = {

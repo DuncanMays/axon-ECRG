@@ -27,7 +27,7 @@ async def test_basic_service_request():
 	for i in range(default_service_depth, 0, -1):
 		print('testing simplex RPC')
 
-		stub = axon.stubs.SyncStub(worker_ip='localhost', endpoint_prefix=full_endpoint, rpc_name='test_fn/__call__')
+		stub = axon.stubs.SyncStub(worker_ip='localhost', tl=axon.transport_client.HTTPTransportClient(), endpoint_prefix=full_endpoint, rpc_name='test_fn/__call__')
 		
 		stub()
 
@@ -75,7 +75,7 @@ async def test_MetaServiceStub():
 async def test_SyncStub():
 	print('test_SyncStub')
 
-	worker = axon.client.get_ServiceStub('localhost', endpoint_prefix=endpoint+service_name, stub_type=axon.client.SyncStub)
+	worker = axon.client.get_ServiceStub('localhost', endpoint_prefix=endpoint+service_name, stub_type=axon.stubs.SyncStub)
 
 	# tests that child stubs are instantiated properly and that their RPCs work
 	for i in range(test_service_depth, 0, -1):
@@ -83,7 +83,7 @@ async def test_SyncStub():
 		worker()
 
 		# tests that stub is inherited from GenericSimplexStub
-		if isinstance(worker.test_fn, axon.client.SyncStub):
+		if isinstance(worker.test_fn, axon.stubs.SyncStub):
 			print('Inheritance from axon.stubs.SyncStub confirmed')
 		else:
 			raise BaseException('Stub is not inheritance from axon.stubs.SyncStub')

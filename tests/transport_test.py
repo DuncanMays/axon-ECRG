@@ -8,13 +8,18 @@ path.append('..')
 
 import axon
 
-class TestSimplex():
+@pytest.mark.asyncio
+async def test_client():
+	print('test_client')
 
-	@pytest.mark.asyncio
-	async def test_urllib3_stub(self):
-		print('test_urllib3_stub')
+	rpc_name = 'simplex_rpc'
+	url = 'http://localhost:'+str(axon.config.comms_config.worker_port)+'/'+axon.config.default_rpc_endpoint+rpc_name+'/__call__'
+	tl = axon.transport_client.HTTPTransportClient()
 
-		rpc_name = 'simplex_rpc'
-		url = 'http://localhost:'+str(axon.config.comms_config.worker_port)+'/'+axon.config.default_rpc_config['endpoint_prefix']+rpc_name+'/__call__'
+	assert('test passed!' == await tl.call_rpc(url, ('test ', ), {'suffix':'passed!', }))
 
-		print(await axon.transport_client.call_rpc(url, ('test ', ), {'suffix':'passed!', }))
+	profile = tl.get_worker_profile('localhost', port=axon.config.comms_config.worker_port)
+
+	assert('port' in profile)
+	assert('rpcs' in profile)
+	assert('simplex_rpc' in profile['rpcs'])

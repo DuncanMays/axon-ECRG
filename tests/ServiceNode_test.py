@@ -17,25 +17,28 @@ class DummyClass():
 		print('test fn called at depth: '+str(self.depth))
 		pass
 
-def test_add_child_child_config():
+def test_add_child():
 
 	t = DummyClass()
 	s = axon.worker.ServiceNode(t, 'test')
 
-	def simplex_rpc(self):
-		print('simplex_rpc called')
+	test_config = {
+		'executor' : 'dummy_executor',
+		'endpoint_prefix' : 'dummy_endpoint',
+	}
 
-	# def duplex_rpc(self):
-	# 	print('duplex_rpc called')
+	def test_add_child_rpc(self):
+		print('test_add_child_rpc called')
 
-	s.add_child('simplex_child', simplex_rpc, comms_pattern='simplex')
+	s.add_child('test_add_child', test_add_child_rpc, executor='dummy_executor')
 
-	assert(s.children['simplex_child'].children['__call__']['comms_pattern'] == 'simplex')
+	child_config = s.children['test_add_child'].children['__call__']
+	assert(child_config['executor'] == 'dummy_executor')
 
 	print('test_add_child_child_config passed!')
 
 def main():
-	test_add_child_child_config()
+	test_add_child()
 
 if (__name__=='__main__'):
 	main()

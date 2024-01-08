@@ -1,12 +1,14 @@
 # the bit that exports worker profile class and uses the RVL
 # an RPC stub is the thing on the client that makes a calling request and waits for the response
 
-from .config import comms_config, default_service_config, default_rpc_config
+from .config import comms_config, default_service_config, default_rpc_endpoint
 from .utils import deserialize
-from .stubs import GenericStub, SyncStub
-from .transport_client import GET
+from .stubs import GenericStub
+from .transport_client import GET, HTTPTransportClient
 
 from types import SimpleNamespace
+
+transport_client = HTTPTransportClient()
 
 def get_ServiceStub(ip_addr='localhost', port=comms_config.worker_port,  endpoint_prefix=default_service_config['endpoint_prefix'], name='', profile=None, stub_type=GenericStub, top_stub_type=object):
 	global count 
@@ -42,7 +44,7 @@ def get_ServiceStub_helper(ip_addr, port, profile, stub_type, top_stub_type):
 
 		else:
 			# If a member is not a profile, then it must be an RPC config, and so correspond to a callable object on the worker with no __dict__attribute
-			attrs[key] = stub_type(worker_ip=ip_addr, port=port, endpoint_prefix=member['endpoint_prefix']+'/', rpc_name=key)
+			attrs[key] = stub_type(worker_ip=ip_addr, port=port, tl=transport_client, endpoint_prefix=member['endpoint_prefix']+'/', rpc_name=key)
 
 	if '__call__' in keys:
 		# if the profile has a __call__ attribute, than the corresponding object on the server is callable and has a __dict__ attribute, and so must be represented by an RPC stub bound to the given network coordinates
@@ -58,16 +60,9 @@ def get_BoundStubClass(stub_type, ip_addr, port, configuration):
 	# a class for stubs that are bound to a certain RPC
 	class BoundStubClass(stub_type):
 		def __init__(self):
-			stub_type.__init__(self, worker_ip=ip_addr, port=port, endpoint_prefix=configuration['endpoint_prefix']+'/', rpc_name='__call__')
+			stub_type.__init__(self, worker_ip=ip_addr, port=port, tl=transport_client, endpoint_prefix=configuration['endpoint_prefix']+'/', rpc_name='__call__')
 
 	return BoundStubClass
-
-def get_worker_profile(ip_addr, port=comms_config.worker_port):
-	url = 'http://'+str(ip_addr)+':'+str(port)+'/_get_profile'
-	_, profile_str = GET(url)
-	profile = deserialize(profile_str)
-	profile['port'] = port
-	return profile
 
 class RemoteWorker():
 
@@ -78,7 +73,7 @@ class RemoteWorker():
 		self.name = profile['name']
 
 		# this will need to be a lookup on a services key to a number of service profiles
-		self.rpcs = get_ServiceStub(self.ip_addr, port=self.port, endpoint_prefix=default_rpc_config['endpoint_prefix']+'/', name=default_rpc_config['endpoint_prefix'], profile=profile['rpcs'], stub_type=self.stub_type)
+		self.rpcs = get_ServiceStub(self.ip_addr, port=self.port, endpoint_prefix=default_rpc_endpoint+'/', name=default_rpc_endpoint, profile=profile['rpcs'], stub_type=self.stub_type)
 
 		for service_name in profile['services'].keys():
 			s = get_ServiceStub(self.ip_addr, port=self.port, endpoint_prefix=f'{service_name}/', name=service_name, profile=profile['services'][service_name], stub_type=self.stub_type)
@@ -88,10 +83,11 @@ class RemoteWorker():
 		rpcs = {}
 
 		for rpc_desc in rpcs_descs:
-			rpcs[name] = stub_type(worker_ip=self.ip_addr, port=self.port, rpc_name=rpc_desc['name'], comms_pattern=rpc_desc['comms_pattern'])
+			rpcs[name] = stub_type(worker_ip=self.ip_addr, port=self.port, tl=transport_client, rpc_name=rpc_desc['name'], comms_pattern=rpc_desc['comms_pattern'])
 
 		self.rpcs = SimpleNamespace(**rpcs)
 
 def get_RemoteWorker(ip_addr, port=comms_config.worker_port, stub_type=GenericStub):
-	profile = get_worker_profile(ip_addr, port)
+	global transport_client
+	profile = transport_client.get_worker_profile(ip_addr, port)
 	return RemoteWorker(profile, stub_type=stub_type)

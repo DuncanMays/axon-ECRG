@@ -2,7 +2,7 @@
 # and executor is the thing that takes a function, and executes it in a thread/process and returns the result as response or even another HTTP req entirely
 
 from .utils import deserialize, serialize, get_self_ip, overwrite
-from .config import comms_config, default_rpc_config, default_service_config, default_service_depth
+from .config import comms_config, default_rpc_endpoint, default_service_config, default_service_depth
 
 from flask import Flask
 from flask import request as route_req
@@ -94,8 +94,6 @@ def invoke_RPC(target_fn, param_str, in_parallel=True):
 
 def register_RPC(fn, **configuration):
 
-	configuration = overwrite(default_rpc_config, configuration)
-
 	if not 'name' in configuration:
 		configuration['name'] = fn.__name__
 
@@ -114,6 +112,31 @@ def register_RPC(fn, **configuration):
 	endpoint = '/'+configuration['endpoint_prefix']+configuration['name']
 	app.route(endpoint, methods=['POST'])(route_fn)
 
+class HTTPTransportWorker():
+
+	def __init__(self):
+		pass
+
+	def register_RPC(self, fn, **configuration):
+
+		if not 'name' in configuration:
+			configuration['name'] = fn.__name__
+
+		executor = configuration['executor']
+
+		if isinstance(executor, PPE):
+			fn = cloudpickle.dumps(fn)
+
+		def route_fn():
+			param_str = route_req.form['msg']
+			future = executor.submit(invoke_RPC, fn, param_str)
+			return future.result()
+
+		# flask requires that each route function has a unique name
+		route_fn.__name__ = ''.join(random.choices(string.ascii_letters, k=10))
+		endpoint = '/'+configuration['endpoint_prefix']+configuration['name']
+		app.route(endpoint, methods=['POST'])(route_fn)
+
 registered_ServiceNodes = {}
 
 def register_ServiceNode(subject, name, depth=default_service_depth, **configuration):
@@ -131,6 +154,10 @@ class ServiceNode():
 		self.depth = depth
 
 		self.configuration = overwrite(default_service_config, configuration)
+		# before we factor out the HTTPTransportWorker, we need to use None as the default setting in default_service_config
+		# this is because this file imports from config, and so config cannot import from this file
+		if (self.configuration['tl'] == None):
+			self.configuration['tl'] = HTTPTransportWorker()
 
 		# iterates over members and either registers them as RPCs or recursively turns them into ServiceNodes
 		# for key, member in self.subject.__dict__.items():
@@ -190,11 +217,17 @@ class ServiceNode():
 		return child
 
 	def init_RPC(self, key, fn):
-		child_config = copy(self.configuration)
-		child_config['endpoint_prefix'] += str(self.name)+'/'
-		child_config['name'] = key
 
-		register_RPC(fn, **child_config)
+		tl = self.configuration['tl']
+
+		child_config = {
+			'endpoint_prefix': self.configuration['endpoint_prefix'] + str(self.name)+'/',
+			'name': key,
+			'executor': self.configuration['executor']
+		}
+
+		tl.register_RPC(fn, **child_config)
+		# register_RPC(fn, **child_config)
 
 		# remember the configuration
 		self.children[key] = child_config
@@ -223,7 +256,7 @@ class ServiceNode():
 		return profile
 
 # a ServiceNode that holds all RPCs associated by this worker instance
-RPC_node = ServiceNode(object(), default_rpc_config['endpoint_prefix'])
+RPC_node = ServiceNode(object(), default_rpc_endpoint)
 
 # the RPC decorator adds the associated function to the RPC_node ServiceNode
 def rpc(**configuration):

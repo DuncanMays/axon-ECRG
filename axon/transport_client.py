@@ -5,6 +5,7 @@ import threading
 import inspect
 
 from .utils import serialize, deserialize
+from .config import comms_config
 
 req_executor = futures.ThreadPoolExecutor(max_workers=100)
 http = urllib3.PoolManager()
@@ -68,12 +69,24 @@ def GET(url, timeout=None):
 	x = future.result()
 	return x.status, x.data.decode()
 
-def call_rpc_helper(url, data):
-	resp = http.request('POST', url, fields=data)
-	return_obj = deserialize(resp.data.decode())
-	return error_handler(return_obj)
+class HTTPTransportClient():
 
-def call_rpc(url, args, kwargs):
-	future = req_executor.submit(call_rpc_helper, url, {'msg': serialize((args, kwargs))})
-	return AsyncResultHandle(future)
+	def __init__(self):
+		pass
+
+	def get_worker_profile(self, ip_addr, port=comms_config.worker_port):
+		url = 'http://'+str(ip_addr)+':'+str(port)+'/_get_profile'
+		_, profile_str = GET(url)
+		profile = deserialize(profile_str)
+		profile['port'] = port
+		return profile
+
+	def call_rpc_helper(self, url, data):
+		resp = http.request('POST', url, fields=data)
+		return_obj = deserialize(resp.data.decode())
+		return error_handler(return_obj)
+
+	def call_rpc(self, url, args, kwargs):
+		future = req_executor.submit(self.call_rpc_helper, url, {'msg': serialize((args, kwargs))})
+		return AsyncResultHandle(future)
 
