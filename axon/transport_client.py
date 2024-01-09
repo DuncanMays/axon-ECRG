@@ -5,7 +5,7 @@ import threading
 import inspect
 
 from .utils import serialize, deserialize
-from .config import comms_config
+from .config import comms_config, default_service_config
 
 req_executor = futures.ThreadPoolExecutor(max_workers=100)
 http = urllib3.PoolManager()
@@ -74,11 +74,17 @@ class HTTPTransportClient():
 	def __init__(self):
 		pass
 
-	def get_worker_profile(self, ip_addr, port=comms_config.worker_port):
+	def get_worker_profile(self, ip_addr='localhost', port=comms_config.worker_port,  endpoint_prefix=default_service_config['endpoint_prefix'], name=''):
 		url = 'http://'+str(ip_addr)+':'+str(port)+'/_get_profile'
 		_, profile_str = GET(url)
 		profile = deserialize(profile_str)
 		profile['port'] = port
+
+		# url = 'http://'+str(ip_addr)+':'+str(port)+'/'+endpoint_prefix+name
+		# print(url)
+		# _, profile_str = GET(url)
+		# profile = deserialize(profile_str)
+
 		return profile
 
 	def call_rpc_helper(self, url, data):

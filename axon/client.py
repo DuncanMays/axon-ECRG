@@ -66,11 +66,10 @@ def get_BoundStubClass(stub_type, ip_addr, port, configuration):
 
 class RemoteWorker():
 
-	def __init__(self, profile, stub_type=GenericStub):
+	def __init__(self, profile, ip_addr, port, stub_type=GenericStub):
+		self.ip_addr = ip_addr
 		self.stub_type = stub_type
-		self.ip_addr = profile['ip_addr']
-		self.port = profile['port']
-		self.name = profile['name']
+		self.port = port
 
 		# this will need to be a lookup on a services key to a number of service profiles
 		self.rpcs = get_ServiceStub(self.ip_addr, port=self.port, endpoint_prefix=default_rpc_endpoint+'/', name=default_rpc_endpoint, profile=profile['rpcs'], stub_type=self.stub_type)
@@ -90,4 +89,4 @@ class RemoteWorker():
 def get_RemoteWorker(ip_addr, port=comms_config.worker_port, stub_type=GenericStub):
 	global transport_client
 	profile = transport_client.get_worker_profile(ip_addr, port)
-	return RemoteWorker(profile, stub_type=stub_type)
+	return RemoteWorker(profile, ip_addr, port, stub_type=stub_type)

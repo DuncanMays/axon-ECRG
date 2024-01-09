@@ -39,8 +39,6 @@ def _get_profile():
 		service_profiles[key] = registered_ServiceNodes[key].get_profile()
 
 	profile = {
-		'name': name,
-		'ip_addr': ip_addr,
 		'rpcs': RPC_node.get_profile(),
 		'services': service_profiles,
 	}
