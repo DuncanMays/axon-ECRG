@@ -29,22 +29,6 @@ log.disabled = True
 app = Flask(__name__)
 name = 'worker'
 
-# a default route to serve up what rpcs this worker offers, and their configuration
-@app.route('/_get_profile', methods=['GET'])
-def _get_profile():
-	global name, ip_addr
-
-	service_profiles = {}
-	for key in registered_ServiceNodes:
-		service_profiles[key] = registered_ServiceNodes[key].get_profile()
-
-	profile = {
-		'rpcs': RPC_node.get_profile(),
-		'services': service_profiles,
-	}
-
-	return serialize(profile)
-
 loop, event_loop_thread = None, None
 def start_event_loop_thread():
 	global loop, event_loop_thread
@@ -135,6 +119,19 @@ class HTTPTransportWorker():
 		endpoint = '/'+configuration['endpoint_prefix']+configuration['name']
 		app.route(endpoint, methods=['POST'])(route_fn)
 
+def _get_profile():
+
+	service_profiles = {}
+	for key in registered_ServiceNodes:
+		service_profiles[key] = registered_ServiceNodes[key].get_profile()
+
+	profile = {
+		'rpcs': RPC_node.get_profile(),
+		'services': service_profiles,
+	}
+
+	return profile
+
 registered_ServiceNodes = {}
 
 def register_ServiceNode(subject, name, depth=default_service_depth, **configuration):
@@ -185,19 +182,8 @@ class ServiceNode():
 				# Any member with a __call__ attribute but no __dict__ attribute is represented in profile by an RPC config
 				self.init_RPC(key, member)
 
-		# we now register a GET route at the ServiceNode's endpoint to expose its profile
-		
-		# the function that will be exposed as a route
-		def get_profile_str():
-			profile = self.get_profile()
-			return serialize(profile)
-
-		# functions that flask registers as routes must have different names, even if they are registered at different endpoints, so we've got to change the name of the function here.
-		# it is set to a random string firstly because the literal name of the function is arbitrary, but also because some services might have functions with the same names
-		get_profile_str.__name__ = ''.join(random.choices(string.ascii_letters, k=10))
-		endpoint = '/'+self.configuration['endpoint_prefix']+self.name
-
-		app.route(endpoint, methods=['GET'])(get_profile_str)
+		# we now register an RPC at the ServiceNode's endpoint to expose its profile
+		self.configuration['tl'].register_RPC(self.get_profile, name=self.name, executor=default_service_config['executor'], endpoint_prefix=self.configuration['endpoint_prefix'])
 
 	def add_child(self, key, child, **child_config):
 		# limits recursion to a depth parameter
@@ -267,6 +253,8 @@ def rpc(**configuration):
 # starts the web app
 def init(wrkr_name='worker', port=comms_config.worker_port):
 	global name
+
+	register_RPC(_get_profile, name='/_get_profile', executor=default_service_config['executor'], endpoint_prefix=default_service_config['endpoint_prefix'])
 
 	name = wrkr_name
 	# the web application that will serve the services and rpcs as routes

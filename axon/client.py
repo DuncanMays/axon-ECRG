@@ -19,8 +19,8 @@ def get_ServiceStub(ip_addr='localhost', port=comms_config.worker_port,  endpoin
 	# gets the profile if none are provided
 	if (profile == None):
 		url = 'http://'+str(ip_addr)+':'+str(comms_config.worker_port)+'/'+endpoint_prefix+name
-		_, profile_str = GET(url)
-		profile = deserialize(profile_str)
+		f = transport_client.call_rpc(url, (), {})
+		profile = f.join()
 
 	# once the profil is obtained, metaclass creation is left to get_ServiceStub_helper
 	return get_ServiceStub_helper(ip_addr, port, profile, stub_type, top_stub_type)
@@ -88,5 +88,6 @@ class RemoteWorker():
 
 def get_RemoteWorker(ip_addr, port=comms_config.worker_port, stub_type=GenericStub):
 	global transport_client
-	profile = transport_client.get_worker_profile(ip_addr, port)
+	url = f'http://{ip_addr}:{port}/{default_service_config["endpoint_prefix"]}/_get_profile'
+	profile = transport_client.call_rpc(url, (), {}).join()
 	return RemoteWorker(profile, ip_addr, port, stub_type=stub_type)
