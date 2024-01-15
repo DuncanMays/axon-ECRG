@@ -1,17 +1,12 @@
 from types import SimpleNamespace
 from .inline_executor import InlineExecutor
+# from .transport_worker import HTTPTransportWorker
 inline_executor = InlineExecutor()
 
 version = "0.2.1"
 default_service_depth = 3
 default_rpc_endpoint = 'rpc/'
 NUM_OPEN_REQS = 512
-
-default_service_config = {
-	'endpoint_prefix': '',
-	'executor': inline_executor,
-	'tl': None
-}
 
 comms_config = {
 	'notice_board_port': 8002,
@@ -20,3 +15,9 @@ comms_config = {
 }
 
 comms_config = SimpleNamespace(**comms_config)
+
+default_service_config = {
+	'endpoint_prefix': '',
+	'executor': inline_executor,
+	'tl': None
+}

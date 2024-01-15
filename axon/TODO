@@ -1,0 +1,10 @@
+Move HTTPTranportWorker into a separate file - Transport_worker cannot import config information, or any file that imports config, since it is imported by the config file, and so there would be a circular reference
+
+write tests for HTTPTRansportWorker and HTTPTransportClient
+	register an RPC with register_RPC
+	then call it with call_RPC
+- transport tests calls RPCs registered in __init__ with call_RPC, this isn't ideal but it's passable for now
+
+Change get_profile to only serve profiles for the requesting tl
+test with multiple instances of HTTPTranportWorker
+	Create RemoteWorker objects with different transport layers and test to see that they're different

@@ -19,7 +19,6 @@ async def test_client():
 	assert('test passed!' == await tl.call_rpc(url, ('test ', ), {'suffix':'passed!', }))
 
 	url = f'http://localhost:{axon.config.comms_config.worker_port}/{axon.config.default_service_config["endpoint_prefix"]}/_get_profile'
-	# profile = tl.get_worker_profile('localhost', port=axon.config.comms_config.worker_port)
 	profile = await tl.call_rpc(url, (), {})
 
 	assert('rpcs' in profile)
