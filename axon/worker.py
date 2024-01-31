@@ -6,13 +6,14 @@ from .config import comms_config, default_rpc_endpoint, default_service_config, 
 from .transport_worker import HTTPTransportWorker
 
 from copy import copy
+from threading import Thread
+from time import sleep
+from sys import maxsize as MAX_INT
+
 import pickle, cloudpickle
 import asyncio
 
-# before we factor out the HTTPTransportWorker, we need to use None as the default setting in default_service_config
-# this is because this file imports from config, and so config cannot import from this file
-if (default_service_config['tl'] == None):
-	default_service_config['tl'] = HTTPTransportWorker(comms_config.worker_port)
+transport_layers = set()
 
 def _get_profile():
 
@@ -44,6 +45,7 @@ class ServiceNode():
 		self.depth = depth
 
 		self.configuration = overwrite(default_service_config, configuration)
+		self.tl = self.configuration['tl']
 
 		# iterates over members and either registers them as RPCs or recursively turns them into ServiceNodes
 		# for key, member in self.subject.__dict__.items():
@@ -74,7 +76,8 @@ class ServiceNode():
 				self.init_RPC(key, member)
 
 		# we now register an RPC at the ServiceNode's endpoint to expose its profile
-		self.configuration['tl'].register_RPC(self.get_profile, name=self.name, executor=default_service_config['executor'], endpoint_prefix=self.configuration['endpoint_prefix'])
+		self.tl.register_RPC(self.get_profile, name=self.name, executor=default_service_config['executor'], endpoint_prefix=self.configuration['endpoint_prefix'])
+		transport_layers.add(self.tl)
 
 	def add_child(self, key, child, **child_config):
 		# limits recursion to a depth parameter
@@ -95,6 +98,7 @@ class ServiceNode():
 
 		tl = self.configuration['tl']
 
+		# this dict will be sent back with the profile to client
 		child_config = {
 			'endpoint_prefix': self.configuration['endpoint_prefix'] + str(self.name)+'/',
 			'name': key,
@@ -119,6 +123,11 @@ class ServiceNode():
 
 			# if the child is itself a ServiceNode, recursively get the profiles of its attributes
 			if isinstance(child, ServiceNode):
+				
+				# if the child uses a different transport layer, ignore it
+				if (self.tl != child.tl):
+					continue
+
 				profile[key] = child.get_profile()
 
 			# if the attribute is an RPC, the profile element is its configuration
@@ -143,7 +152,14 @@ def rpc(**configuration):
 def init(port=comms_config.worker_port):
 	global name
 
-	tl = default_service_config['tl']
-	tl.register_RPC(_get_profile, name='/_get_profile', executor=default_service_config['executor'], endpoint_prefix=default_service_config['endpoint_prefix'])
+	dtl = default_service_config['tl']
+	dtl.register_RPC(_get_profile, name='/_get_profile', executor=default_service_config['executor'], endpoint_prefix=default_service_config['endpoint_prefix'])
 
-	tl.run()
+	tl_threads = []
+	for tl in transport_layers:
+		tl_thread = Thread(target=tl.run, daemon=True)
+		tl_thread.start()
+		tl_threads.append(tl_thread)
+
+	while True:
+		sleep(MAX_INT)

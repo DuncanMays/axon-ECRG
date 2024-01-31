@@ -1,5 +1,5 @@
 from .config import comms_config
-from .utils import serialize, deserialize
+from .serializers import serialize
 
 from flask import Flask
 from flask import request as route_req

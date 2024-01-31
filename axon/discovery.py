@@ -1,6 +1,7 @@
 from .transport_client import GET, POST
 from .config import comms_config
-from .utils import serialize, deserialize, get_self_ip
+from .utils import get_self_ip
+from .serializers import deserialize
 from .notice_board_app import NoticeBoard
 
 from flask import Flask

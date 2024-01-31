@@ -1,4 +1,4 @@
-from .utils import deserialize, serialize
+from .serializers import deserialize, serialize
 
 from flask import Flask
 from flask import request as route_req

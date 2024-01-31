@@ -4,8 +4,7 @@ import concurrent.futures as futures
 import threading
 import inspect
 
-from .utils import serialize, deserialize
-from .config import comms_config, default_service_config
+from .serializers import serialize, deserialize
 
 req_executor = futures.ThreadPoolExecutor(max_workers=100)
 http = urllib3.PoolManager()

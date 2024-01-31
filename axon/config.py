@@ -1,6 +1,6 @@
 from types import SimpleNamespace
 from .inline_executor import InlineExecutor
-# from .transport_worker import HTTPTransportWorker
+from .transport_worker import HTTPTransportWorker
 inline_executor = InlineExecutor()
 
 version = "0.2.1"
@@ -19,5 +19,5 @@ comms_config = SimpleNamespace(**comms_config)
 default_service_config = {
 	'endpoint_prefix': '',
 	'executor': inline_executor,
-	'tl': None
+	'tl': HTTPTransportWorker(comms_config.worker_port)
 }
