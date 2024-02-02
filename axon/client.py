@@ -17,11 +17,11 @@ def get_ServiceStub(ip_addr='localhost', port=comms_config.worker_port,  endpoin
 
 	# gets the profile if none are provided
 	if (profile == None):
-		url = 'http://'+str(ip_addr)+':'+str(comms_config.worker_port)+'/'+endpoint_prefix+name
+		url = 'http://'+str(ip_addr)+':'+str(port)+'/'+endpoint_prefix+name
 		f = tl.call_rpc(url, (), {})
 		profile = f.join()
 
-	# once the profil is obtained, metaclass creation is left to get_ServiceStub_helper
+	# once the profile is obtained, metaclass creation is left to get_ServiceStub_helper
 	return get_ServiceStub_helper(ip_addr, port, tl, profile, stub_type, top_stub_type)
 
 def get_ServiceStub_helper(ip_addr, port, tl, profile, stub_type, top_stub_type):

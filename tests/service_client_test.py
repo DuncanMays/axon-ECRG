@@ -2,7 +2,6 @@ from sys import path
 path.append('..')
 
 import axon
-import threading
 import asyncio
 import time
 import json

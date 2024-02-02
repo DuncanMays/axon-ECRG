@@ -8,7 +8,6 @@ from .transport_worker import HTTPTransportWorker
 from copy import copy
 from threading import Thread
 from time import sleep
-from sys import maxsize as MAX_INT
 
 import pickle, cloudpickle
 import asyncio
@@ -18,8 +17,11 @@ transport_layers = set()
 def _get_profile():
 
 	service_profiles = {}
+	dtl = default_service_config['tl']
 	for key in registered_ServiceNodes:
-		service_profiles[key] = registered_ServiceNodes[key].get_profile()
+		tl = registered_ServiceNodes[key].tl
+		if (dtl == tl):
+			service_profiles[key] = registered_ServiceNodes[key].get_profile()
 
 	profile = {
 		'rpcs': RPC_node.get_profile(),
@@ -162,4 +164,4 @@ def init(port=comms_config.worker_port):
 		tl_threads.append(tl_thread)
 
 	while True:
-		sleep(MAX_INT)
+		sleep(1000_000)
