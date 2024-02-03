@@ -8,11 +8,24 @@ path.append('..')
 
 import axon
 
+# TransportWorker = axon.worker.HTTPTransportWorker
+# TransportClient = axon.client.HTTPTransportClient
+
+# def setup_inputs(request):
+# 	global TransportWorker, TransportClient
+
+# 	tl = request.config.getoption("-tl")
+
+	
+
+
+
 @pytest.mark.asyncio
 async def test_tl_basic():
+
 	port = axon.utils.get_open_port(lower_bound=8001)
-	tlw = axon.worker.HTTPTransportWorker(port)
-	tlc = axon.client.HTTPTransportClient()
+	tlw = TransportWorker(port)
+	tlc = TransportClient()
 
 	def wrk_fn(param):
 		return param
@@ -32,7 +45,7 @@ async def test_tl_basic():
 @pytest.mark.asyncio
 async def test_second_tl():
 	port = axon.utils.get_open_port(lower_bound=8002)
-	tlw = axon.worker.HTTPTransportWorker(port)
+	tlw = TransportWorker(port)
 
 	class TestClass():
 
