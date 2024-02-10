@@ -60,22 +60,21 @@ def invoke_RPC(target_fn, param_str, in_parallel=True):
 
 	return serialize(return_object)
 
-class HTTPTransportWorker():
+cclass SocketTransportWorker():
 
 	def __init__(self, port):
-		cli = sys.modules['flask.cli']
-		cli.show_server_banner = lambda *x: None
-		log = logging.getLogger('werkzeug')
-		log.disabled = True
-		# the app that listens for incomming http requests
-		self.app = Flask(__name__)	
 		self.port = port
+		self.RPCs = {}
 
 	def run(self):
-		self.app.run(host='0.0.0.0', port=self.port)
+		with s.serve(self.call_RPC, '127.0.0.1', self.port) as server:
+			server.serve_forever()
+
+	def call_RPC(websocket):
+		endpoint, param_str = websocket.recv()
+		return self.RPCs[endpoint](param_str)
 
 	def register_RPC(self, fn, **configuration):
-		print('hello!!')
 
 		if not 'name' in configuration:
 			configuration['name'] = fn.__name__
@@ -85,12 +84,10 @@ class HTTPTransportWorker():
 		if isinstance(executor, PPE):
 			fn = cloudpickle.dumps(fn)
 
-		def route_fn():
-			param_str = route_req.form['msg']
+		def route_fn(param_str):
 			future = executor.submit(invoke_RPC, fn, param_str)
-			return future.result()
+			websocket.send(future.result())
 
-		# flask requires that each route function has a unique name
-		route_fn.__name__ = ''.join(random.choices(string.ascii_letters, k=10))
 		endpoint = '/'+configuration['endpoint_prefix']+configuration['name']
-		self.app.route(endpoint, methods=['POST'])(route_fn)
+		
+		self.RPCs[endpoint] = route_fn

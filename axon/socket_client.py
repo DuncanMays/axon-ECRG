@@ -68,18 +68,26 @@ def GET(url, timeout=None):
 	x = future.result()
 	return x.status, x.data.decode()
 
-class HTTPTransportClient():
+class SocketTransportClient():
 
 	def __init__(self):
 		pass
 
-	def call_rpc_helper(self, url, data):
-		resp = http.request('POST', url, fields=data)
-		return_obj = deserialize(resp.data.decode())
-		return error_handler(return_obj)
+	# def call_rpc_helper(self, socket, endpoint, data):
+	# 	socket.send(serialize(endpoint, data))
+	# 	return_obj = deserialize(socket.recv())
+	# 	return error_handler(return_obj)
 
 	def call_rpc(self, url, args, kwargs):
-		print('hi!')
-		future = req_executor.submit(self.call_rpc_helper, url, {'msg': serialize((args, kwargs))})
-		return AsyncResultHandle(future)
+	# 	future = req_executor.submit(self.call_rpc_helper, url, {'msg': serialize((args, kwargs))})
+	# 	return AsyncResultHandle(future)
+
+		url_components = url.split('/')
+		url_head = '/'.join(url_components[:3])
+		endpoint = '/' + '/'.join(url_components[3:])
+
+		with connect(url_head) as socket:
+			socket.send(serialize((endpoint, args, kwargs)))
+			return_obj = deserialize(socket.recv())
+			return error_handler(return_obj)
 

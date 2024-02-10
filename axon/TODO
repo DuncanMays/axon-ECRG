@@ -1,12 +1,8 @@
 client has too many parameters to everything port, endpoint_prefix, ip_addr and name could be condensed into one parameter URL
 
-Change get_profile to only serve profiles for the requesting tl
-	only checking if the child is a ServiceNode That means RPCs with a different TL will still be sent if they're registered with init_RPC
+to swap out the TL being tested, I'm not sure this is possible
 
-write tests for HTTPTRansportWorker and HTTPTransportClient
-	register an RPC with register_RPC
-	then call it with call_RPC
-- transport tests calls RPCs registered in __init__ with call_RPC, this isn't ideal but it's passable for now
+implement socket TL
+	There is an issue with the client transport layer taking a complete URL for an RPC invokation while the socket server does not have a concept of endpoints outside of its RPCs dict ~ just split the url along '/', take off the first three indices and rejoinwebsockets.sync.client.connect
 
-test with multiple instances of HTTPTranportWorker
-	Create RemoteWorker objects with different transport layers and test to see that they're different
+	There is an issue with URLs containing transport-layer specific strings, like ws for websockets and http for HTTP.

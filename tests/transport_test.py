@@ -8,17 +8,8 @@ path.append('..')
 
 import axon
 
-# TransportWorker = axon.worker.HTTPTransportWorker
-# TransportClient = axon.client.HTTPTransportClient
-
-# def setup_inputs(request):
-# 	global TransportWorker, TransportClient
-
-# 	tl = request.config.getoption("-tl")
-
-	
-
-
+TransportWorker = axon.worker.HTTPTransportWorker
+TransportClient = axon.client.HTTPTransportClient
 
 @pytest.mark.asyncio
 async def test_tl_basic():
@@ -44,6 +35,7 @@ async def test_tl_basic():
 
 @pytest.mark.asyncio
 async def test_second_tl():
+
 	port = axon.utils.get_open_port(lower_bound=8002)
 	tlw = TransportWorker(port)
 
