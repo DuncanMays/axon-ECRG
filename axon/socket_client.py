@@ -4,6 +4,7 @@ import concurrent.futures as futures
 import threading
 import inspect
 
+from websockets.sync.client import connect
 from .serializers import serialize, deserialize
 
 req_executor = futures.ThreadPoolExecutor(max_workers=100)
@@ -82,12 +83,19 @@ class SocketTransportClient():
 	# 	future = req_executor.submit(self.call_rpc_helper, url, {'msg': serialize((args, kwargs))})
 	# 	return AsyncResultHandle(future)
 
+		# split the endpoint from the url
 		url_components = url.split('/')
 		url_head = '/'.join(url_components[:3])
 		endpoint = '/' + '/'.join(url_components[3:])
 
-		with connect(url_head) as socket:
-			socket.send(serialize((endpoint, args, kwargs)))
-			return_obj = deserialize(socket.recv())
-			return error_handler(return_obj)
+		param_str = serialize((args, kwargs))
+		req_str = endpoint+' '+param_str
 
+		with connect(url_head) as socket:
+			socket.send(req_str)
+			return_obj = deserialize(socket.recv())
+		
+		res = error_handler(return_obj)
+		f = futures.Future()
+		f.set_result(res)
+		return AsyncResultHandle(f)

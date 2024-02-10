@@ -18,6 +18,7 @@ def get_ServiceStub(ip_addr='localhost', port=comms_config.worker_port,  endpoin
 	# gets the profile if none are provided
 	if (profile == None):
 		url = 'http://'+str(ip_addr)+':'+str(port)+'/'+endpoint_prefix+name
+		# url = 'ws://'+str(ip_addr)+':'+str(port)+'/'+endpoint_prefix+name
 		f = tl.call_rpc(url, (), {})
 		profile = f.join()
 
@@ -59,7 +60,7 @@ def get_BoundStubClass(stub_type, ip_addr, port, tl, configuration):
 	# a class for stubs that are bound to a certain RPC
 	class BoundStubClass(stub_type):
 		def __init__(self):
-			stub_type.__init__(self, worker_ip=ip_addr, port=port, tl=tl, endpoint_prefix=configuration['endpoint_prefix']+'/', rpc_name='__call__')
+			stub_type.__init__(self, worker_ip=ip_addr, port=port, tl=tl, endpoint_prefix=configuration['endpoint_prefix'], rpc_name='__call__')
 
 	return BoundStubClass
 
@@ -88,5 +89,6 @@ class RemoteWorker():
 
 def get_RemoteWorker(ip_addr, tl=transport_client, port=comms_config.worker_port, stub_type=GenericStub):
 	url = f'http://{ip_addr}:{port}/{default_service_config["endpoint_prefix"]}/_get_profile'
+	# url = f'ws://{ip_addr}:{port}/{default_service_config["endpoint_prefix"]}/_get_profile'
 	profile = tl.call_rpc(url, (), {}).join()
 	return RemoteWorker(profile, ip_addr, port, tl, stub_type=stub_type)

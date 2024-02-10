@@ -4,6 +4,7 @@ from flask import Flask
 from flask import request as route_req
 from concurrent.futures import ProcessPoolExecutor as PPE
 from threading import Thread, Lock
+import websockets.sync.server as sync_server
 
 import sys
 import logging
@@ -60,19 +61,21 @@ def invoke_RPC(target_fn, param_str, in_parallel=True):
 
 	return serialize(return_object)
 
-cclass SocketTransportWorker():
+class SocketTransportWorker():
 
 	def __init__(self, port):
 		self.port = port
 		self.RPCs = {}
 
 	def run(self):
-		with s.serve(self.call_RPC, '127.0.0.1', self.port) as server:
+		with sync_server.serve(self.call_RPC, '127.0.0.1', self.port) as server:
 			server.serve_forever()
 
-	def call_RPC(websocket):
-		endpoint, param_str = websocket.recv()
-		return self.RPCs[endpoint](param_str)
+	def call_RPC(self, websocket):
+		req_str = websocket.recv()
+		endpoint, param_str = req_str.split(' ', 1)
+		result = self.RPCs[endpoint](param_str)
+		websocket.send(result)
 
 	def register_RPC(self, fn, **configuration):
 
@@ -86,7 +89,7 @@ cclass SocketTransportWorker():
 
 		def route_fn(param_str):
 			future = executor.submit(invoke_RPC, fn, param_str)
-			websocket.send(future.result())
+			return future.result()
 
 		endpoint = '/'+configuration['endpoint_prefix']+configuration['name']
 		

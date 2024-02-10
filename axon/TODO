@@ -5,4 +5,6 @@ to swap out the TL being tested, I'm not sure this is possible
 implement socket TL
 	There is an issue with the client transport layer taking a complete URL for an RPC invokation while the socket server does not have a concept of endpoints outside of its RPCs dict ~ just split the url along '/', take off the first three indices and rejoinwebsockets.sync.client.connect
 
-	There is an issue with URLs containing transport-layer specific strings, like ws for websockets and http for HTTP.
+	There is an issue with URLs containing transport-layer specific strings, like ws for websockets and http for HTTP. This is blocking transport tests, since a lot of times the prefix on the URl is hardcoded and so can't be swapped during the test for different transport layers.
+
+	There is an issue with the socket transport layer not removing double slashes, and so where they appear, there's a key error once the worker tries to lookup the endpoint.

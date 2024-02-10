@@ -11,6 +11,10 @@ import axon
 TransportWorker = axon.worker.HTTPTransportWorker
 TransportClient = axon.client.HTTPTransportClient
 
+# TransportWorker = axon.socket_worker.SocketTransportWorker
+# TransportClient = axon.socket_client.SocketTransportClient
+
+
 @pytest.mark.asyncio
 async def test_tl_basic():
 
@@ -30,6 +34,7 @@ async def test_tl_basic():
 	time.sleep(1)
 
 	url = f'http://localhost:{port}/test_tl_basic/wrk_fn'
+	# url = f'ws://localhost:{port}/test_tl_basic/wrk_fn'
 	result = await tlc.call_rpc(url, ('hello!', ), {})
 	assert(result == 'hello!')
 
@@ -37,6 +42,7 @@ async def test_tl_basic():
 async def test_second_tl():
 
 	port = axon.utils.get_open_port(lower_bound=8002)
+	tlc = TransportClient()
 	tlw = TransportWorker(port)
 
 	class TestClass():
@@ -56,11 +62,11 @@ async def test_second_tl():
 	time.sleep(1)
 
 	# the positive test that the service registered with the secondary transport layer exists
-	ss = axon.client.get_ServiceStub(ip_addr='localhost', port=port, endpoint_prefix='/test_second_tl_service')
+	ss = axon.client.get_ServiceStub(ip_addr='localhost', tl=tlc, port=port, endpoint_prefix='test_second_tl_service')
 	result = await ss.test_fn('hi there!')
 	assert(result == 'hi there!')
 
-	# the negative test that the service registered with the secondary transport layer does not show up on the primary transport layer
+	# # the negative test that the service registered with the secondary transport layer does not show up on the primary transport layer
 	rw = axon.client.get_RemoteWorker('localhost')
 	assert(hasattr(rw, 'test_second_tl_service') == False)
 

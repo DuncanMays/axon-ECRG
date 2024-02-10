@@ -11,6 +11,7 @@ class GenericStub():
 
 	def __call__(self, *args, **kwargs):
 		url = 'http://'+str(self.remote_ip)+':'+str(self.port)+'/'+self.endpoint_prefix+self.__name__
+		# url = 'ws://'+str(self.remote_ip)+':'+str(self.port)+'/'+self.endpoint_prefix+self.__name__
 		return self.tl.call_rpc(url, args, kwargs)
 
 class SyncStub():
@@ -24,4 +25,5 @@ class SyncStub():
 
 	def __call__(self, *args, **kwargs):
 		url = 'http://'+str(self.remote_ip)+':'+str(self.port)+'/'+self.endpoint_prefix+self.__name__
+		# url = 'ws://'+str(self.remote_ip)+':'+str(self.port)+'/'+self.endpoint_prefix+self.__name__
 		return self.tl.call_rpc(url, args, kwargs).join()
