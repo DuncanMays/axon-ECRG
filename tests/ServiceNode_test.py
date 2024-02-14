@@ -36,9 +36,3 @@ def test_add_child():
 	assert(child_config['executor'] == 'dummy_executor')
 
 	print('test_add_child_child_config passed!')
-
-def main():
-	test_add_child()
-
-if (__name__=='__main__'):
-	main()

@@ -69,7 +69,7 @@ async def test_MetaServiceStub():
 			# if this is the last iteration, worker won't have a child and this line will raise an attribute error
 			worker = worker.child
 
-# # this test creates a metastub to a test service that inherits from SimplexStubs and calls methods recursively to check that each child function is a sync stub
+# this test creates a metastub to a test service that inherits from SimplexStubs and calls methods recursively to check that each child function is a sync stub
 @pytest.mark.asyncio
 async def test_SyncStub():
 	print('test_SyncStub')
