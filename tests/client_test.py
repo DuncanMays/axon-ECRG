@@ -6,8 +6,8 @@ import asyncio
 import time
 
 @pytest.mark.asyncio
-async def test_client():
-	print('test_client')
+async def test_tl_client():
+	print('test_tl_client')
 
 	rpc_name = 'simplex_rpc'
 	url = 'http://localhost:'+str(axon.config.comms_config.worker_port)+'/'+axon.config.default_rpc_endpoint+rpc_name+'/__call__'
@@ -25,7 +25,7 @@ async def test_client():
 async def test_RemoteWorker():
 	print('test_RemoteWorker')
 
-	w = axon.client.get_RemoteWorker('localhost')
+	w = axon.client.get_RemoteWorker(f'http://localhost:{axon.config.comms_config.worker_port}')
 
 	print(await w.rpcs.simplex_rpc('simplex test ', suffix='passed'))
 

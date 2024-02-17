@@ -8,9 +8,10 @@ import json
 import pytest
 
 default_service_depth = axon.config.default_service_depth
+port = axon.config.comms_config.worker_port
 
 # the endpoint that our service will be located at
-endpoint = 'test_endpoint_prefix/'
+endpoint = 'test_endpoint_prefix'
 # the name of our service
 service_name = 'simplex_service'
 
@@ -18,20 +19,21 @@ test_service_depth = 3
 
 # this test manulually creates a stub that points to a service endpoint. Note that each endpoint is suffixed with /__call__ since RPC configs are stored on the __call__ attribute
 @pytest.mark.asyncio
-async def test_basic_service_request():
-	print('test_basic_service_request')
+async def test_GenericStub():
+	print('test_GenericStub')
 
 	# tests that ServiceStubs, including child stubs, are instantiated properly and that their RPCs work
-	full_endpoint = endpoint+service_name+'/'
+	full_endpoint = f'{endpoint}/{service_name}'
 	for i in range(default_service_depth, 0, -1):
-		print('testing simplex RPC')
+		print('testing GenericStub')
 
-		stub = axon.stubs.SyncStub(worker_ip='localhost', tl=axon.transport_client.HTTPTransportClient(), endpoint_prefix=full_endpoint, rpc_name='test_fn/__call__')
+		url=f'http://localhost:{port}/{full_endpoint}/test_fn/__call__'
+		stub = axon.stubs.GenericStub(url=url, tl=axon.transport_client.HTTPTransportClient())
 		
-		stub()
+		await stub()
 
 		# next iteration, the stub will point at the child service
-		full_endpoint = full_endpoint + 'child/'
+		full_endpoint = full_endpoint + '/child'
 
 # this test creates a metastub to a test service and calls methods recursively to check each child object. Also checks inheritance from a BaseClass
 @pytest.mark.asyncio
@@ -42,7 +44,8 @@ async def test_MetaServiceStub():
 		def __init__(self):
 			pass
 
-	worker = axon.client.get_ServiceStub('localhost', endpoint_prefix=endpoint+service_name, top_stub_type=BaseClass)
+	url = f'http://localhost:{port}/{endpoint}/{service_name}'
+	worker = axon.client.get_ServiceStub(url, top_stub_type=BaseClass)
 
 	# Tests that the stub is inherited from BaseClass, as specified by kwarg top_stub_type
 	if isinstance(worker, BaseClass):
@@ -74,7 +77,8 @@ async def test_MetaServiceStub():
 async def test_SyncStub():
 	print('test_SyncStub')
 
-	worker = axon.client.get_ServiceStub('localhost', endpoint_prefix=endpoint+service_name, stub_type=axon.stubs.SyncStub)
+	url = f'http://localhost:{port}/{endpoint}/{service_name}'
+	worker = axon.client.get_ServiceStub(url, stub_type=axon.stubs.SyncStub)
 
 	# tests that child stubs are instantiated properly and that their RPCs work
 	for i in range(test_service_depth, 0, -1):

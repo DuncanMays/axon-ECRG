@@ -1,17 +1,9 @@
-Should look into a good way to manuallly specify which TL is under test. This might not be possible in pytest, but maybe if we put the tests with the module on Pypi we can have a python -m command to run the transport layer tests on another python module representing a transport layer.
+Should look into a good way to manuallly specify which TL is under test. This might not be possible in pytest, but maybe if we put the tests with the module on Pypi we can have a python -m command to run the transport layer tests on another python module representing a transport layer. How would you specify the URl prefix? The same service with websockets would be at ws://..... while with HTTP it would be http://.....
 
 implement socket TL
 
 	There is an issue with URLs containing transport-layer specific strings, like ws for websockets and http for HTTP. This is blocking transport tests, since a lot of times the prefix on the URl is hardcoded and so can't be swapped during the test for different transport layers.
 
-	client has too many parameters to everything port, endpoint_prefix, ip_addr and name could be condensed into one parameter URL
-
 	Don't forget to involve executors in the socket transport client, and rename worker_tests to something more fitting, maybe concurrency_tests
 
-Change client calls to use URLs
-
-	use service_client_test to verify progress
-
-	Change stubs to use URLs
-
-	Change metaStubs to use URLs
+There is an issue with determining which side of an endpoint element the slash should go on. If there's a slash at the end, the endpoint will be invalid, but if there's duplicate slashes this won't work with the websocket tl. This has to do with the worker -> profile -> stub pipeline

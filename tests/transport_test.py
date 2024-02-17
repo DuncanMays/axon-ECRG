@@ -62,11 +62,12 @@ async def test_second_tl():
 	time.sleep(1)
 
 	# the positive test that the service registered with the secondary transport layer exists
-	ss = axon.client.get_ServiceStub(ip_addr='localhost', tl=tlc, port=port, endpoint_prefix='test_second_tl_service')
+	url = f'http://localhost:{port}/test_second_tl_service'
+	ss = axon.client.get_ServiceStub(url, tl=tlc)
 	result = await ss.test_fn('hi there!')
 	assert(result == 'hi there!')
 
-	# # the negative test that the service registered with the secondary transport layer does not show up on the primary transport layer
-	rw = axon.client.get_RemoteWorker('localhost')
+	# the negative test that the service registered with the secondary transport layer does not show up on the primary transport layer
+	rw = axon.client.get_RemoteWorker(f'http://localhost:{axon.config.comms_config.worker_port}')
 	assert(hasattr(rw, 'test_second_tl_service') == False)
 

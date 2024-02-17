@@ -12,7 +12,7 @@ time_safety_magin = 0.1
 
 @pytest.mark.asyncio
 async def test_invokation():
-	remote_worker = axon.client.get_RemoteWorker('localhost')
+	remote_worker = axon.client.get_RemoteWorker(f'http://localhost:{axon.config.comms_config.worker_port}')
 	message = 'hello world!'
 	delay = 0
 
@@ -29,7 +29,7 @@ async def test_invokation():
 
 @pytest.mark.asyncio
 async def test_inline_concurrency():
-	remote_worker = axon.client.get_RemoteWorker('localhost')
+	remote_worker = axon.client.get_RemoteWorker(f'http://localhost:{axon.config.comms_config.worker_port}')
 	message = 'hello world!'
 	delay = 1
 
@@ -49,7 +49,7 @@ async def test_inline_concurrency():
 
 @pytest.mark.asyncio
 async def test_tpe_concurrency():
-	remote_worker = axon.client.get_RemoteWorker('localhost')
+	remote_worker = axon.client.get_RemoteWorker(f'http://localhost:{axon.config.comms_config.worker_port}')
 	message = 'hello world!'
 	delay = 1
 
@@ -69,7 +69,7 @@ async def test_tpe_concurrency():
 
 @pytest.mark.asyncio
 async def test_ppe_concurrency():
-	remote_worker = axon.client.get_RemoteWorker('localhost')
+	remote_worker = axon.client.get_RemoteWorker(f'http://localhost:{axon.config.comms_config.worker_port}')
 	message = 'hello world!'
 	delay = 1
 
@@ -89,7 +89,7 @@ async def test_ppe_concurrency():
 
 @pytest.mark.asyncio
 async def test_inline_async_concurrency():
-	remote_worker = axon.client.get_RemoteWorker('localhost')
+	remote_worker = axon.client.get_RemoteWorker(f'http://localhost:{axon.config.comms_config.worker_port}')
 	message = 'hello world!'
 	delay = 1
 
@@ -109,7 +109,7 @@ async def test_inline_async_concurrency():
 
 @pytest.mark.asyncio
 async def test_tpe_async_concurrency():
-	remote_worker = axon.client.get_RemoteWorker('localhost')
+	remote_worker = axon.client.get_RemoteWorker(f'http://localhost:{axon.config.comms_config.worker_port}')
 	message = 'hello world!'
 	delay = 1
 
@@ -129,7 +129,7 @@ async def test_tpe_async_concurrency():
 
 @pytest.mark.asyncio
 async def test_ppe_async_concurrency():
-	remote_worker = axon.client.get_RemoteWorker('localhost')
+	remote_worker = axon.client.get_RemoteWorker(f'http://localhost:{axon.config.comms_config.worker_port}')
 	message = 'hello world!'
 	delay = 1
 

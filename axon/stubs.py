@@ -2,28 +2,17 @@ from .config import comms_config, default_rpc_endpoint
 
 class GenericStub():
 
-	def __init__(self, worker_ip='localhost', tl=None, port=comms_config.worker_port, rpc_name=None, endpoint_prefix=default_rpc_endpoint):
-		self.remote_ip = worker_ip
+	def __init__(self, tl, url):
+		self.url = url
 		self.tl = tl
-		self.port = port
-		self.__name__ = rpc_name
-		self.endpoint_prefix = endpoint_prefix
 
 	def __call__(self, *args, **kwargs):
-		url = 'http://'+str(self.remote_ip)+':'+str(self.port)+'/'+self.endpoint_prefix+self.__name__
-		# url = 'ws://'+str(self.remote_ip)+':'+str(self.port)+'/'+self.endpoint_prefix+self.__name__
-		return self.tl.call_rpc(url, args, kwargs)
+		return self.tl.call_rpc(self.url, args, kwargs)
 
-class SyncStub():
+class SyncStub(GenericStub):
 
-	def __init__(self, worker_ip='localhost', tl=None, port=comms_config.worker_port, rpc_name=None, endpoint_prefix=default_rpc_endpoint):
-		self.remote_ip = worker_ip
-		self.port = port
-		self.tl = tl
-		self.__name__ = rpc_name
-		self.endpoint_prefix = endpoint_prefix
+	def __init__(self, tl, url):
+		GenericStub.__init__(self, tl, url)
 
 	def __call__(self, *args, **kwargs):
-		url = 'http://'+str(self.remote_ip)+':'+str(self.port)+'/'+self.endpoint_prefix+self.__name__
-		# url = 'ws://'+str(self.remote_ip)+':'+str(self.port)+'/'+self.endpoint_prefix+self.__name__
-		return self.tl.call_rpc(url, args, kwargs).join()
+		return GenericStub.__call__(self, *args, **kwargs).join()
