@@ -74,12 +74,7 @@ class HTTPTransportWorker():
 	def run(self):
 		self.app.run(host='0.0.0.0', port=self.port)
 
-	def register_RPC(self, fn, **configuration):
-
-		if not 'name' in configuration:
-			configuration['name'] = fn.__name__
-
-		executor = configuration['executor']
+	def register_RPC(self, fn, endpoint, executor):
 
 		if isinstance(executor, PPE):
 			fn = cloudpickle.dumps(fn)
@@ -91,5 +86,4 @@ class HTTPTransportWorker():
 
 		# flask requires that each route function has a unique name
 		route_fn.__name__ = ''.join(random.choices(string.ascii_letters, k=10))
-		endpoint = configuration['endpoint_prefix']+'/'+configuration['name']
 		self.app.route(endpoint, methods=['POST'])(route_fn)

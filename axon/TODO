@@ -4,6 +4,8 @@ Should look into a good way to manually specify which TL is under test. This mig
 
 Factor out the common pieces from socket_worker and transport_worker into a separate file
 
-Don't forget to involve executors in the socket transport client, and rename worker_tests to something more fitting, maybe concurrency_tests
+change the way RPC configs are recorded in ServiceNode and obtained in ServiceStub
 
-transport workers seem to take the usual input of endpoint prefix and such instead of just endpoint
+setting the name of the route fn to something random should be done in the transport layer
+
+Don't forget to involve executors in the socket transport client, and rename worker_tests to something more fitting, maybe concurrency_tests
