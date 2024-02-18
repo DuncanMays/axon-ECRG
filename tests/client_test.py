@@ -10,12 +10,12 @@ async def test_tl_client():
 	print('test_tl_client')
 
 	rpc_name = 'simplex_rpc'
-	url = 'http://localhost:'+str(axon.config.comms_config.worker_port)+'/'+axon.config.default_rpc_endpoint+rpc_name+'/__call__'
+	url = f'http://localhost:{axon.config.comms_config.worker_port}/{axon.config.default_rpc_endpoint}/{rpc_name}/__call__'
 	tl = axon.transport_client.HTTPTransportClient()
 
 	assert('test passed!' == await tl.call_rpc(url, ('test ', ), {'suffix':'passed!', }))
 
-	url = f'http://localhost:{axon.config.comms_config.worker_port}/{axon.config.default_service_config["endpoint_prefix"]}/_get_profile'
+	url = f'http://localhost:{axon.config.comms_config.worker_port}{axon.config.default_service_config["endpoint_prefix"]}/_get_profile'
 	profile = await tl.call_rpc(url, (), {})
 
 	assert('rpcs' in profile)

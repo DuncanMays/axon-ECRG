@@ -5,7 +5,7 @@ inline_executor = InlineExecutor()
 
 version = "0.2.1"
 default_service_depth = 3
-default_rpc_endpoint = 'rpc/'
+default_rpc_endpoint = 'rpc'
 NUM_OPEN_REQS = 512
 
 comms_config = {

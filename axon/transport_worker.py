@@ -91,5 +91,5 @@ class HTTPTransportWorker():
 
 		# flask requires that each route function has a unique name
 		route_fn.__name__ = ''.join(random.choices(string.ascii_letters, k=10))
-		endpoint = '/'+configuration['endpoint_prefix']+configuration['name']
+		endpoint = configuration['endpoint_prefix']+'/'+configuration['name']
 		self.app.route(endpoint, methods=['POST'])(route_fn)

@@ -25,7 +25,7 @@ async def test_tl_basic():
 	def wrk_fn(param):
 		return param
 
-	config = {'name':'wrk_fn', 'endpoint_prefix':'test_tl_basic/', 'executor':axon.inline_executor.InlineExecutor()}
+	config = {'name':'wrk_fn', 'endpoint_prefix':'/test_tl_basic', 'executor':axon.inline_executor.InlineExecutor()}
 	tlw.register_RPC(wrk_fn, **config)
 
 	wrkr_thread = threading.Thread(target=tlw.run, daemon=True)

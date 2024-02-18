@@ -26,7 +26,7 @@ class TestClass():
 		print(f'__call__ called at depth {self.depth}')
 
 # the endpoint that our service will be located at
-endpoint = 'test_endpoint_prefix/'
+endpoint = '/test_endpoint_prefix'
 
 # defines an instance of TestClass and creates a service node out of it
 test_service_depth = 3

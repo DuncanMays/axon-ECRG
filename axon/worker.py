@@ -89,7 +89,7 @@ class ServiceNode():
 		child_config = overwrite(self.configuration, child_config)
 
 		# the child's endpoint_prefix is the parent's prefix plus / and the child's name
-		child_config['endpoint_prefix'] += str(self.name)+'/'
+		child_config['endpoint_prefix'] += '/'+str(self.name)
 
 		# create a ServiceNode out of it and register it as a child
 		child = ServiceNode(child, key, depth=self.depth-1, **child_config)
@@ -102,7 +102,7 @@ class ServiceNode():
 
 		# this dict will be sent back with the profile to client
 		child_config = {
-			'endpoint_prefix': self.configuration['endpoint_prefix'] + str(self.name)+'/',
+			'endpoint_prefix': self.configuration['endpoint_prefix'] +'/'+ str(self.name),
 			'name': key,
 			'executor': self.configuration['executor']
 		}
@@ -152,10 +152,9 @@ def rpc(**configuration):
 	return add_to_RPC_node
 
 def init(port=comms_config.worker_port):
-	global name
 
 	dtl = default_service_config['tl']
-	dtl.register_RPC(_get_profile, name='/_get_profile', executor=default_service_config['executor'], endpoint_prefix=default_service_config['endpoint_prefix'])
+	dtl.register_RPC(_get_profile, name='_get_profile', executor=default_service_config['executor'], endpoint_prefix=default_service_config['endpoint_prefix'])
 
 	tl_threads = []
 	for tl in transport_layers:

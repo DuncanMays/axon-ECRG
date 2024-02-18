@@ -1,4 +1,5 @@
 from .serializers import deserialize, serialize
+from .config import comms_config
 
 from flask import Flask
 from flask import request as route_req
@@ -63,7 +64,7 @@ def invoke_RPC(target_fn, param_str, in_parallel=True):
 
 class SocketTransportWorker():
 
-	def __init__(self, port):
+	def __init__(self, port=comms_config.worker_port+1):
 		self.port = port
 		self.RPCs = {}
 
@@ -74,7 +75,10 @@ class SocketTransportWorker():
 	def call_RPC(self, websocket):
 		req_str = websocket.recv()
 		endpoint, param_str = req_str.split(' ', 1)
+		endpoint = endpoint.replace('//', '/')
+
 		result = self.RPCs[endpoint](param_str)
+
 		websocket.send(result)
 
 	def register_RPC(self, fn, **configuration):

@@ -1,9 +1,9 @@
-Should look into a good way to manuallly specify which TL is under test. This might not be possible in pytest, but maybe if we put the tests with the module on Pypi we can have a python -m command to run the transport layer tests on another python module representing a transport layer. How would you specify the URl prefix? The same service with websockets would be at ws://..... while with HTTP it would be http://.....
+there is a problem with the socket transport not being able to use port 8000, even without any RPCs on the default transport layer. This is because of the default transport layer serving up the worker's whole profile. We should probably start thinking about making RemoteWorkers ServiceStubs and about having each tl have its own config
 
-implement socket TL
+Should look into a good way to manually specify which TL is under test. This might not be possible in pytest, but maybe if we put the tests with the module on Pypi we can have a python -m command to run the transport layer tests on another python module representing a transport layer. How would you specify the URl prefix? The same service with websockets would be at ws://..... while with HTTP it would be http://.....
 
-	There is an issue with URLs containing transport-layer specific strings, like ws for websockets and http for HTTP. This is blocking transport tests, since a lot of times the prefix on the URl is hardcoded and so can't be swapped during the test for different transport layers.
+Factor out the common pieces from socket_worker and transport_worker into a separate file
 
-	Don't forget to involve executors in the socket transport client, and rename worker_tests to something more fitting, maybe concurrency_tests
+Don't forget to involve executors in the socket transport client, and rename worker_tests to something more fitting, maybe concurrency_tests
 
-There is an issue with determining which side of an endpoint element the slash should go on. If there's a slash at the end, the endpoint will be invalid, but if there's duplicate slashes this won't work with the websocket tl. This has to do with the worker -> profile -> stub pipeline
+transport workers seem to take the usual input of endpoint prefix and such instead of just endpoint

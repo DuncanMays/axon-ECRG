@@ -34,12 +34,12 @@ def get_ServiceStub_helper(url, tl, profile, stub_type, top_stub_type):
 
 		else:
 			# If a member is not a profile, then it must be an RPC config, and so correspond to a callable object on the worker with no __dict__attribute
-			stub_url = url + f"/{member['endpoint_prefix']}/{key}"
+			stub_url = url + f"{member['endpoint_prefix']}/{key}"
 			attrs[key] = stub_type(tl=tl, url = stub_url)
 
 	if '__call__' in keys:
 		# if the profile has a __call__ attribute, than the corresponding object on the server is callable and has a __dict__ attribute, and so must be represented by an RPC stub bound to the given network coordinates
-		stub_url = url + f"/{profile['__call__']['endpoint_prefix']}/__call__"
+		stub_url = url + f"{profile['__call__']['endpoint_prefix']}/__call__"
 		BoundStubClass = get_BoundStubClass(stub_type, tl, stub_url)
 		# this ensures the stub will inherit from a stub class that's bound to the configuration
 		parent_classes = (BoundStubClass, ) + parent_classes
@@ -61,8 +61,6 @@ class RemoteWorker():
 	def __init__(self, profile, url, tl=transport_client, stub_type=GenericStub, top_stub_type=object):
 		self.url = url
 		self.tl = tl
-		self.stub_type = stub_type
-		self.top_stub_type = top_stub_type
 
 		# this will need to be a lookup on a services key to a number of service profiles
 		self.rpcs = get_ServiceStub_helper(url, tl, profile=profile['rpcs'], stub_type=stub_type, top_stub_type=top_stub_type)
