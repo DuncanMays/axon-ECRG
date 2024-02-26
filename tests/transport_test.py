@@ -10,10 +10,11 @@ import axon
 
 TransportWorker = axon.worker.HTTPTransportWorker
 TransportClient = axon.client.HTTPTransportClient
+url_scheme = 'http'
 
 # TransportWorker = axon.socket_worker.SocketTransportWorker
 # TransportClient = axon.socket_client.SocketTransportClient
-
+# url_scheme = 'ws'
 
 @pytest.mark.asyncio
 async def test_tl_basic():
@@ -32,8 +33,7 @@ async def test_tl_basic():
 
 	time.sleep(1)
 
-	url = f'http://localhost:{port}/test_tl_basic/wrk_fn'
-	# url = f'ws://localhost:{port}/test_tl_basic/wrk_fn'
+	url = f'{url_scheme}://localhost:{port}/test_tl_basic/wrk_fn'
 	result = await tlc.call_rpc(url, ('hello!', ), {})
 	assert(result == 'hello!')
 
@@ -61,7 +61,7 @@ async def test_second_tl():
 	time.sleep(1)
 
 	# the positive test that the service registered with the secondary transport layer exists
-	url = f'http://localhost:{port}/test_second_tl_service'
+	url = f'{url_scheme}://localhost:{port}/test_second_tl_service'
 	ss = axon.client.get_ServiceStub(url, tl=tlc)
 	result = await ss.test_fn('hi there!')
 	assert(result == 'hi there!')

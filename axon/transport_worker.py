@@ -96,3 +96,10 @@ class HTTPTransportWorker():
 			fn = cloudpickle.dumps(fn)
 
 		self.rpcs[endpoint] = (fn, executor)
+
+	def deregister_RPC(self, endpoint):
+
+		if endpoint in self.rpcs:
+			del self.rpcs[endpoint]
+		else:
+			raise BaseException(f'No RPC registered at endpoint: {endpoint}')
