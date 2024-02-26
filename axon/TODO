@@ -1,9 +1,0 @@
-there is a problem with the socket transport not being able to use port 8000, even without any RPCs on the default transport layer. This is because of the default transport layer serving up the worker's whole profile. We should probably start thinking about making RemoteWorkers ServiceStubs and about having each tl have its own config
-
-Should look into a good way to manually specify which TL is under test. This might not be possible in pytest, but maybe if we put the tests with the module on Pypi we can have a python -m command to run the transport layer tests on another python module representing a transport layer. How would you specify the URl prefix? The same service with websockets would be at ws://..... while with HTTP it would be http://.....
-
-Factor out the common pieces from socket_worker and transport_worker into a separate file
-
-Don't forget to involve executors in the socket transport client, and rename worker_tests to something more fitting, maybe concurrency_tests
-
-change the way RPC configs are recorded in ServiceNode and obtained in ServiceStub
