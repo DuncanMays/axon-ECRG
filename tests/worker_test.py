@@ -29,15 +29,15 @@ async def test_invokation():
 
 @pytest.mark.asyncio
 async def test_inline_concurrency():
-	remote_worker = axon.client.get_RemoteWorker(f'http://localhost:{axon.config.comms_config.worker_port}')
+	inline_service = axon.client.get_ServiceStub(f'http://localhost:{axon.config.comms_config.worker_port}/inline_service')
 	message = 'hello world!'
 	delay = 1
 
 	start = time.time()
 
 	reqs = []
-	reqs.append(remote_worker.inline_service.print_this(delay, message))
-	reqs.append(remote_worker.inline_service.print_this(delay, message))
+	reqs.append(inline_service.print_this(delay, message))
+	reqs.append(inline_service.print_this(delay, message))
 
 	reqs = await asyncio.gather(*reqs)
 
@@ -49,15 +49,15 @@ async def test_inline_concurrency():
 
 @pytest.mark.asyncio
 async def test_tpe_concurrency():
-	remote_worker = axon.client.get_RemoteWorker(f'http://localhost:{axon.config.comms_config.worker_port}')
+	thread_pool_service = axon.client.get_ServiceStub(f'http://localhost:{axon.config.comms_config.worker_port}/thread_pool_service')
 	message = 'hello world!'
 	delay = 1
 
 	start = time.time()
 
 	reqs = []
-	reqs.append(remote_worker.thread_pool_service.print_this(delay, message))
-	reqs.append(remote_worker.thread_pool_service.print_this(delay, message))
+	reqs.append(thread_pool_service.print_this(delay, message))
+	reqs.append(thread_pool_service.print_this(delay, message))
 
 	reqs = await asyncio.gather(*reqs)
 
@@ -69,15 +69,15 @@ async def test_tpe_concurrency():
 
 @pytest.mark.asyncio
 async def test_ppe_concurrency():
-	remote_worker = axon.client.get_RemoteWorker(f'http://localhost:{axon.config.comms_config.worker_port}')
+	process_pool_service = axon.client.get_ServiceStub(f'http://localhost:{axon.config.comms_config.worker_port}/process_pool_service')
 	message = 'hello world!'
 	delay = 1
 
 	start = time.time()
 
 	reqs = []
-	reqs.append(remote_worker.process_pool_service.print_this(delay, message))
-	reqs.append(remote_worker.process_pool_service.print_this(delay, message))
+	reqs.append(process_pool_service.print_this(delay, message))
+	reqs.append(process_pool_service.print_this(delay, message))
 
 	reqs = await asyncio.gather(*reqs)
 
@@ -89,15 +89,15 @@ async def test_ppe_concurrency():
 
 @pytest.mark.asyncio
 async def test_inline_async_concurrency():
-	remote_worker = axon.client.get_RemoteWorker(f'http://localhost:{axon.config.comms_config.worker_port}')
+	inline_service = axon.client.get_ServiceStub(f'http://localhost:{axon.config.comms_config.worker_port}/inline_service')
 	message = 'hello world!'
 	delay = 1
 
 	start = time.time()
 
 	reqs = []
-	reqs.append(remote_worker.inline_service.print_this_async(delay, message))
-	reqs.append(remote_worker.inline_service.print_this_async(delay, message))
+	reqs.append(inline_service.print_this_async(delay, message))
+	reqs.append(inline_service.print_this_async(delay, message))
 
 	reqs = await asyncio.gather(*reqs)
 
@@ -109,15 +109,15 @@ async def test_inline_async_concurrency():
 
 @pytest.mark.asyncio
 async def test_tpe_async_concurrency():
-	remote_worker = axon.client.get_RemoteWorker(f'http://localhost:{axon.config.comms_config.worker_port}')
+	thread_pool_service = axon.client.get_ServiceStub(f'http://localhost:{axon.config.comms_config.worker_port}/thread_pool_service')
 	message = 'hello world!'
 	delay = 1
 
 	start = time.time()
 
 	reqs = []
-	reqs.append(remote_worker.thread_pool_service.print_this_async(delay, message))
-	reqs.append(remote_worker.thread_pool_service.print_this_async(delay, message))
+	reqs.append(thread_pool_service.print_this_async(delay, message))
+	reqs.append(thread_pool_service.print_this_async(delay, message))
 
 	reqs = await asyncio.gather(*reqs)
 
@@ -129,15 +129,15 @@ async def test_tpe_async_concurrency():
 
 @pytest.mark.asyncio
 async def test_ppe_async_concurrency():
-	remote_worker = axon.client.get_RemoteWorker(f'http://localhost:{axon.config.comms_config.worker_port}')
+	process_pool_service = axon.client.get_ServiceStub(f'http://localhost:{axon.config.comms_config.worker_port}/process_pool_service')
 	message = 'hello world!'
 	delay = 1
 
 	start = time.time()
 
 	reqs = []
-	reqs.append(remote_worker.process_pool_service.print_this_async(delay, message))
-	reqs.append(remote_worker.process_pool_service.print_this_async(delay, message))
+	reqs.append(process_pool_service.print_this_async(delay, message))
+	reqs.append(process_pool_service.print_this_async(delay, message))
 
 	reqs = await asyncio.gather(*reqs)
 

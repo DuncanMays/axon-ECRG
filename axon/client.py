@@ -13,9 +13,9 @@ def get_ServiceStub(url, tl=transport_client, stub_type=GenericStub, top_stub_ty
 	profile = tl.call_rpc(url, (), {}).join()
 	url_components = url.split('/')
 	base_url = '/'.join(url_components[:3])
-	return get_ServiceStub_helper(base_url, tl, profile, stub_type, top_stub_type)
+	return make_ServiceStub(base_url, tl, profile, stub_type, top_stub_type)
 
-def get_ServiceStub_helper(url, tl, profile, stub_type, top_stub_type):
+def make_ServiceStub(url, tl, profile, stub_type, top_stub_type):
 
 	attrs = {}
 	keys = list(profile.keys())
@@ -30,7 +30,7 @@ def get_ServiceStub_helper(url, tl, profile, stub_type, top_stub_type):
 
 		if '__profile_flag__' in member:
 			# member is a profile for a ServiceNode
-			attrs[key] = get_ServiceStub_helper(url, tl, member, stub_type, object)
+			attrs[key] = make_ServiceStub(url, tl, member, stub_type, object)
 
 		else:
 			# If a member is not a profile, then it must be an RPC config, and so correspond to a callable object on the worker with no __dict__attribute
@@ -63,10 +63,10 @@ class RemoteWorker():
 		self.tl = tl
 
 		# this will need to be a lookup on a services key to a number of service profiles
-		self.rpcs = get_ServiceStub_helper(url, tl, profile=profile['rpcs'], stub_type=stub_type, top_stub_type=top_stub_type)
+		self.rpcs = make_ServiceStub(url, tl, profile=profile['rpcs'], stub_type=stub_type, top_stub_type=top_stub_type)
 
 		for service_name in profile['services'].keys():
-			s = get_ServiceStub_helper(url, tl, profile=profile['services'][service_name], stub_type=stub_type, top_stub_type=top_stub_type)
+			s = make_ServiceStub(url, tl, profile=profile['services'][service_name], stub_type=stub_type, top_stub_type=top_stub_type)
 			setattr(self, service_name, s)
 
 def get_RemoteWorker(url, tl=transport_client, stub_type=GenericStub, top_stub_type=object):
