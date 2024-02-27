@@ -8,13 +8,13 @@ path.append('..')
 
 import axon
 
-TransportWorker = axon.worker.HTTPTransportWorker
-TransportClient = axon.client.HTTPTransportClient
-url_scheme = 'http'
+# TransportWorker = axon.worker.HTTPTransportWorker
+# TransportClient = axon.client.HTTPTransportClient
+# url_scheme = 'http'
 
-# TransportWorker = axon.socket_worker.SocketTransportWorker
-# TransportClient = axon.socket_client.SocketTransportClient
-# url_scheme = 'ws'
+TransportWorker = axon.socket_worker.SocketTransportWorker
+TransportClient = axon.socket_client.SocketTransportClient
+url_scheme = 'ws'
 
 @pytest.mark.asyncio
 async def test_tl_basic():
