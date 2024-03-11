@@ -84,7 +84,7 @@ class HTTPTransportWorker():
 			(fn, executor) = self.rpcs[path]
 
 			param_str = route_req.form['msg']
-			future = executor.submit(invoke_RPC, fn, param_str)
+			future = executor.submit(invoke_RPC, fn, param_str, in_parallel=True)
 			return future.result()
 
 	def run(self):

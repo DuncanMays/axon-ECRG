@@ -15,7 +15,7 @@ def get_ServiceStub(url, tl=transport_client, stub_type=GenericStub, top_stub_ty
 	base_url = '/'.join(url_components[:3])
 	return make_ServiceStub(base_url, tl, profile, stub_type, top_stub_type)
 
-def make_ServiceStub(url, tl, profile, stub_type, top_stub_type):
+def make_ServiceStub(url, tl, profile, stub_type=GenericStub, top_stub_type=object):
 
 	attrs = {}
 	keys = list(profile.keys())

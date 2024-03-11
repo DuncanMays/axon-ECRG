@@ -158,7 +158,6 @@ def rpc(**configuration):
 def init(port=comms_config.worker_port):
 
 	dtl = default_service_config['tl']
-	# dtl.register_RPC(_get_profile, name='_get_profile', executor=default_service_config['executor'], endpoint_prefix=default_service_config['endpoint_prefix'])
 	profile_endpoint = f"{default_service_config['endpoint_prefix']}/_get_profile"
 	dtl.register_RPC(_get_profile, profile_endpoint, default_service_config['executor'])
 
