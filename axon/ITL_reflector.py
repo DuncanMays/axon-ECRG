@@ -40,8 +40,6 @@ def sock_serve_fn(websocket):
 
 	http_tl.run()
 
-	# time.sleep(4)
-
 def run():
 	with sync_server.serve(sock_serve_fn, '127.0.0.1', 8080) as server:
 		server.serve_forever()
