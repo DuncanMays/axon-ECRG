@@ -4,12 +4,14 @@ path.append('..')
 import axon
 import time
 import pytest
-
 import threading
+import pickle
+
+default_depth = 3
 
 class DummyClass():
 
-	def __init__(self, depth=3):
+	def __init__(self, depth=default_depth):
 		self.child = None
 		self.depth = depth
 
@@ -53,25 +55,52 @@ def test_remove_child_not_live():
 	assert('/test/test_fn' not in s.tl.rpcs)
 	assert('/test/test_fn/__call__' not in s.tl.rpcs)
 
-# def test_add_child_live():
+def test_add_child_live():
 
-# 	port = axon.utils.get_open_port(lower_bound=8003)
-# 	tlw = axon.worker.HTTPTransportWorker(port)
+	port = axon.utils.get_open_port(lower_bound=8003)
+	tlw = axon.worker.HTTPTransportWorker(port)
 
-# 	t = DummyClass()
-# 	s = axon.worker.ServiceNode(t, 'test', tl=tlw)
+	t = DummyClass()
+	s = axon.worker.ServiceNode(t, 'test', tl=tlw)
 
-# 	def test_add_child_rpc(self):
-# 		print('test_add_child_rpc called')
+	worker_thread = threading.Thread(target=tlw.run, daemon=True)
+	worker_thread.start()
+	time.sleep(0.5)
 
-# 	print(port)
+	child = DummyClass()
 
-# 	worker_thread = threading.Thread(target=axon.worker.init(), daemon=True)
-# 	worker_thread.start()
-# 	time.sleep(1)
+	s.add_child('test_add_child', child)
 
-# 	# stub = axon.client.get_ServiceStub(f'http://localhost:{port}/test')
+	stub = axon.client.get_ServiceStub(f'http://localhost:{port}/test')
 
-# 	# print(dir(stub))
+	stub.test_add_child.test_fn().join()
 
-# 	# s.add_child('test_add_child', test_add_child_rpc)
+def test_remove_child_live():
+
+	port = axon.utils.get_open_port(lower_bound=8004)
+	tlw = axon.worker.HTTPTransportWorker(port)
+
+	t = DummyClass()
+	s = axon.worker.ServiceNode(t, 'test', tl=tlw)
+
+	worker_thread = threading.Thread(target=tlw.run, daemon=True)
+	worker_thread.start()
+	time.sleep(0.5)
+
+	# the stub before the child gets removed
+	stub_with_child = axon.client.get_ServiceStub(f'http://localhost:{port}/test')
+
+	s.remove_child('child')
+
+	# recursively checks that all the child's children were removed as well
+	for i in range(default_depth-1):
+		stub_with_child = stub_with_child.child
+
+		with pytest.raises(pickle.UnpicklingError):
+			stub_with_child.test_fn().join()
+
+	# the stub after the child gets removed
+	no_child_stub = axon.client.get_ServiceStub(f'http://localhost:{port}/test')
+
+	# checks that the child attribute has been removed from the stub
+	assert(not hasattr(no_child_stub, 'child'))

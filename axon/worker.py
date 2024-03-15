@@ -175,15 +175,14 @@ def rpc(**configuration):
 
 	return add_to_RPC_node
 
-def init(port=comms_config.worker_port):
+def init(tl=default_service_config['tl']):
 
-	dtl = default_service_config['tl']
 	profile_endpoint = f"{default_service_config['endpoint_prefix']}/_get_profile"
-	dtl.register_RPC(_get_profile, profile_endpoint, default_service_config['executor'])
+	tl.register_RPC(_get_profile, profile_endpoint, default_service_config['executor'])
 
 	tl_threads = []
-	for tl in transport_layers:
-		tl_thread = Thread(target=tl.run, daemon=True)
+	for t in transport_layers:
+		tl_thread = Thread(target=t.run, daemon=True)
 		tl_thread.start()
 		tl_threads.append(tl_thread)
 
