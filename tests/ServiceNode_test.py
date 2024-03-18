@@ -8,6 +8,8 @@ import threading
 import pickle
 
 default_depth = 3
+url_scheme = axon.config.url_scheme
+TransportWorker = type(axon.config.default_service_config['tl'])
 
 class DummyClass():
 
@@ -58,7 +60,7 @@ def test_remove_child_not_live():
 def test_add_child_live():
 
 	port = axon.utils.get_open_port(lower_bound=8003)
-	tlw = axon.worker.HTTPTransportWorker(port)
+	tlw = TransportWorker(port)
 
 	t = DummyClass()
 	s = axon.worker.ServiceNode(t, 'test', tl=tlw)
@@ -71,14 +73,14 @@ def test_add_child_live():
 
 	s.add_child('test_add_child', child)
 
-	stub = axon.client.get_ServiceStub(f'http://localhost:{port}/test')
+	stub = axon.client.get_ServiceStub(f'{url_scheme}://localhost:{port}/test')
 
 	stub.test_add_child.test_fn().join()
 
 def test_remove_child_live():
 
 	port = axon.utils.get_open_port(lower_bound=8004)
-	tlw = axon.worker.HTTPTransportWorker(port)
+	tlw = TransportWorker(port)
 
 	t = DummyClass()
 	s = axon.worker.ServiceNode(t, 'test', tl=tlw)
@@ -88,19 +90,20 @@ def test_remove_child_live():
 	time.sleep(0.5)
 
 	# the stub before the child gets removed
-	stub_with_child = axon.client.get_ServiceStub(f'http://localhost:{port}/test')
+	stub_with_child = axon.client.get_ServiceStub(f'{url_scheme}://localhost:{port}/test')
 
 	s.remove_child('child')
 
 	# recursively checks that all the child's children were removed as well
 	for i in range(default_depth-1):
+		print(i)
 		stub_with_child = stub_with_child.child
 
-		with pytest.raises(pickle.UnpicklingError):
+		with pytest.raises(KeyError):
 			stub_with_child.test_fn().join()
 
 	# the stub after the child gets removed
-	no_child_stub = axon.client.get_ServiceStub(f'http://localhost:{port}/test')
+	no_child_stub = axon.client.get_ServiceStub(f'{url_scheme}://localhost:{port}/test')
 
 	# checks that the child attribute has been removed from the stub
 	assert(not hasattr(no_child_stub, 'child'))

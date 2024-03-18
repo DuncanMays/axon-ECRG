@@ -1,10 +1,12 @@
 import axon
 import threading
 import time
+import pytest
 
 from websockets.sync.client import connect
 from concurrent.futures import ThreadPoolExecutor
 
+url_scheme = axon.config.url_scheme
 reflector = axon.ITL_reflector
 ITL_Worker = axon.ITL_worker.ITL_Worker
 
@@ -20,6 +22,8 @@ class DummyClass():
 
 		return 'all done!'
 
+# @pytest.mark.xfail
+# @pytest.mark.skip
 def test_basic_operation():
 
 	reflector_thread = threading.Thread(target=reflector.run, daemon=True)
@@ -36,10 +40,10 @@ def test_basic_operation():
 	worker_thread.start()
 	time.sleep(1)
 
-	stub = axon.client.get_ServiceStub('http://localhost:8081/reflected_service')
+	stub = axon.client.get_ServiceStub(f'{url_scheme}://localhost:8081/reflected_service')
 
 	reflected_str = 'this is a message sent from client to reflector, then to worker, back through the reflector'
 	response = stub.print_str(reflected_str).join()
 	print(response)
 
-	itlw.close()
+	# itlw.close()

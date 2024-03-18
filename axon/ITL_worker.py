@@ -1,6 +1,5 @@
 import sys
 sys.path.append('..')
-
 from .config import comms_config
 from .transport_worker import invoke_RPC
 from .serializers import serialize, deserialize
@@ -10,6 +9,8 @@ import websockets
 from websockets.sync.client import connect
 import cloudpickle
 import time
+import sys
+import traceback
 
 class ITL_Worker():
 
@@ -17,38 +18,46 @@ class ITL_Worker():
 		self.reflector_url = reflector_url
 		self.rpcs = {}
 
-		# create connection to reflector
-		self.connection = connect(reflector_url)
-
 	def run(self):
 		
 		(fn, _) = self.rpcs['/test_service']
 		profile = fn()
 		profile = serialize(profile)
-		self.connection.send(profile)
 
-		while True:
+		with connect(self.reflector_url) as connection:
+			connection.send(profile)
 
-			req_str = None
-			try:
-				# blocks until a message is recieved
-				req_str = self.connection.recv()
+			while True:
 
-			except(websockets.exceptions.ConnectionClosedOK):
-				self.close()
-				break
+				req_str = None
+				try:
+					# blocks until a message is recieved
+					req_str = connection.recv()
 
-			endpoint, param_str = req_str.split(' ', 1)
-			endpoint = endpoint.replace('//', '/')
+				except(websockets.exceptions.ConnectionClosedOK):
+					self.close()
+					break
 
-			(fn, executor) = self.rpcs[endpoint]
+				return_object = {
+					'errcode': 0,
+					'result': None,
+				}
 
-			future = executor.submit(invoke_RPC, fn, param_str)
+				try:
+					endpoint, param_str = req_str.split(' ', 1)
+					endpoint = endpoint.replace('//', '/')
 
-			self.connection.send(future.result())
+					(fn, executor) = self.rpcs[endpoint]
 
-	def close(self):
-		self.connection.close()
+					future = executor.submit(invoke_RPC, fn, param_str)
+					return_object['result'] = future.result()
+
+				except():
+					return_object['errcode'] = 1
+					return_object['result'] = (traceback.format_exc(), sys.exc_info()[1])
+
+
+				connection.send(serialize(return_object))
 
 	def register_RPC(self, fn, endpoint, executor):
 

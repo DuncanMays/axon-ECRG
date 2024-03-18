@@ -9,6 +9,8 @@ import pytest
 
 default_service_depth = axon.config.default_service_depth
 port = axon.config.comms_config.worker_port
+url_scheme = axon.config.url_scheme
+TransportClient = type(axon.config.default_client_tl)
 
 # the endpoint that our service will be located at
 endpoint = 'test_endpoint_prefix'
@@ -27,8 +29,8 @@ async def test_GenericStub():
 	for i in range(default_service_depth, 0, -1):
 		print('testing GenericStub')
 
-		url=f'http://localhost:{port}/{full_endpoint}/test_fn/__call__'
-		stub = axon.stubs.GenericStub(url=url, tl=axon.transport_client.HTTPTransportClient())
+		url=f'{url_scheme}://localhost:{port}/{full_endpoint}/test_fn/__call__'
+		stub = axon.stubs.GenericStub(url=url, tl=TransportClient())
 		
 		await stub()
 
@@ -44,7 +46,7 @@ async def test_MetaServiceStub():
 		def __init__(self):
 			pass
 
-	url = f'http://localhost:{port}/{endpoint}/{service_name}'
+	url = f'{url_scheme}://localhost:{port}/{endpoint}/{service_name}'
 	worker = axon.client.get_ServiceStub(url, top_stub_type=BaseClass)
 
 	# Tests that the stub is inherited from BaseClass, as specified by kwarg top_stub_type
@@ -77,7 +79,7 @@ async def test_MetaServiceStub():
 async def test_SyncStub():
 	print('test_SyncStub')
 
-	url = f'http://localhost:{port}/{endpoint}/{service_name}'
+	url = f'{url_scheme}://localhost:{port}/{endpoint}/{service_name}'
 	worker = axon.client.get_ServiceStub(url, stub_type=axon.stubs.SyncStub)
 
 	# tests that child stubs are instantiated properly and that their RPCs work

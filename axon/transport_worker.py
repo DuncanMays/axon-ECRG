@@ -32,33 +32,21 @@ def invoke_RPC(target_fn, param_str, in_parallel=True):
 
 	args, kwargs = deserialize(param_str)
 
-	return_object = {
-		'errcode': 0,
-		'result': None,
-	}
+	result = None
 
-	try:
-		result = None
-
-		if not in_parallel:
-			with inline_lock:
-				result = target_fn(*args, **kwargs)
-		else:
+	if not in_parallel:
+		with inline_lock:
 			result = target_fn(*args, **kwargs)
+	else:
+		result = target_fn(*args, **kwargs)
 
-		if inspect.iscoroutine(result):
-			if (event_loop_thread == None) or not (event_loop_thread.is_alive()):
-				start_event_loop_thread()
-				
-			result = asyncio.run_coroutine_threadsafe(result, loop).result()
+	if inspect.iscoroutine(result):
+		if (event_loop_thread == None) or not (event_loop_thread.is_alive()):
+			start_event_loop_thread()
+			
+		result = asyncio.run_coroutine_threadsafe(result, loop).result()
 
-		return_object['result'] = result
-
-	except:
-		return_object['errcode'] = 1
-		return_object['result'] = (traceback.format_exc(), sys.exc_info()[1])
-
-	return serialize(return_object)
+	return result
 
 class HTTPTransportWorker():
 
@@ -80,12 +68,23 @@ class HTTPTransportWorker():
 		@self.app.route('/', defaults={'path': ''}, methods=['POST'])
 		@self.app.route('/<path:path>', methods=['POST'])
 		def catch_all(path):
-			path = '/'+path
-			(fn, executor) = self.rpcs[path]
 
-			param_str = route_req.form['msg']
-			future = executor.submit(invoke_RPC, fn, param_str, in_parallel=True)
-			return future.result()
+			return_object = {
+				'errcode': 0,
+				'result': None,
+			}
+			
+			try:
+				path = '/'+path
+				(fn, executor) = self.rpcs[path]
+
+				param_str = route_req.form['msg']
+				return_object['result'] = executor.submit(invoke_RPC, fn, param_str, in_parallel=True).result()
+			except:
+				return_object['errcode'] = 1
+				return_object['result'] = (traceback.format_exc(), sys.exc_info()[1])
+				
+			return serialize(return_object)
 
 	def run(self):
 		self.app.run(host='0.0.0.0', port=self.port)

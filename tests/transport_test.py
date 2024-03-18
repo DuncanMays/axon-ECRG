@@ -8,13 +8,9 @@ path.append('..')
 
 import axon
 
-# TransportWorker = axon.worker.HTTPTransportWorker
-# TransportClient = axon.client.HTTPTransportClient
-# url_scheme = 'http'
-
-TransportWorker = axon.socket_worker.SocketTransportWorker
-TransportClient = axon.socket_client.SocketTransportClient
-url_scheme = 'ws'
+url_scheme = axon.config.url_scheme
+TransportClient = type(axon.config.default_client_tl)
+TransportWorker = type(axon.config.default_service_config['tl'])
 
 @pytest.mark.asyncio
 async def test_tl_basic():
@@ -67,6 +63,6 @@ async def test_second_tl():
 	assert(result == 'hi there!')
 
 	# the negative test that the service registered with the secondary transport layer does not show up on the primary transport layer
-	rw = axon.client.get_RemoteWorker(f'http://localhost:{axon.config.comms_config.worker_port}')
+	rw = axon.client.get_RemoteWorker(f'{url_scheme}://localhost:{axon.config.comms_config.worker_port}')
 	assert(hasattr(rw, 'test_second_tl_service') == False)
 

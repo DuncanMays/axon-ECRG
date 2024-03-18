@@ -1,13 +1,13 @@
 # the bit that exports worker profile class and uses the RVL
 # an RPC stub is the thing on the client that makes a calling request and waits for the response
 
-from .config import comms_config, default_service_config, default_rpc_endpoint
+from .config import comms_config, default_service_config, default_rpc_endpoint, default_client_tl
 from .stubs import GenericStub
 from .transport_client import GET, HTTPTransportClient
 
 from types import SimpleNamespace
 
-transport_client = HTTPTransportClient()
+transport_client = default_client_tl
 
 def get_ServiceStub(url, tl=transport_client, stub_type=GenericStub, top_stub_type=object):
 	profile = tl.call_rpc(url, (), {}).join()

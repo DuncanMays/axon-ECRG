@@ -5,17 +5,20 @@ import pytest
 import asyncio
 import time
 
+url_scheme = axon.config.url_scheme
+TransportClient = type(axon.config.default_client_tl)
+
 @pytest.mark.asyncio
 async def test_tl_client():
 	print('test_tl_client')
 
 	rpc_name = 'simplex_rpc'
-	url = f'http://localhost:{axon.config.comms_config.worker_port}/{axon.config.default_rpc_endpoint}/{rpc_name}/__call__'
-	tl = axon.transport_client.HTTPTransportClient()
+	url = f'{url_scheme}://localhost:{axon.config.comms_config.worker_port}/{axon.config.default_rpc_endpoint}/{rpc_name}/__call__'
+	tl = TransportClient()
 
 	assert('test passed!' == await tl.call_rpc(url, ('test ', ), {'suffix':'passed!', }))
 
-	url = f'http://localhost:{axon.config.comms_config.worker_port}{axon.config.default_service_config["endpoint_prefix"]}/_get_profile'
+	url = f'{url_scheme}://localhost:{axon.config.comms_config.worker_port}{axon.config.default_service_config["endpoint_prefix"]}/_get_profile'
 	profile = await tl.call_rpc(url, (), {})
 
 	assert('rpcs' in profile)
@@ -25,7 +28,7 @@ async def test_tl_client():
 async def test_RemoteWorker():
 	print('test_RemoteWorker')
 
-	w = axon.client.get_RemoteWorker(f'http://localhost:{axon.config.comms_config.worker_port}')
+	w = axon.client.get_RemoteWorker(f'{url_scheme}://localhost:{axon.config.comms_config.worker_port}')
 
 	print(await w.rpcs.simplex_rpc('simplex test ', suffix='passed'))
 
