@@ -56,5 +56,5 @@ def run(endpoint):
 
 	reflector_node = axon.worker.register_ServiceNode({}, endpoint, tl=http_tl)
 
-	with sync_server.serve(sock_serve_fn, '127.0.0.1', 8080) as server:
+	with sync_server.serve(sock_serve_fn, '0.0.0.0', 8080) as server:
 		server.serve_forever()
