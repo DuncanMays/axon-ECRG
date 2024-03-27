@@ -14,18 +14,43 @@ import traceback
 
 class ITL_Worker():
 
-	def __init__(self, reflector_url):
+	def __init__(self, reflector_url, name):
+		self.name = name
 		self.reflector_url = reflector_url
 		self.rpcs = {}
 
 	def run(self):
+
+		# here we get the worker's profile to send up to the reflector
+		endpoints = self.rpcs.keys()
+
+		# filter out the ones that end in __call__, since they're endpoints for RPCs, not get_profile
+		profile_endpoints = filter(lambda x : not x[::-1].split('/', 1)[0] == '__llac__', endpoints)
+
+		profile = {}
+
+		for pe in profile_endpoints:
+			parent = pe.split('/', 2)[1]
+
+			if parent in profile:
+				if (len(pe) < len(profile[parent])):
+					profile[parent] = pe
+
+			else:
+				profile[parent] = pe
 		
-		(fn, _) = self.rpcs['/test_service']
-		profile = fn()
-		profile = serialize(profile)
+		for service_name in profile:
+			endpoint = profile[service_name]
+			(fn, _) = self.rpcs[endpoint]
+			profile[service_name] = fn()
+
+		profile_str = serialize(profile)
+
+		# this is the first message we'll send the reflector, containing the service name and its profile
+		header_str = str(self.name)+'||'+profile_str
 
 		with connect(self.reflector_url) as connection:
-			connection.send(profile)
+			connection.send(header_str)
 
 			while True:
 
@@ -35,7 +60,9 @@ class ITL_Worker():
 					req_str = connection.recv()
 
 				except(websockets.exceptions.ConnectionClosedOK):
-					self.close()
+					break
+
+				except(websockets.exceptions.ConnectionClosedError):
 					break
 
 				return_object = {

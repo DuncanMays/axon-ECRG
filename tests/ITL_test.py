@@ -22,15 +22,13 @@ class DummyClass():
 
 		return 'all done!'
 
-# @pytest.mark.xfail
-# @pytest.mark.skip
 def test_basic_operation():
 
-	reflector_thread = threading.Thread(target=reflector.run, daemon=True)
+	reflector_thread = threading.Thread(target=reflector.run, args=('reflected_services',), daemon=True)
 	reflector_thread.start()
-	time.sleep(1)
+	time.sleep(0.5)
 
-	itlw = ITL_Worker('ws://localhost:8080')
+	itlw = ITL_Worker('ws://localhost:8080', 'test_worker')
 	tpe = ThreadPoolExecutor(max_workers=10)
 	t = DummyClass()
 
@@ -38,12 +36,9 @@ def test_basic_operation():
 
 	worker_thread = threading.Thread(target=itlw.run, daemon=True)
 	worker_thread.start()
-	time.sleep(1)
+	time.sleep(0.5)
 
-	stub = axon.client.get_ServiceStub(f'{url_scheme}://localhost:8081/reflected_service')
-
-	reflected_str = 'this is a message sent from client to reflector, then to worker, back through the reflector'
-	response = stub.print_str(reflected_str).join()
-	print(response)
-
-	# itlw.close()
+	stub = axon.client.get_ServiceStub(f'{url_scheme}://localhost:8081/reflected_services')
+	reflected_str = 'this is a message sent from client to reflector, then to worker, where it\'s printed to console'
+	response = stub.test_worker.test_service.print_str(reflected_str).join()
+	assert(response == 'all done!')

@@ -73,9 +73,9 @@ class ServiceNode():
 				# Any member with a __dict__ attribute gets a profile, provided it as not been accessed via __call__
 				self.add_child(key, member)
 
-			# elif hasattr(member, '__call__'):
-			# 	# Any member with a __call__ attribute but no __dict__ attribute is represented in profile by an RPC config
-			# 	self.init_RPC(key, member)
+			elif hasattr(member, '__call__'):
+				# Any member with a __call__ attribute but no __dict__ attribute is represented in profile by an RPC config
+				self.init_RPC(key, member)
 
 		# we now register an RPC at the ServiceNode's endpoint to expose its profile
 		# self.tl.register_RPC(self.get_profile, name=self.name, executor=default_service_config['executor'], endpoint_prefix=self.configuration['endpoint_prefix'])
@@ -87,16 +87,17 @@ class ServiceNode():
 
 		child = self.children[child_key]
 
-		# remove all grandchildren
-		grand_child_keys = list(child.children.keys())
-		for grand_child_key in grand_child_keys:
+		if isinstance(child, ServiceNode):
+			# remove all grandchildren
+			grand_child_keys = list(child.children.keys())
+			for grand_child_key in grand_child_keys:
 
-			if (grand_child_key == '__call__'):
-				endpoint = f"{self.configuration['endpoint_prefix']}/{self.name}/{child_key}/{grand_child_key}"
-				self.tl.deregister_RPC(endpoint)
+				if (grand_child_key == '__call__'):
+					endpoint = f"{self.configuration['endpoint_prefix']}/{self.name}/{child_key}/{grand_child_key}"
+					self.tl.deregister_RPC(endpoint)
 
-			else:
-				child.remove_child(grand_child_key)
+				else:
+					child.remove_child(grand_child_key)
 
 		# deregisters the child's profile endpoint
 		profile_endpoint = f"{self.configuration['endpoint_prefix']}/{self.name}/{child_key}"
