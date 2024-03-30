@@ -1,6 +1,7 @@
 # from .config import comms_config
 from .transport_worker import invoke_RPC
 from .serializers import serialize
+from .chunking import send_in_chunks, recv_chunks
 
 from concurrent.futures import ProcessPoolExecutor as PPE
 import websockets.sync.server as sync_server
@@ -13,6 +14,7 @@ class SocketTransportWorker():
 	def __init__(self, port=8001):
 		self.port = port
 		self.rpcs = {}
+		self.maxsize = 100_000
 
 	def run(self):
 		with sync_server.serve(self.sock_serve_fn, '127.0.0.1', self.port) as server:
@@ -26,12 +28,12 @@ class SocketTransportWorker():
 		}
 		
 		try:
-			req_str = websocket.recv()
-			endpoint, param_str = req_str.split(' ', 1)
+			endpoint = websocket.recv()
 			endpoint = endpoint.replace('//', '/')
 
-			(fn, executor) = self.rpcs[endpoint]
+			param_str = recv_chunks(websocket)
 
+			(fn, executor) = self.rpcs[endpoint]
 			future = executor.submit(invoke_RPC, fn, param_str)
 			return_object['result'] = future.result()
 			
@@ -39,7 +41,9 @@ class SocketTransportWorker():
 			return_object['errcode'] = 1
 			return_object['result'] = (traceback.format_exc(), sys.exc_info()[1])
 			
-		websocket.send(serialize(return_object))
+		result_str = serialize(return_object)
+
+		send_in_chunks(websocket, result_str)
 
 	def register_RPC(self, fn, endpoint, executor):
 

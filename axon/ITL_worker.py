@@ -41,10 +41,15 @@ class ITL_Worker():
 		
 		for service_name in profile:
 			endpoint = profile[service_name]
+			print(endpoint)
 			(fn, _) = self.rpcs[endpoint]
 			profile[service_name] = fn()
 
+		# print()
+
 		profile_str = serialize(profile)
+
+		print(len(profile_str))
 
 		# this is the first message we'll send the reflector, containing the service name and its profile
 		header_str = str(self.name)+'||'+profile_str
@@ -53,17 +58,10 @@ class ITL_Worker():
 			connection.send(header_str)
 
 			while True:
+				print('within while loop')
 
-				req_str = None
-				try:
-					# blocks until a message is recieved
-					req_str = connection.recv()
-
-				except(websockets.exceptions.ConnectionClosedOK):
-					break
-
-				except(websockets.exceptions.ConnectionClosedError):
-					break
+				req_str = connection.recv()
+				print('request recieved')
 
 				return_object = {
 					'errcode': 0,
@@ -87,6 +85,8 @@ class ITL_Worker():
 				connection.send(serialize(return_object))
 
 	def register_RPC(self, fn, endpoint, executor):
+
+		print(endpoint)
 
 		if isinstance(executor, PPE):
 			fn = cloudpickle.dumps(fn)
