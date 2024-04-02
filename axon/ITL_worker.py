@@ -3,6 +3,7 @@ sys.path.append('..')
 from .config import comms_config
 from .transport_worker import invoke_RPC
 from .serializers import serialize, deserialize
+from .chunking import send_in_chunks, recv_chunks
 
 from concurrent.futures import ProcessPoolExecutor as PPE
 import websockets
@@ -21,10 +22,10 @@ class ITL_Worker():
 
 	def run(self):
 
-		# here we get the worker's profile to send up to the reflector
-		endpoints = self.rpcs.keys()
+		# here we search through registered RPCs to find any top-level service node's who's profile we send up to the reflector
 
-		# filter out the ones that end in __call__, since they're endpoints for RPCs, not get_profile
+		endpoints = self.rpcs.keys()
+		# filter out the keys that end in __call__, since they're endpoints for RPCs, not get_profile
 		profile_endpoints = filter(lambda x : not x[::-1].split('/', 1)[0] == '__llac__', endpoints)
 
 		profile = {}
@@ -41,11 +42,8 @@ class ITL_Worker():
 		
 		for service_name in profile:
 			endpoint = profile[service_name]
-			print(endpoint)
 			(fn, _) = self.rpcs[endpoint]
 			profile[service_name] = fn()
-
-		# print()
 
 		profile_str = serialize(profile)
 
@@ -58,10 +56,10 @@ class ITL_Worker():
 			connection.send(header_str)
 
 			while True:
-				print('within while loop')
 
-				req_str = connection.recv()
-				print('request recieved')
+				endpoint = connection.recv()
+				endpoint = endpoint.replace('//', '/')
+				param_str = recv_chunks(connection)
 
 				return_object = {
 					'errcode': 0,
@@ -69,9 +67,6 @@ class ITL_Worker():
 				}
 
 				try:
-					endpoint, param_str = req_str.split(' ', 1)
-					endpoint = endpoint.replace('//', '/')
-
 					(fn, executor) = self.rpcs[endpoint]
 
 					future = executor.submit(invoke_RPC, fn, param_str)
@@ -81,12 +76,9 @@ class ITL_Worker():
 					return_object['errcode'] = 1
 					return_object['result'] = (traceback.format_exc(), sys.exc_info()[1])
 
-
-				connection.send(serialize(return_object))
+				send_in_chunks(connection, serialize(return_object))
 
 	def register_RPC(self, fn, endpoint, executor):
-
-		print(endpoint)
 
 		if isinstance(executor, PPE):
 			fn = cloudpickle.dumps(fn)

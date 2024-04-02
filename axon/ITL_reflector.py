@@ -11,6 +11,7 @@ from concurrent.futures import Future
 from .serializers import serialize, deserialize
 from .transport_client import req_executor, error_handler, AsyncResultHandle
 from .config import default_service_config
+from .chunking import send_in_chunks, recv_chunks
 
 TransportWorker = type(default_service_config['tl'])
 http_tl = TransportWorker(8081)
@@ -22,10 +23,12 @@ class ITL_Client():
 		self.socket = socket
 
 	def call_rpc_helper(self, endpoint, args, kwargs):
+
+		self.socket.send(endpoint)
 		param_str = serialize((args, kwargs))
-		req_str = endpoint+' '+param_str
-		self.socket.send(req_str)
-		result_str = self.socket.recv()
+		send_in_chunks(self.socket, param_str)
+
+		result_str = recv_chunks(self.socket)
 		wrapped_result = deserialize(result_str)
 		return error_handler(wrapped_result)
 

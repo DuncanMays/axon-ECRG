@@ -34,7 +34,7 @@ registered_ServiceNodes = {}
 
 def register_ServiceNode(subject, name, depth=default_service_depth, **configuration):
 
-	s = ServiceNode(subject, name, depth=default_service_depth, **configuration)
+	s = ServiceNode(subject, name, depth=depth, **configuration)
 	registered_ServiceNodes[name] = s
 	return s
 
