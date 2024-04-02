@@ -47,7 +47,7 @@ class ITL_Worker():
 
 		profile_str = serialize(profile)
 
-		print(len(profile_str))
+		# print(len(profile_str))
 
 		# this is the first message we'll send the reflector, containing the service name and its profile
 		header_str = str(self.name)+'||'+profile_str
@@ -56,15 +56,19 @@ class ITL_Worker():
 			connection.send(header_str)
 
 			while True:
+				# print('in loop')
 
 				endpoint = connection.recv()
 				endpoint = endpoint.replace('//', '/')
+				# print(f'endpoint: {endpoint}')
 				param_str = recv_chunks(connection)
 
 				return_object = {
 					'errcode': 0,
 					'result': None,
 				}
+
+				# print('executing')
 
 				try:
 					(fn, executor) = self.rpcs[endpoint]
@@ -75,6 +79,8 @@ class ITL_Worker():
 				except():
 					return_object['errcode'] = 1
 					return_object['result'] = (traceback.format_exc(), sys.exc_info()[1])
+
+				# print('sending results back')
 
 				send_in_chunks(connection, serialize(return_object))
 
