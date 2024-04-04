@@ -34,6 +34,14 @@ async def test_tl_basic():
 	assert(result == 'hello!')
 
 @pytest.mark.asyncio
+async def test_error_catching():
+	url = f'{url_scheme}://localhost:{axon.config.comms_config.worker_port}/rpc'
+	ss = axon.client.get_ServiceStub(url)
+
+	with pytest.raises(BaseException):
+		await ss.throw_error()
+
+@pytest.mark.asyncio
 async def test_second_tl():
 
 	port = axon.utils.get_open_port(lower_bound=8002)

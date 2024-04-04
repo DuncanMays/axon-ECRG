@@ -10,6 +10,10 @@ from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 def simplex_rpc(prefix, suffix='simplex test failed'):
 	return prefix+suffix
 
+@axon.worker.rpc()
+def throw_error():
+	raise BaseException('Calling this RPC will raise an error')
+
 class TestClass():
 	def __init__(self, depth=1):
 		self.depth = depth
