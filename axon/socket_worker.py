@@ -21,11 +21,6 @@ class SocketTransportWorker():
 			server.serve_forever()
 
 	def sock_serve_fn(self, websocket):
-
-		return_object = {
-			'errcode': 0,
-			'result': None,
-		}
 		
 		try:
 			endpoint = websocket.recv()
@@ -34,14 +29,13 @@ class SocketTransportWorker():
 			param_str = recv_chunks(websocket)
 
 			(fn, executor) = self.rpcs[endpoint]
-			future = executor.submit(invoke_RPC, fn, param_str)
-			return_object['result'] = future.result()
+			result_str = executor.submit(invoke_RPC, fn, param_str).result()
+			result_str = f'0|{result_str}'
 			
 		except:
-			return_object['errcode'] = 1
-			return_object['result'] = (traceback.format_exc(), sys.exc_info()[1])
+			result_str = serialize((traceback.format_exc(), sys.exc_info()[1]))
+			result_str = f'1|{result_str}'
 			
-		result_str = serialize(return_object)
 
 		send_in_chunks(websocket, result_str)
 

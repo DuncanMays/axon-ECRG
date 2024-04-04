@@ -10,14 +10,16 @@ class SocketTransportClient():
 		self.maxsize = 100_000
 
 	def call_rpc_helper(self, url_head, endpoint, param_str):
+		result = None
 
 		with connect(url_head) as socket:
 			socket.send(endpoint)
 			send_in_chunks(socket, param_str)
 			result_str = recv_chunks(socket)
-			return_obj = deserialize(result_str)
+			result_str = error_handler(result_str)
+			result = deserialize(result_str)
 
-		return error_handler(return_obj)
+		return result
 
 	def call_rpc(self, url, args, kwargs):
 

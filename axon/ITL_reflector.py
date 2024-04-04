@@ -29,8 +29,8 @@ class ITL_Client():
 		send_in_chunks(self.socket, param_str)
 
 		result_str = recv_chunks(self.socket)
-		wrapped_result = deserialize(result_str)
-		return error_handler(wrapped_result)
+		result_str = error_handler(result_str)
+		return deserialize(result_str)
 
 	def call_rpc(self, endpoint, args, kwargs):
 		future = req_executor.submit(self.call_rpc_helper, endpoint, args, kwargs)

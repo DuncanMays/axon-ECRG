@@ -46,7 +46,7 @@ def invoke_RPC(target_fn, param_str, in_parallel=True):
 			
 		result = asyncio.run_coroutine_threadsafe(result, loop).result()
 
-	return result
+	return serialize(result)
 
 class HTTPTransportWorker():
 
@@ -68,23 +68,20 @@ class HTTPTransportWorker():
 		@self.app.route('/', defaults={'path': ''}, methods=['POST'])
 		@self.app.route('/<path:path>', methods=['POST'])
 		def catch_all(path):
-
-			return_object = {
-				'errcode': 0,
-				'result': None,
-			}
 			
 			try:
 				path = '/'+path
 				(fn, executor) = self.rpcs[path]
 
 				param_str = route_req.form['msg']
-				return_object['result'] = executor.submit(invoke_RPC, fn, param_str, in_parallel=True).result()
+				result_str = executor.submit(invoke_RPC, fn, param_str, in_parallel=True).result()
+				result_str = f'0|{result_str}'
+
 			except:
-				return_object['errcode'] = 1
-				return_object['result'] = (traceback.format_exc(), sys.exc_info()[1])
+				result_str = serialize((traceback.format_exc(), sys.exc_info()[1]))
+				result_str = f'1|{result_str}'
 				
-			return serialize(return_object)
+			return result_str
 
 	def run(self):
 		self.app.run(host='0.0.0.0', port=self.port)

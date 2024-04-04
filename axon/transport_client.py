@@ -10,10 +10,12 @@ req_executor = futures.ThreadPoolExecutor(max_workers=100)
 http = urllib3.PoolManager()
 
 # this function checks if an error flag has been set and raises the corresponding error if it has
-def error_handler(return_obj):
-	if (return_obj['errcode'] == 1):
+def error_handler(result_str):
+	err_code, result_str = result_str.split('|', 1)
+
+	if (err_code == '1'):
 		# an error occured in worker, raise it
-		(error_info, error) = return_obj['result']
+		(error_info, error) = deserialize(result_str)
 
 		print('the following error occured in worker:')
 		print(error_info)
@@ -21,7 +23,7 @@ def error_handler(return_obj):
 
 	else:
 		# returns the result
-		return return_obj['result']
+		return result_str
 
 class AsyncResultHandle():
 
@@ -75,8 +77,8 @@ class HTTPTransportClient():
 
 	def call_rpc_helper(self, url, data):
 		resp = http.request('POST', url, fields=data)
-		return_obj = deserialize(resp.data.decode())
-		return error_handler(return_obj)
+		result_str = error_handler(resp.data.decode())
+		return deserialize(result_str)
 
 	def call_rpc(self, url, args, kwargs):
 		future = req_executor.submit(self.call_rpc_helper, url, {'msg': serialize((args, kwargs))})
