@@ -4,7 +4,7 @@ sys.path.append('..')
 import axon
 import time
 import threading
-import websockets.sync.server as sync_server
+import websockets
 
 from concurrent.futures import Future
 
@@ -19,22 +19,32 @@ reflector_node = None
 
 class ITL_Client():
 
-	def __init__(self, socket):
+	def __init__(self, socket, name):
 		self.socket = socket
+		self.name = name
 
 	def call_rpc_helper(self, endpoint, args, kwargs):
 
-		self.socket.send(endpoint)
-		param_str = serialize((args, kwargs))
-		send_in_chunks(self.socket, param_str)
+		try:
+			self.socket.send(endpoint)
+			param_str = serialize((args, kwargs))
+			send_in_chunks(self.socket, param_str)
 
-		result_str = recv_chunks(self.socket)
-		result_str = error_handler(result_str)
-		return deserialize(result_str)
+			result_str = recv_chunks(self.socket)
+			result_str = error_handler(result_str)
+			return deserialize(result_str)
+
+		except(websockets.ConnectionClosed) as e:
+			self.on_close()
+			raise e
 
 	def call_rpc(self, endpoint, args, kwargs):
 		future = req_executor.submit(self.call_rpc_helper, endpoint, args, kwargs)
 		return AsyncResultHandle(future)
+
+	def on_close(self):
+		global reflector_node
+		reflector_node.remove_child(self.name)
 
 def sock_serve_fn(websocket):
 	global http_tl, reflector_node
@@ -43,12 +53,13 @@ def sock_serve_fn(websocket):
 	name, profile_str = header_str.split('||', 1)
 	profile = deserialize(profile_str)
 
-	itl = ITL_Client(websocket)
+	itl = ITL_Client(websocket, name)
 	stub = axon.client.make_ServiceStub('', itl, profile, stub_type=axon.stubs.SyncStub)
-	reflector_node.add_child(name, stub) 
+	reflector_node.add_child(name, stub)
 
 	# blocks until the worker closes the connection
-	time.sleep(1_000_000)
+	while True:
+		time.sleep(1_000_000)
 
 def run(endpoint):
 	global http_tl, reflector_node
@@ -59,5 +70,5 @@ def run(endpoint):
 
 	reflector_node = axon.worker.register_ServiceNode({}, endpoint, tl=http_tl)
 
-	with sync_server.serve(sock_serve_fn, '0.0.0.0', 8080) as server:
+	with websockets.sync.server.serve(sock_serve_fn, '0.0.0.0', 8080) as server:
 		server.serve_forever()
