@@ -81,6 +81,9 @@ class HTTPTransportClient():
 		return deserialize(result_str)
 
 	def call_rpc(self, url, args, kwargs):
+
+		# checks if the url has a port specified, and if no, use the default
+
 		future = req_executor.submit(self.call_rpc_helper, url, {'msg': serialize((args, kwargs))})
 		return AsyncResultHandle(future)
 

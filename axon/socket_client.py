@@ -25,7 +25,7 @@ class SocketTransportClient():
 
 		# split the endpoint from the url
 		url_components = url.split('/')
-		url_head = '/'.join(url_components[:3])
+		url_head = '/'.join(url_components[:3])		
 		endpoint = '/' + '/'.join(url_components[3:])
 
 		param_str = serialize((args, kwargs))

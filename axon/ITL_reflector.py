@@ -38,7 +38,11 @@ class ITL_Client():
 			self.on_close()
 			raise e
 
-	def call_rpc(self, endpoint, args, kwargs):
+	def call_rpc(self, url, args, kwargs):
+		url_components = url.split('/')
+		url_head = '/'.join(url_components[:3])		
+		endpoint = '/' + '/'.join(url_components[3:])
+
 		future = req_executor.submit(self.call_rpc_helper, endpoint, args, kwargs)
 		return AsyncResultHandle(future)
 
@@ -54,7 +58,7 @@ def sock_serve_fn(websocket):
 	profile = deserialize(profile_str)
 
 	itl = ITL_Client(websocket, name)
-	stub = axon.client.make_ServiceStub('', itl, profile, stub_type=axon.stubs.SyncStub)
+	stub = axon.client.make_ServiceStub('ws://none:0000', itl, profile, stub_type=axon.stubs.SyncStub)
 	reflector_node.add_child(name, stub)
 
 	# blocks until the worker closes the connection
