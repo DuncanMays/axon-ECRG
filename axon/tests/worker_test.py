@@ -1,6 +1,3 @@
-from sys import path
-path.append('..')
-
 import axon
 import asyncio
 import time

@@ -3,9 +3,6 @@ import threading
 import asyncio
 import time
 
-from sys import path
-path.append('..')
-
 import axon
 
 url_scheme = axon.config.url_scheme

@@ -1,9 +1,8 @@
 # the bit that listens idly and serves RPCs
 # and executor is the thing that takes a function, and executes it in a thread/process and returns the result as response or even another HTTP req entirely
 
-from .utils import overwrite
-from .config import comms_config, default_rpc_endpoint, default_service_config, default_service_depth
-from .transport_worker import HTTPTransportWorker
+from axon.utils import overwrite
+from axon.config import comms_config, default_rpc_endpoint, default_service_config, default_service_depth
 
 from copy import copy
 from threading import Thread

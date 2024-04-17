@@ -4,7 +4,7 @@ import concurrent.futures as futures
 import threading
 import inspect
 
-from .serializers import serialize, deserialize
+from axon.serializers import serialize, deserialize
 
 req_executor = futures.ThreadPoolExecutor(max_workers=100)
 http = urllib3.PoolManager()
@@ -22,7 +22,6 @@ def error_handler(result_str):
 		raise(error)
 
 	else:
-		# returns the result
 		return result_str
 
 class AsyncResultHandle():
@@ -69,21 +68,3 @@ def GET(url, timeout=None):
 	future = req_executor.submit(GET_thread_fn, url)
 	x = future.result()
 	return x.status, x.data.decode()
-
-class HTTPTransportClient():
-
-	def __init__(self):
-		pass
-
-	def call_rpc_helper(self, url, data):
-		resp = http.request('POST', url, fields=data)
-		result_str = error_handler(resp.data.decode())
-		return deserialize(result_str)
-
-	def call_rpc(self, url, args, kwargs):
-
-		# checks if the url has a port specified, and if no, use the default
-
-		future = req_executor.submit(self.call_rpc_helper, url, {'msg': serialize((args, kwargs))})
-		return AsyncResultHandle(future)
-
