@@ -4,6 +4,8 @@ import concurrent.futures as futures
 import threading
 import inspect
 
+from abc import ABC, abstractmethod
+
 from axon.serializers import serialize, deserialize
 
 req_executor = futures.ThreadPoolExecutor(max_workers=100)
@@ -68,3 +70,9 @@ def GET(url, timeout=None):
 	future = req_executor.submit(GET_thread_fn, url)
 	x = future.result()
 	return x.status, x.data.decode()
+
+class AbstractTransportClient(ABC):
+
+	@abstractmethod
+	def call_rpc(self, url, args, kwargs):
+		pass
