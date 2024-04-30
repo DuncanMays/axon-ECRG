@@ -4,6 +4,7 @@ from flask import Flask
 from flask import request as route_req
 from concurrent.futures import ProcessPoolExecutor as PPE
 from threading import Thread, Lock
+from abc import ABC, abstractmethod
 
 import sys
 import logging
@@ -49,3 +50,17 @@ def invoke_RPC(target_fn, param_str, in_parallel=True):
 		result = asyncio.run_coroutine_threadsafe(result, loop).result()
 
 	return serialize(result)
+
+class AbstractTransportWorker(ABC):
+
+	@abstractmethod
+	def run(self):
+		pass
+
+	@abstractmethod
+	def register_RPC(self, fn, endpoint, executor):
+		pass
+
+	@abstractmethod
+	def deregister_RPC(self, endpoint):
+		pass

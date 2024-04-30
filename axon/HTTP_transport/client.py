@@ -2,9 +2,9 @@ from sys import path
 path.append('..')
 
 from axon.serializers import serialize, deserialize
-from axon.transport_client import http, req_executor, error_handler, AsyncResultHandle
+from axon.transport_client import AbstractTransportClient, http, req_executor, error_handler, AsyncResultHandle
 
-class HTTPTransportClient():
+class HTTPTransportClient(AbstractTransportClient):
 
 	def __init__(self):
 		pass

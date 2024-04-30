@@ -9,6 +9,13 @@ url_scheme = axon.config.url_scheme
 TransportClient = type(axon.config.default_client_tl)
 TransportWorker = type(axon.config.default_service_config['tl'])
 
+@pytest.mark.tl
+def test_inheritance():
+
+	assert(isinstance(axon.config.default_client_tl, axon.transport_client.AbstractTransportClient))
+	assert(isinstance(axon.config.default_service_config['tl'], axon.transport_worker.AbstractTransportWorker))
+
+@pytest.mark.tl
 @pytest.mark.asyncio
 async def test_tl_basic():
 
@@ -30,6 +37,7 @@ async def test_tl_basic():
 	result = await tlc.call_rpc(url, ('hello!', ), {})
 	assert(result == 'hello!')
 
+@pytest.mark.tl
 @pytest.mark.asyncio
 async def test_error_catching():
 	url = f'{url_scheme}://localhost:{axon.config.comms_config.worker_port}/rpc'
@@ -38,6 +46,7 @@ async def test_error_catching():
 	with pytest.raises(BaseException):
 		await ss.throw_error()
 
+@pytest.mark.tl
 @pytest.mark.asyncio
 async def test_second_tl():
 

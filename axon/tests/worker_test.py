@@ -8,6 +8,7 @@ import pytest
 url_scheme = axon.config.url_scheme
 time_safety_magin = 0.1
 
+@pytest.mark.tl
 @pytest.mark.asyncio
 async def test_invokation():
 	remote_worker = axon.client.get_RemoteWorker(f'{url_scheme}://localhost:{axon.config.comms_config.worker_port}')
@@ -24,7 +25,7 @@ async def test_invokation():
 
 	print('test_invokation complete!')
 
-
+@pytest.mark.tl
 @pytest.mark.asyncio
 async def test_inline_concurrency():
 	inline_service = axon.client.get_ServiceStub(f'{url_scheme}://localhost:{axon.config.comms_config.worker_port}/inline_service')
@@ -45,6 +46,7 @@ async def test_inline_concurrency():
 	assert(abs(delay - 2) < time_safety_magin)
 	print('test_inline_concurrency complete!')
 
+@pytest.mark.tl
 @pytest.mark.asyncio
 async def test_tpe_concurrency():
 	thread_pool_service = axon.client.get_ServiceStub(f'{url_scheme}://localhost:{axon.config.comms_config.worker_port}/thread_pool_service')
@@ -65,6 +67,7 @@ async def test_tpe_concurrency():
 	assert(abs(delay - 1) < time_safety_magin)
 	print('test_tpe_concurrency complete!')
 
+@pytest.mark.tl
 @pytest.mark.asyncio
 async def test_ppe_concurrency():
 	process_pool_service = axon.client.get_ServiceStub(f'{url_scheme}://localhost:{axon.config.comms_config.worker_port}/process_pool_service')
@@ -85,6 +88,7 @@ async def test_ppe_concurrency():
 	assert(abs(delay - 1) < time_safety_magin)
 	print('test_ppe_concurrency complete!')
 
+@pytest.mark.tl
 @pytest.mark.asyncio
 async def test_inline_async_concurrency():
 	inline_service = axon.client.get_ServiceStub(f'{url_scheme}://localhost:{axon.config.comms_config.worker_port}/inline_service')
@@ -105,6 +109,7 @@ async def test_inline_async_concurrency():
 	assert(abs(delay - 1) < time_safety_magin)
 	print('test_inline_async_concurrency complete!')
 
+@pytest.mark.tl
 @pytest.mark.asyncio
 async def test_tpe_async_concurrency():
 	thread_pool_service = axon.client.get_ServiceStub(f'{url_scheme}://localhost:{axon.config.comms_config.worker_port}/thread_pool_service')
@@ -125,6 +130,7 @@ async def test_tpe_async_concurrency():
 	assert(abs(delay - 1) < time_safety_magin)
 	print('test_tpe_async_concurrency complete!')
 
+@pytest.mark.tl
 @pytest.mark.asyncio
 async def test_ppe_async_concurrency():
 	process_pool_service = axon.client.get_ServiceStub(f'{url_scheme}://localhost:{axon.config.comms_config.worker_port}/process_pool_service')

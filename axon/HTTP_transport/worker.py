@@ -9,10 +9,10 @@ import traceback
 import logging
 import cloudpickle
 
-from axon.transport_worker import invoke_RPC
+from axon.transport_worker import AbstractTransportWorker, invoke_RPC
 from axon.serializers import serialize
 
-class HTTPTransportWorker():
+class HTTPTransportWorker(AbstractTransportWorker):
 
 	def __init__(self, port):
 		# all RPCs registered with this TL are stored here in this dict

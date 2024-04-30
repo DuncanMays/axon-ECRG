@@ -7,6 +7,7 @@ import time
 url_scheme = axon.config.url_scheme
 TransportClient = type(axon.config.default_client_tl)
 
+@pytest.mark.tl
 @pytest.mark.asyncio
 async def test_tl_client():
 	print('test_tl_client')
