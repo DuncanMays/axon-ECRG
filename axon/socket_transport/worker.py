@@ -1,15 +1,15 @@
-# from .config import comms_config
-from .transport_worker import invoke_RPC
-from .serializers import serialize
-from .chunking import send_in_chunks, recv_chunks
+from axon.transport_worker import AbstractTransportWorker, invoke_RPC
+from axon.serializers import serialize
+from axon.chunking import send_in_chunks, recv_chunks
 
 from concurrent.futures import ProcessPoolExecutor as PPE
+
 import websockets.sync.server as sync_server
 import cloudpickle
 import sys
 import traceback
 
-class SocketTransportWorker():
+class SocketTransportWorker(AbstractTransportWorker):
 
 	def __init__(self, port=8001):
 		self.port = port

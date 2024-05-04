@@ -4,8 +4,6 @@ import axon.discovery
 import axon.stubs
 import axon.utils
 import axon.worker
-import axon.socket_client
-import axon.socket_worker
 
 import axon.ITL_reflector
 import axon.ITL_worker

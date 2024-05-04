@@ -1,10 +1,13 @@
+from sys import path
+path.append('..')
+
+from axon.serializers import serialize, deserialize
+from axon.transport_client import AbstractTransportClient, req_executor, error_handler, AsyncResultHandle
+from axon.chunking import send_in_chunks, recv_chunks
+
 from websockets.sync.client import connect
 
-from .serializers import serialize, deserialize
-from .transport_client import req_executor, error_handler, AsyncResultHandle
-from .chunking import send_in_chunks, recv_chunks
-
-class SocketTransportClient():
+class SocketTransportClient(AbstractTransportClient):
 
 	def __init__(self):
 		self.maxsize = 100_000

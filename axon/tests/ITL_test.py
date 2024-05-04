@@ -28,7 +28,7 @@ def test_basic_operation():
 	reflector_thread.start()
 	time.sleep(0.5)
 
-	itlw = ITL_Worker('ws://localhost:8080', 'test_worker')
+	itlw = ITL_Worker('ws://localhost:8008', 'test_worker')
 	tpe = ThreadPoolExecutor(max_workers=10)
 	t = DummyClass()
 

@@ -7,6 +7,7 @@ import inspect
 from abc import ABC, abstractmethod
 
 from axon.serializers import serialize, deserialize
+# from axon.HTTP_transport.config import scheme
 
 req_executor = futures.ThreadPoolExecutor(max_workers=100)
 http = urllib3.PoolManager()

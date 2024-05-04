@@ -1,10 +1,8 @@
 from types import SimpleNamespace
 from axon.inline_executor import InlineExecutor
 
-from axon.socket_worker import SocketTransportWorker
-from axon.socket_client import SocketTransportClient
-
 import axon.HTTP_transport as transport
+# import axon.socket_transport as transport
 
 inline_executor = InlineExecutor()
 

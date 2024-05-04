@@ -5,6 +5,7 @@ import axon
 import time
 import threading
 import websockets
+from websockets.sync.server import serve as sync_serve
 
 from concurrent.futures import Future
 
@@ -74,5 +75,5 @@ def run(endpoint):
 
 	reflector_node = axon.worker.register_ServiceNode({}, endpoint, tl=http_tl)
 
-	with websockets.sync.server.serve(sock_serve_fn, '0.0.0.0', 8080) as server:
+	with sync_serve(sock_serve_fn, '0.0.0.0', 8008) as server:
 		server.serve_forever()
