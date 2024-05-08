@@ -10,7 +10,10 @@ TransportClient = type(axon.config.default_client_tl)
 TransportWorker = type(axon.config.default_service_config['tl'])
 
 @pytest.mark.tl
-def test_inheritance():
+def test_interface_compliance():
+
+	assert(hasattr(axon.config.transport.config, 'port'))
+	assert(hasattr(axon.config.transport.config, 'scheme'))
 
 	assert(isinstance(axon.config.default_client_tl, axon.transport_client.AbstractTransportClient))
 	assert(isinstance(axon.config.default_service_config['tl'], axon.transport_worker.AbstractTransportWorker))
@@ -40,7 +43,7 @@ async def test_tl_basic():
 @pytest.mark.tl
 @pytest.mark.asyncio
 async def test_error_catching():
-	url = f'{url_scheme}://localhost:{axon.config.comms_config.worker_port}/rpc'
+	url = f'{url_scheme}://localhost:{axon.config.transport.config.port}/rpc'
 	ss = axon.client.get_ServiceStub(url)
 
 	with pytest.raises(BaseException):
@@ -77,6 +80,6 @@ async def test_second_tl():
 	assert(result == 'hi there!')
 
 	# the negative test that the service registered with the secondary transport layer does not show up on the primary transport layer
-	rw = axon.client.get_RemoteWorker(f'{url_scheme}://localhost:{axon.config.comms_config.worker_port}')
+	rw = axon.client.get_RemoteWorker(f'{url_scheme}://localhost:{axon.config.transport.config.port}')
 	assert(hasattr(rw, 'test_second_tl_service') == False)
 

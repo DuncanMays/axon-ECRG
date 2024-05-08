@@ -11,10 +11,11 @@ import cloudpickle
 
 from axon.transport_worker import AbstractTransportWorker, invoke_RPC
 from axon.serializers import serialize
+from axon.HTTP_transport import config
 
 class HTTPTransportWorker(AbstractTransportWorker):
 
-	def __init__(self, port):
+	def __init__(self, port=config.port):
 		# all RPCs registered with this TL are stored here in this dict
 		self.rpcs = {}
 

@@ -1,8 +1,9 @@
 from .transport_client import GET, POST
-from .config import comms_config
+from .config import transport
 from .utils import get_self_ip
 from .serializers import deserialize
 from .notice_board_app import NoticeBoard
+from .config import comms_config
 
 from flask import Flask
 from flask import request as route_req
@@ -10,7 +11,7 @@ import requests, aiohttp
 import asyncio 
 
 # broadcasts to all IPs on the LAN, and returns a list of the IPs that provide a response
-async def broadcast_discovery(node_type='*', port=comms_config.worker_port, num_hosts=-1, timeout=10):
+async def broadcast_discovery(node_type='*', port=transport.config.port, num_hosts=-1, timeout=10):
 	self_ip = get_self_ip()
 	# the first three numbers of the ip address, representing the LAN address
 	base_addr = '.'.join(self_ip.split('.')[:-1])+'.'

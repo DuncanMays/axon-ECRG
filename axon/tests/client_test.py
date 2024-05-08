@@ -1,4 +1,5 @@
 from axon import axon
+from types import SimpleNamespace
 
 import pytest
 import asyncio
@@ -6,6 +7,7 @@ import time
 
 url_scheme = axon.config.url_scheme
 TransportClient = type(axon.config.default_client_tl)
+tl_config = axon.config.transport.config
 
 @pytest.mark.tl
 @pytest.mark.asyncio
@@ -13,22 +15,37 @@ async def test_tl_client():
 	print('test_tl_client')
 
 	rpc_name = 'simplex_rpc'
-	url = f'{url_scheme}://localhost:{axon.config.comms_config.worker_port}/{axon.config.default_rpc_endpoint}/{rpc_name}/__call__'
+	url = f'{url_scheme}://localhost:{tl_config.port}/{axon.config.default_rpc_endpoint}/{rpc_name}/__call__'
 	tl = TransportClient()
 
 	assert('test passed!' == await tl.call_rpc(url, ('test ', ), {'suffix':'passed!', }))
 
-	url = f'{url_scheme}://localhost:{axon.config.comms_config.worker_port}{axon.config.default_service_config["endpoint_prefix"]}/_get_profile'
+	url = f'{url_scheme}://localhost:{tl_config.port}{axon.config.default_service_config["endpoint_prefix"]}/_get_profile'
 	profile = await tl.call_rpc(url, (), {})
 
 	assert('rpcs' in profile)
 	assert('simplex_rpc' in profile['rpcs'])
 
+url_shorthand_test_cases = [('http://localhost:50/endpoint', 'http://localhost:50/endpoint'), ('http://localhost:50/endpoint', 'http://localhost/endpoint'), ('http://localhost:50/endpoint', 'localhost:50/endpoint'), ('http://localhost:50/endpoint', 'localhost/endpoint')]
+url_shorthand_test_cases += [('http://192.168.2.0:50/endpoint', 'http://192.168.2.0:50/endpoint'), ('http://192.168.2.0:50/endpoint', 'http://192.168.2.0/endpoint'), ('http://192.168.2.0:50/endpoint', '192.168.2.0:50/endpoint'), ('http://192.168.2.0:50/endpoint', '192.168.2.0/endpoint')]
+url_shorthand_test_cases += [('http://www.google.com:50/endpoint', 'http://www.google.com:50/endpoint'), ('http://www.google.com:50/endpoint', 'http://www.google.com/endpoint'), ('http://www.google.com:50/endpoint', 'www.google.com:50/endpoint'), ('http://www.google.com:50/endpoint', 'www.google.com/endpoint')]
+
+@pytest.mark.parametrize("expected, shorthand", url_shorthand_test_cases)
+def test_url_shorthand(expected, shorthand):
+	print('test_url_shorthand')
+
+	config = SimpleNamespace(
+		port=50,
+		scheme='http'
+	)
+
+	assert axon.stubs.add_url_defaults(shorthand, config) == expected
+
 @pytest.mark.asyncio
 async def test_RemoteWorker():
 	print('test_RemoteWorker')
 
-	w = axon.client.get_RemoteWorker(f'{url_scheme}://localhost:{axon.config.comms_config.worker_port}')
+	w = axon.client.get_RemoteWorker(f'{url_scheme}://localhost:{tl_config.port}')
 
 	print(await w.rpcs.simplex_rpc('simplex test ', suffix='passed'))
 

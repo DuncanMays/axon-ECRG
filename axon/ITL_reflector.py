@@ -39,6 +39,10 @@ class ITL_Client():
 			self.on_close()
 			raise e
 
+	def get_config(self):
+		# the ITL client sends requests through an already established socket connection, so config info like the port number and scheme don't exist
+		return None
+
 	def call_rpc(self, url, args, kwargs):
 		url_components = url.split('/')
 		url_head = '/'.join(url_components[:3])		

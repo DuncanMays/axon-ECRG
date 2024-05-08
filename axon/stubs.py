@@ -1,13 +1,14 @@
 from urllib.parse import urlparse, urlunparse
 
-from .config import comms_config, default_rpc_endpoint
+def add_url_defaults(url, config):
+	
+	if '://' not in url:
+		url = config.scheme+'://'+url
 
-# sets the port in url if none are specified
-def set_port(url, default_port=comms_config.worker_port):
 	comps = urlparse(url)
 
 	if (comps.port == None):
-		netloc = f'{comps.hostname}:{default_port}'
+		netloc = f'{comps.hostname}:{config.port}'
 		url = urlunparse((comps.scheme, netloc, comps.path, '','' ,  ''))
 
 	return url
@@ -15,7 +16,7 @@ def set_port(url, default_port=comms_config.worker_port):
 class GenericStub():
 
 	def __init__(self, tl, url):
-		self.url = set_port(url)
+		self.url = add_url_defaults(url, tl.get_config())
 		self.tl = tl
 
 	def __call__(self, *args, **kwargs):

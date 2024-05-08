@@ -1,6 +1,7 @@
 from axon.transport_worker import AbstractTransportWorker, invoke_RPC
 from axon.serializers import serialize
 from axon.chunking import send_in_chunks, recv_chunks
+from axon.socket_transport import config
 
 from concurrent.futures import ProcessPoolExecutor as PPE
 
@@ -11,7 +12,7 @@ import traceback
 
 class SocketTransportWorker(AbstractTransportWorker):
 
-	def __init__(self, port=8001):
+	def __init__(self, port=config.port):
 		self.port = port
 		self.rpcs = {}
 		self.maxsize = 100_000

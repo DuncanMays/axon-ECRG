@@ -1,6 +1,6 @@
 import sys
 sys.path.append('..')
-from .config import comms_config
+
 from .transport_worker import invoke_RPC
 from .serializers import serialize, deserialize
 from .chunking import send_in_chunks, recv_chunks

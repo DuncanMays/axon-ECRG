@@ -7,7 +7,6 @@ import inspect
 from abc import ABC, abstractmethod
 
 from axon.serializers import serialize, deserialize
-# from axon.HTTP_transport.config import scheme
 
 req_executor = futures.ThreadPoolExecutor(max_workers=100)
 http = urllib3.PoolManager()
@@ -73,6 +72,10 @@ def GET(url, timeout=None):
 	return x.status, x.data.decode()
 
 class AbstractTransportClient(ABC):
+
+	@abstractmethod
+	def get_config(self):
+		pass
 
 	@abstractmethod
 	def call_rpc(self, url, args, kwargs):

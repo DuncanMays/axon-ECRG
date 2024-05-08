@@ -5,7 +5,7 @@ import json
 import pytest
 
 default_service_depth = axon.config.default_service_depth
-port = axon.config.comms_config.worker_port
+port = axon.config.transport.config.port
 url_scheme = axon.config.url_scheme
 TransportClient = type(axon.config.default_client_tl)
 

@@ -4,13 +4,17 @@ path.append('..')
 from axon.serializers import serialize, deserialize
 from axon.transport_client import AbstractTransportClient, req_executor, error_handler, AsyncResultHandle
 from axon.chunking import send_in_chunks, recv_chunks
+from axon.socket_transport import config
 
 from websockets.sync.client import connect
 
 class SocketTransportClient(AbstractTransportClient):
 
-	def __init__(self):
+	def __init__(self, port=config.port):
 		self.maxsize = 100_000
+
+	def get_config(self):
+		return config
 
 	def call_rpc_helper(self, url_head, endpoint, param_str):
 		result = None

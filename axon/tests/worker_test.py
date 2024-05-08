@@ -11,7 +11,7 @@ time_safety_magin = 0.1
 @pytest.mark.tl
 @pytest.mark.asyncio
 async def test_invokation():
-	remote_worker = axon.client.get_RemoteWorker(f'{url_scheme}://localhost:{axon.config.comms_config.worker_port}')
+	remote_worker = axon.client.get_RemoteWorker(f'{url_scheme}://localhost:{axon.config.transport.config.port}')
 	message = 'hello world!'
 	delay = 0
 
@@ -28,7 +28,7 @@ async def test_invokation():
 @pytest.mark.tl
 @pytest.mark.asyncio
 async def test_inline_concurrency():
-	inline_service = axon.client.get_ServiceStub(f'{url_scheme}://localhost:{axon.config.comms_config.worker_port}/inline_service')
+	inline_service = axon.client.get_ServiceStub(f'{url_scheme}://localhost:{axon.config.transport.config.port}/inline_service')
 	message = 'hello world!'
 	delay = 1
 
@@ -49,7 +49,7 @@ async def test_inline_concurrency():
 @pytest.mark.tl
 @pytest.mark.asyncio
 async def test_tpe_concurrency():
-	thread_pool_service = axon.client.get_ServiceStub(f'{url_scheme}://localhost:{axon.config.comms_config.worker_port}/thread_pool_service')
+	thread_pool_service = axon.client.get_ServiceStub(f'{url_scheme}://localhost:{axon.config.transport.config.port}/thread_pool_service')
 	message = 'hello world!'
 	delay = 1
 
@@ -70,7 +70,7 @@ async def test_tpe_concurrency():
 @pytest.mark.tl
 @pytest.mark.asyncio
 async def test_ppe_concurrency():
-	process_pool_service = axon.client.get_ServiceStub(f'{url_scheme}://localhost:{axon.config.comms_config.worker_port}/process_pool_service')
+	process_pool_service = axon.client.get_ServiceStub(f'{url_scheme}://localhost:{axon.config.transport.config.port}/process_pool_service')
 	message = 'hello world!'
 	delay = 1
 
@@ -91,7 +91,7 @@ async def test_ppe_concurrency():
 @pytest.mark.tl
 @pytest.mark.asyncio
 async def test_inline_async_concurrency():
-	inline_service = axon.client.get_ServiceStub(f'{url_scheme}://localhost:{axon.config.comms_config.worker_port}/inline_service')
+	inline_service = axon.client.get_ServiceStub(f'{url_scheme}://localhost:{axon.config.transport.config.port}/inline_service')
 	message = 'hello world!'
 	delay = 1
 
@@ -112,7 +112,7 @@ async def test_inline_async_concurrency():
 @pytest.mark.tl
 @pytest.mark.asyncio
 async def test_tpe_async_concurrency():
-	thread_pool_service = axon.client.get_ServiceStub(f'{url_scheme}://localhost:{axon.config.comms_config.worker_port}/thread_pool_service')
+	thread_pool_service = axon.client.get_ServiceStub(f'{url_scheme}://localhost:{axon.config.transport.config.port}/thread_pool_service')
 	message = 'hello world!'
 	delay = 1
 
@@ -133,7 +133,7 @@ async def test_tpe_async_concurrency():
 @pytest.mark.tl
 @pytest.mark.asyncio
 async def test_ppe_async_concurrency():
-	process_pool_service = axon.client.get_ServiceStub(f'{url_scheme}://localhost:{axon.config.comms_config.worker_port}/process_pool_service')
+	process_pool_service = axon.client.get_ServiceStub(f'{url_scheme}://localhost:{axon.config.transport.config.port}/process_pool_service')
 	message = 'hello world!'
 	delay = 1
 

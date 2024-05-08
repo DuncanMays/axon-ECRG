@@ -1,7 +1,7 @@
 # the bit that exports worker profile class and uses the RVL
 # an RPC stub is the thing on the client that makes a calling request and waits for the response
 
-from axon.config import comms_config, default_service_config, default_rpc_endpoint, default_client_tl
+from axon.config import default_service_config, default_rpc_endpoint, default_client_tl
 from axon.stubs import GenericStub
 
 from types import SimpleNamespace
