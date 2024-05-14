@@ -34,7 +34,7 @@ async def test_tl_basic():
 	wrkr_thread = threading.Thread(target=tlw.run, daemon=True)
 	wrkr_thread.start()
 
-	time.sleep(1)
+	time.sleep(0.5)
 
 	url = f'{url_scheme}://localhost:{port}/test_tl_basic/wrk_fn'
 	result = await tlc.call_rpc(url, ('hello!', ), {})

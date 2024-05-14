@@ -1,8 +1,15 @@
+from sys import argv as cli_args
+from importlib import import_module
 from types import SimpleNamespace
 from axon.inline_executor import InlineExecutor
 
-# import axon.HTTP_transport as transport
-import axon.socket_transport as transport
+TL_name = 'axon.HTTP_transport'
+
+if '--tl' in cli_args:
+	i = cli_args.index('--tl')
+	TL_name = cli_args[i+1]
+
+transport = import_module(TL_name)
 
 inline_executor = InlineExecutor()
 

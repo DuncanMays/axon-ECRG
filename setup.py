@@ -12,11 +12,11 @@ README = (HERE / "README.md").read_text()
 setup(
 	name="axon-ECRG",
 	version=version,
-	description="Edge computing framework developed and maintained by the Edge Computing Research Group at Queen's University",
+	description="RPC proxy framework",
 	long_description=README,
 	long_description_content_type="text/markdown",
 	url="https://github.com/DuncanMays/axon-ECRG",
-	packages=['axon'],
-	install_requires=['flask', 'uuid', 'requests', 'aiohttp'],
+	packages=['axon', 'tests'],
+	install_requires=['flask', 'uuid', 'requests', 'aiohttp', 'websockets'],
 )
 
