@@ -28,7 +28,6 @@ class FnService():
 		self.saved_tensors = {}
 
 	def apply(self, ctx_id, x):
-		print('apply')
 
 		with torch.enable_grad():
 			y = self.net(x)
