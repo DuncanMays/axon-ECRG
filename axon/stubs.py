@@ -1,4 +1,5 @@
 from urllib.parse import urlparse, urlunparse
+import asyncio
 
 def add_url_defaults(url, config):
 	
@@ -9,7 +10,7 @@ def add_url_defaults(url, config):
 
 	if (comps.port == None):
 		netloc = f'{comps.hostname}:{config.port}'
-		url = urlunparse((comps.scheme, netloc, comps.path, '','' ,  ''))
+		url = urlunparse((comps.scheme, netloc, comps.path, '', '' , ''))
 
 	return url
 
@@ -20,7 +21,11 @@ class GenericStub():
 		self.tl = tl
 
 	def __call__(self, *args, **kwargs):
-		return self.tl.call_rpc(self.url, args, kwargs)
+		print('stub start', args)
+		t = self.tl.call_rpc(self.url, args, kwargs)
+		print('stub end', args)
+
+		return t
 
 class SyncStub(GenericStub):
 
