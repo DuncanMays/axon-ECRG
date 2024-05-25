@@ -20,14 +20,4 @@ class HTTPTransportClient(AbstractTransportClient):
 		return deserialize(result_str)
 
 	def call_rpc(self, url, args, kwargs):
-		# print(url, args)
-		# future = req_executor.submit(self.call_rpc_helper, url, {'msg': serialize((args, kwargs))})
-		# print(url, args)
-		# return AsyncResultHandle(future)
-
-		print(url, args)
-		c = AsyncResultHandle(self.call_rpc_helper, url, {'msg': serialize((args, kwargs))})
-		print(c)
-		# print(c.__await__())
-		print(url, args)
-		return c
+		return AsyncResultHandle(self.call_rpc_helper, url, {'msg': serialize((args, kwargs))})

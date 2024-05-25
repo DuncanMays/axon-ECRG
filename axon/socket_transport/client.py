@@ -38,5 +38,4 @@ class SocketTransportClient(AbstractTransportClient):
 		param_str = serialize((args, kwargs))
 		req_str = endpoint+' '+param_str
 
-		future = req_executor.submit(self.call_rpc_helper, url_head, endpoint, param_str)
-		return AsyncResultHandle(future)
+		return AsyncResultHandle(self.call_rpc_helper, url_head, endpoint, param_str)

@@ -2,13 +2,14 @@
 # an RPC stub is the thing on the client that makes a calling request and waits for the response
 
 from axon.config import default_service_config, default_rpc_endpoint, default_client_tl
-from axon.stubs import GenericStub
+from axon.stubs import GenericStub, add_url_defaults
 
 from types import SimpleNamespace
 
 transport_client = default_client_tl
 
 def get_ServiceStub(url, tl=transport_client, stub_type=GenericStub, top_stub_type=object):
+	url = add_url_defaults(url, tl.get_config())
 	profile = tl.call_rpc(url, (), {}).join()
 	url_components = url.split('/')
 	base_url = '/'.join(url_components[:3])
@@ -69,5 +70,6 @@ class RemoteWorker():
 			setattr(self, service_name, s)
 
 def get_RemoteWorker(url, tl=transport_client, stub_type=GenericStub, top_stub_type=object):
+	url = add_url_defaults(url, tl.get_config())
 	profile = tl.call_rpc(f'{url}/_get_profile', (), {}).join()
 	return RemoteWorker(profile, url, tl, stub_type=stub_type)

@@ -21,11 +21,7 @@ class GenericStub():
 		self.tl = tl
 
 	def __call__(self, *args, **kwargs):
-		print('stub start', args)
-		t = self.tl.call_rpc(self.url, args, kwargs)
-		print('stub end', args)
-
-		return t
+		return self.tl.call_rpc(self.url, args, kwargs)
 
 class SyncStub(GenericStub):
 

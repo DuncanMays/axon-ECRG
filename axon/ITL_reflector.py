@@ -48,8 +48,7 @@ class ITL_Client():
 		url_head = '/'.join(url_components[:3])		
 		endpoint = '/' + '/'.join(url_components[3:])
 
-		future = req_executor.submit(self.call_rpc_helper, endpoint, args, kwargs)
-		return AsyncResultHandle(future)
+		return AsyncResultHandle(self.call_rpc_helper, endpoint, args, kwargs)
 
 	def on_close(self):
 		global reflector_node
