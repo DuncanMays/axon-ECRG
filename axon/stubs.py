@@ -1,4 +1,4 @@
-from axon.transport_client import AsyncResultHandle
+from axon.transport_client import AsyncResultHandle, req_executor
 
 from urllib.parse import urlparse, urlunparse
 import asyncio
@@ -25,10 +25,18 @@ class GenericStub():
 	def __call__(self, *args, **kwargs):
 		return AsyncResultHandle(self.tl.call_rpc, self.url, args, kwargs)
 
+class FutureStub(GenericStub):
+
+	def __init__(self, tl, url):
+		GenericStub.__init__(self, tl, url)
+
+	def __call__(self, *args, **kwargs):
+		return req_executor.submit(self.tl.call_rpc, self.url, args, kwargs)
+
 class SyncStub(GenericStub):
 
 	def __init__(self, tl, url):
 		GenericStub.__init__(self, tl, url)
 
 	def __call__(self, *args, **kwargs):
-		return GenericStub.__call__(self, *args, **kwargs).join()
+		return self.tl.call_rpc(self.url, args, kwargs)
