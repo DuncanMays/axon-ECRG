@@ -2,7 +2,7 @@ from sys import path
 path.append('..')
 
 from axon.serializers import serialize, deserialize
-from axon.transport_client import AbstractTransportClient, http, req_executor, error_handler, AsyncResultHandle
+from axon.transport_client import AbstractTransportClient, http, error_handler
 from axon.HTTP_transport import config
 
 class HTTPTransportClient(AbstractTransportClient):
@@ -13,11 +13,8 @@ class HTTPTransportClient(AbstractTransportClient):
 	def get_config(self):
 		return config
 
-	def call_rpc_helper(self, url, data):
+	def call_rpc(self, url, args, kwargs):
 
-		resp = http.request('POST', url, fields=data)
+		resp = http.request('POST', url, fields={'msg': serialize((args, kwargs))})
 		result_str = error_handler(resp.data.decode())
 		return deserialize(result_str)
-
-	def call_rpc(self, url, args, kwargs):
-		return AsyncResultHandle(self.call_rpc_helper, url, {'msg': serialize((args, kwargs))})

@@ -1,3 +1,5 @@
+from axon.transport_client import AsyncResultHandle
+
 from urllib.parse import urlparse, urlunparse
 import asyncio
 
@@ -21,7 +23,7 @@ class GenericStub():
 		self.tl = tl
 
 	def __call__(self, *args, **kwargs):
-		return self.tl.call_rpc(self.url, args, kwargs)
+		return AsyncResultHandle(self.tl.call_rpc, self.url, args, kwargs)
 
 class SyncStub(GenericStub):
 

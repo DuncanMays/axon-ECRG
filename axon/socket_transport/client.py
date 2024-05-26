@@ -16,7 +16,15 @@ class SocketTransportClient(AbstractTransportClient):
 	def get_config(self):
 		return config
 
-	def call_rpc_helper(self, url_head, endpoint, param_str):
+	def call_rpc(self, url, args, kwargs):
+
+		# split the endpoint from the url
+		url_components = url.split('/')
+		url_head = '/'.join(url_components[:3])		
+		endpoint = '/' + '/'.join(url_components[3:])
+
+		param_str = serialize((args, kwargs))
+		req_str = endpoint+' '+param_str
 		result = None
 
 		with connect(url_head) as socket:
@@ -27,15 +35,3 @@ class SocketTransportClient(AbstractTransportClient):
 			result = deserialize(result_str)
 
 		return result
-
-	def call_rpc(self, url, args, kwargs):
-
-		# split the endpoint from the url
-		url_components = url.split('/')
-		url_head = '/'.join(url_components[:3])		
-		endpoint = '/' + '/'.join(url_components[3:])
-
-		param_str = serialize((args, kwargs))
-		req_str = endpoint+' '+param_str
-
-		return AsyncResultHandle(self.call_rpc_helper, url_head, endpoint, param_str)

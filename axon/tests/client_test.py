@@ -10,18 +10,17 @@ TransportClient = type(axon.config.default_client_tl)
 tl_config = axon.config.transport.config
 
 @pytest.mark.tl
-@pytest.mark.asyncio
-async def test_tl_client():
+def test_tl_client():
 	print('test_tl_client')
 
 	rpc_name = 'simplex_rpc'
 	url = f'{url_scheme}://localhost:{tl_config.port}/{axon.config.default_rpc_endpoint}/{rpc_name}/__call__'
 	tl = TransportClient()
 
-	assert('test passed!' == await tl.call_rpc(url, ('test ', ), {'suffix':'passed!', }))
+	assert('test passed!' == tl.call_rpc(url, ('test ', ), {'suffix':'passed!', }))
 
 	url = f'{url_scheme}://localhost:{tl_config.port}{axon.config.default_service_config["endpoint_prefix"]}/_get_profile'
-	profile = await tl.call_rpc(url, (), {})
+	profile = tl.call_rpc(url, (), {})
 
 	assert('rpcs' in profile)
 	assert('simplex_rpc' in profile['rpcs'])

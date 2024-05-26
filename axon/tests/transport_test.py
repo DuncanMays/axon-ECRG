@@ -19,8 +19,7 @@ def test_interface_compliance():
 	assert(isinstance(axon.config.default_service_config['tl'], axon.transport_worker.AbstractTransportWorker))
 
 @pytest.mark.tl
-@pytest.mark.asyncio
-async def test_tl_basic():
+def test_tl_basic():
 
 	port = axon.utils.get_open_port(lower_bound=8001)
 	tlw = TransportWorker(port)
@@ -37,7 +36,7 @@ async def test_tl_basic():
 	time.sleep(0.5)
 
 	url = f'{url_scheme}://localhost:{port}/test_tl_basic/wrk_fn'
-	result = await tlc.call_rpc(url, ('hello!', ), {})
+	result = tlc.call_rpc(url, ('hello!', ), {})
 	assert(result == 'hello!')
 
 @pytest.mark.tl
@@ -71,7 +70,7 @@ async def test_second_tl():
 	worker_thread = threading.Thread(target=tlw.run, daemon=True)
 	worker_thread.start()
 
-	time.sleep(1)
+	time.sleep(0.5)
 
 	# the positive test that the service registered with the secondary transport layer exists
 	url = f'{url_scheme}://localhost:{port}/test_second_tl_service'

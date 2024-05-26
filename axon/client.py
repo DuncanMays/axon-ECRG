@@ -10,7 +10,7 @@ transport_client = default_client_tl
 
 def get_ServiceStub(url, tl=transport_client, stub_type=GenericStub, top_stub_type=object):
 	url = add_url_defaults(url, tl.get_config())
-	profile = tl.call_rpc(url, (), {}).join()
+	profile = tl.call_rpc(url, (), {})
 	url_components = url.split('/')
 	base_url = '/'.join(url_components[:3])
 	return make_ServiceStub(base_url, tl, profile, stub_type, top_stub_type)
@@ -71,5 +71,5 @@ class RemoteWorker():
 
 def get_RemoteWorker(url, tl=transport_client, stub_type=GenericStub, top_stub_type=object):
 	url = add_url_defaults(url, tl.get_config())
-	profile = tl.call_rpc(f'{url}/_get_profile', (), {}).join()
+	profile = tl.call_rpc(f'{url}/_get_profile', (), {})
 	return RemoteWorker(profile, url, tl, stub_type=stub_type)

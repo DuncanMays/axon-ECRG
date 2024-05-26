@@ -24,7 +24,14 @@ class ITL_Client():
 		self.socket = socket
 		self.name = name
 
-	def call_rpc_helper(self, endpoint, args, kwargs):
+	def get_config(self):
+		# the ITL client sends requests through an already established socket connection, so config info like the port number and scheme don't exist
+		return None
+
+	def call_rpc(self, url, args, kwargs):
+		url_components = url.split('/')
+		url_head = '/'.join(url_components[:3])		
+		endpoint = '/' + '/'.join(url_components[3:])
 
 		try:
 			self.socket.send(endpoint)
@@ -38,17 +45,6 @@ class ITL_Client():
 		except(websockets.ConnectionClosed) as e:
 			self.on_close()
 			raise e
-
-	def get_config(self):
-		# the ITL client sends requests through an already established socket connection, so config info like the port number and scheme don't exist
-		return None
-
-	def call_rpc(self, url, args, kwargs):
-		url_components = url.split('/')
-		url_head = '/'.join(url_components[:3])		
-		endpoint = '/' + '/'.join(url_components[3:])
-
-		return AsyncResultHandle(self.call_rpc_helper, endpoint, args, kwargs)
 
 	def on_close(self):
 		global reflector_node
