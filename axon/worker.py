@@ -49,7 +49,6 @@ class ServiceNode():
 		self.tl = self.configuration['tl']
 
 		# iterates over members and either registers them as RPCs or recursively turns them into ServiceNodes
-		# for key, member in self.subject.__dict__.items():
 		for key in dir(self.subject):
 
 			# dir calls the overwritable __dir__ function on self.subject. This means it's unreliable in some cases, since developers can specify what it returns.
@@ -77,7 +76,6 @@ class ServiceNode():
 				self.init_RPC(key, member)
 
 		# we now register an RPC at the ServiceNode's endpoint to expose its profile
-		# self.tl.register_RPC(self.get_profile, name=self.name, executor=default_service_config['executor'], endpoint_prefix=self.configuration['endpoint_prefix'])
 		profile_endpoint = f"{self.configuration['endpoint_prefix']}/{self.name}"
 		self.tl.register_RPC(self.get_profile, profile_endpoint, default_service_config['executor'])
 		transport_layers.add(self.tl)
@@ -179,12 +177,12 @@ def init(tl=default_service_config['tl']):
 
 	profile_endpoint = f"{default_service_config['endpoint_prefix']}/_get_profile"
 	tl.register_RPC(_get_profile, profile_endpoint, default_service_config['executor'])
+	transport_layers.add(tl)
 
-	tl_threads = []
-	for t in transport_layers:
+	for i in range(len(transport_layers)-1):
+		t = transport_layers.pop()
 		tl_thread = Thread(target=t.run, daemon=True)
 		tl_thread.start()
-		tl_threads.append(tl_thread)
 
-	while True:
-		sleep(1000_000)
+	last_tl = transport_layers.pop()
+	last_tl.run()
