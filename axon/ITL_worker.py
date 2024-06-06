@@ -4,10 +4,13 @@ sys.path.append('..')
 from .transport_worker import invoke_RPC
 from .serializers import serialize, deserialize
 from .chunking import send_in_chunks, recv_chunks
+from .stubs import add_url_defaults
 
 from concurrent.futures import ProcessPoolExecutor as PPE
-import websockets
 from websockets.sync.client import connect
+from types import SimpleNamespace
+
+import websockets
 import cloudpickle
 import time
 import sys
@@ -15,9 +18,9 @@ import traceback
 
 class ITL_Worker():
 
-	def __init__(self, reflector_url, name):
+	def __init__(self, url, name):
 		self.name = name
-		self.reflector_url = reflector_url
+		self.reflector_url = add_url_defaults(url, SimpleNamespace(port=8008, scheme='ws'))
 		self.rpcs = {}
 
 	def run(self):

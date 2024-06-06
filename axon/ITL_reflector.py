@@ -5,17 +5,16 @@ import axon
 import time
 import threading
 import websockets
-from websockets.sync.server import serve as sync_serve
 
+from websockets.sync.server import serve as sync_serve
 from concurrent.futures import Future
 
 from .serializers import serialize, deserialize
 from .transport_client import req_executor, error_handler, AsyncResultHandle
-from .config import default_service_config
+from .config import transport, default_service_config
 from .chunking import send_in_chunks, recv_chunks
+from .HTTP_transport.config import port as default_http_port
 
-TransportWorker = type(default_service_config['tl'])
-http_tl = TransportWorker(8081)
 reflector_node = None
 
 class ITL_Client():
@@ -51,7 +50,7 @@ class ITL_Client():
 		reflector_node.remove_child(self.name)
 
 def sock_serve_fn(websocket):
-	global http_tl, reflector_node
+	global reflector_node
 
 	header_str = websocket.recv()
 	name, profile_str = header_str.split('||', 1)
@@ -65,14 +64,15 @@ def sock_serve_fn(websocket):
 	while True:
 		time.sleep(1_000_000)
 
-def run(endpoint):
-	global http_tl, reflector_node
+def run(endpoint='reflected_services', ws_port=8008, http_port=default_http_port):
+	global reflector_node
 
+	http_tl = transport.worker(http_port)
 	http_thread = threading.Thread(target=http_tl.run, daemon=True)
 	http_thread.start()
 	time.sleep(0.5)
 
 	reflector_node = axon.worker.register_ServiceNode({}, endpoint, tl=http_tl)
 
-	with sync_serve(sock_serve_fn, '0.0.0.0', 8008) as server:
+	with sync_serve(sock_serve_fn, '0.0.0.0', ws_port) as server:
 		server.serve_forever()

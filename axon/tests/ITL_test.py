@@ -24,11 +24,13 @@ class DummyClass():
 
 def test_basic_operation():
 
-	reflector_thread = threading.Thread(target=reflector.run, args=('reflected_services',), daemon=True)
+
+	worker_port=8081
+	reflector_thread = threading.Thread(target=reflector.run, kwargs={'http_port':worker_port}, daemon=True)
 	reflector_thread.start()
 	time.sleep(0.5)
 
-	itlw = ITL_Worker('ws://localhost:8008', 'test_worker')
+	itlw = ITL_Worker(url='localhost', name='test_worker')
 	tpe = ThreadPoolExecutor(max_workers=10)
 	t = DummyClass()
 
@@ -38,7 +40,7 @@ def test_basic_operation():
 	worker_thread.start()
 	time.sleep(0.5)
 
-	stub = axon.client.get_ServiceStub(f'{url_scheme}://localhost:8081/reflected_services')
+	stub = axon.client.get_ServiceStub(f'{url_scheme}://localhost:{worker_port}/reflected_services')
 	reflected_str = 'this is a message sent from client to reflector, then to worker, where it\'s printed to console'
 	response = stub.test_worker.test_service.print_str(reflected_str).join()
 	assert(response == 'all done!')
