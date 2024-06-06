@@ -35,7 +35,7 @@ def make_ServiceStub(url, tl, profile, stub_type=GenericStub, top_stub_type=obje
 		else:
 			# If a member is not a profile, then it must be an RPC config, and so correspond to a callable object on the worker with no __dict__attribute
 			stub_url = url + f"{member['endpoint_prefix']}/{key}"
-			attrs[key] = stub_type(tl=tl, url = stub_url)
+			attrs[key] = stub_type(tl=tl, url=stub_url)
 
 	if '__call__' in keys:
 		# if the profile has a __call__ attribute, than the corresponding object on the server is callable and has a __dict__ attribute, and so must be represented by an RPC stub bound to the given network coordinates

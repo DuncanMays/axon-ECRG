@@ -7,3 +7,4 @@ integration_tests/__pycache__
 tests/__pycache__
 end-to-end/__pycache__
 **/__pycache__
+.venv

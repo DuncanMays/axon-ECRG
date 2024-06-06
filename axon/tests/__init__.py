@@ -5,6 +5,8 @@ import axon
 import time
 import asyncio
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
+import multiprocessing
+import psutil
 
 @axon.worker.rpc()
 def simplex_rpc(prefix, suffix='simplex test failed'):
@@ -76,9 +78,13 @@ class ProcessPoolService():
 		return message
 
 tps = ProcessPoolService()
-ppe = ProcessPoolExecutor(max_workers=10)
+# ppe = ProcessPoolExecutor(max_workers=10)
+ppe = ProcessPoolExecutor(max_workers=10, mp_context=multiprocessing.get_context("spawn"))
 axon.worker.register_ServiceNode(tps, name='process_pool_service', executor=ppe)
 
-worker_thread = threading.Thread(target=axon.worker.init, daemon=True, name='axon/tests/__init__.py')
-worker_thread.start()
-time.sleep(1)
+if (psutil.Process().name() == 'pytest'):
+	# without this check, using the multiprocessing executor will result in this file being run more than once in other processes, and so we must check if we're in the main process before calling init
+
+	worker_thread = threading.Thread(target=axon.worker.init, daemon=True, name='axon/tests/__init__.py')
+	worker_thread.start()
+	time.sleep(1)

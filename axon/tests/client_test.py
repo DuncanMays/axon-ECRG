@@ -19,7 +19,7 @@ def test_tl_client():
 
 	assert('test passed!' == tl.call_rpc(url, ('test ', ), {'suffix':'passed!', }))
 
-	url = f'{url_scheme}://localhost:{tl_config.port}{axon.config.default_service_config["endpoint_prefix"]}/_get_profile'
+	url = f'{url_scheme}://localhost:{tl_config.port}/{axon.config.default_service_config["endpoint_prefix"]}/_get_profile'
 	profile = tl.call_rpc(url, (), {})
 
 	assert('rpcs' in profile)

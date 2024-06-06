@@ -10,9 +10,9 @@ from itertools import product
 url_scheme = axon.config.url_scheme
 message = 'hello world!'
 
-start_delay = 0.01
-small_delay = 0.01
-big_delay = 0.1
+start_delay = 0.05
+small_delay = 0.05
+big_delay = 0.5
 
 @pytest.mark.tl
 @pytest.mark.asyncio
@@ -34,7 +34,7 @@ async def test_invokation():
 @pytest.mark.asyncio
 async def test_inline_concurrency():
 	# tests that non async services with the inline executor do not run in parallel
-	
+
 	inline_service = axon.client.get_ServiceStub(f'localhost:/inline_service')
 	completion_order = []
 
@@ -84,4 +84,5 @@ async def test_service_concurrency():
 	services = [axon.client.get_ServiceStub(f'localhost/{name}/{v}') for name, v in endpoints]
 
 	for s in services:
+		print(s.url)
 		await verify_parallel(s)
