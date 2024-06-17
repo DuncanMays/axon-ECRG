@@ -60,7 +60,7 @@ def sock_serve_fn(websocket):
 	stub = axon.client.make_ServiceStub('ws://none:0000', itl, profile, stub_type=axon.stubs.SyncStub)
 	reflector_node.add_child(name, stub)
 
-	# blocks until the worker closes the connection
+	# blocks to keep the socket open until the worker closes the connection
 	while True:
 		time.sleep(1_000_000)
 
