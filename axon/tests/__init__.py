@@ -78,7 +78,6 @@ class ProcessPoolService():
 		return message
 
 tps = ProcessPoolService()
-# ppe = ProcessPoolExecutor(max_workers=10)
 ppe = ProcessPoolExecutor(max_workers=10, mp_context=multiprocessing.get_context("spawn"))
 axon.worker.register_ServiceNode(tps, name='process_pool_service', executor=ppe)
 

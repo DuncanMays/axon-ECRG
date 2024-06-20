@@ -19,11 +19,11 @@ def test_tl_client():
 
 	assert('test passed!' == tl.call_rpc(url, ('test ', ), {'suffix':'passed!', }))
 
-	url = f'{url_scheme}://localhost:{tl_config.port}/{axon.config.default_service_config["endpoint_prefix"]}/_get_profile'
+	url = f'{url_scheme}://localhost:{tl_config.port}/{axon.config.default_service_config["endpoint_prefix"]}'
 	profile = tl.call_rpc(url, (), {})
 
-	assert('rpcs' in profile)
-	assert('simplex_rpc' in profile['rpcs'])
+	assert('rpc' in profile)
+	assert('simplex_rpc' in profile['rpc'])
 
 url_shorthand_test_cases = [('http://localhost:50/endpoint', 'http://localhost:50/endpoint'), ('http://localhost:50/endpoint', 'http://localhost/endpoint'), ('http://localhost:50/endpoint', 'localhost:50/endpoint'), ('http://localhost:50/endpoint', 'localhost/endpoint')]
 url_shorthand_test_cases += [('http://192.168.2.0:50/endpoint', 'http://192.168.2.0:50/endpoint'), ('http://192.168.2.0:50/endpoint', 'http://192.168.2.0/endpoint'), ('http://192.168.2.0:50/endpoint', '192.168.2.0:50/endpoint'), ('http://192.168.2.0:50/endpoint', '192.168.2.0/endpoint')]
@@ -41,14 +41,12 @@ def test_url_shorthand(expected, shorthand):
 	assert axon.stubs.add_url_defaults(shorthand, config) == expected
 
 @pytest.mark.asyncio
-async def test_RemoteWorker():
-	print('test_RemoteWorker')
+async def test_TopLevelServiceNode():
+	print('test_TopLevelServiceNode')
 
-	w = axon.client.get_RemoteWorker(f'{url_scheme}://localhost:{tl_config.port}')
+	w = axon.client.get_ServiceStub(f'{url_scheme}://localhost:{tl_config.port}')
 
-	print(await w.rpcs.simplex_rpc('simplex test ', suffix='passed'))
-
-	print(w.rpcs)
+	print(await w.rpc.simplex_rpc('simplex test ', suffix='passed'))
 
 	# tests that the ServiceStub is set up right
 	stub = w.simplex_service

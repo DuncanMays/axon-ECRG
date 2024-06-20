@@ -38,6 +38,10 @@ def test_add_child_not_live():
 	child_config = s.children['test_add_child'].children['__call__']
 	assert(child_config['endpoint_prefix'] == '/test/test_add_child')
 
+	# checks that the ServiceNode's profile contains the added child
+	p = s.get_profile()
+	assert('test_add_child' in p)
+
 	print('test_add_child_child_config passed!')
 
 def test_remove_child_not_live():
@@ -49,6 +53,10 @@ def test_remove_child_not_live():
 
 	# checks that the ServiceNode no longer has a child called test_fn
 	assert('test_fn' not in s.children)
+
+	# checks that the ServiceNode's profile does not contain the added child
+	p = s.get_profile()
+	assert('test' not in p)
 
 	# checks that the necessary RPCs have been removed from the transport layer
 	assert('/test/test_fn' not in s.tl.rpcs)

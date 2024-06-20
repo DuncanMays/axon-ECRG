@@ -71,14 +71,16 @@ class ServiceNode():
 		del self.children[child_key]
 
 	def add_child(self, key, child, **child_config):
+
 		# limits recursion to a depth parameter
-		if (self.depth <= 0): return
+		if (self.depth < 0): return
 
 		# The child config overwrites the parent's config, meaning by default children inherit configuration from their parents
 		child_config = overwrite(self.configuration, child_config)
 
-		# the child's endpoint_prefix is the parent's prefix plus / and the child's name
-		child_config['endpoint_prefix'] += '/'+str(self.name)
+		if self.name != '':
+			# the child's endpoint_prefix is the parent's prefix plus / and the child's name
+			child_config['endpoint_prefix'] += '/'+str(self.name)
 
 		# create a ServiceNode out of it and register it as a child
 		child = ServiceNode(child, key, depth=self.depth-1, **child_config)

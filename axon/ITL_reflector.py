@@ -16,6 +16,7 @@ from .chunking import send_in_chunks, recv_chunks
 from .HTTP_transport.config import port as default_http_port
 
 reflector_node = None
+http_tl = None
 
 class ITL_Client():
 
@@ -50,6 +51,7 @@ class ITL_Client():
 		reflector_node.remove_child(self.name)
 
 def sock_serve_fn(websocket):
+	print('sock_serve_fn')
 	global reflector_node
 
 	header_str = websocket.recv()
@@ -58,21 +60,33 @@ def sock_serve_fn(websocket):
 
 	itl = ITL_Client(websocket, name)
 	stub = axon.client.make_ServiceStub('ws://none:0000', itl, profile, stub_type=axon.stubs.SyncStub)
+	print('================================================')
+	# print(id(reflector_node))
+	# print(name)
+	# print(stub)
+	# print(dir(stub))
 	reflector_node.add_child(name, stub)
+	# print(reflector_node.get_profile().keys())
+	# service_node = reflector_node.children[name]
+	# print(reflector_node.tl)
+	# print(service_node.tl)
+	print(reflector_node.get_profile().keys())
 
+	print('================================================')
 	# blocks to keep the socket open until the worker closes the connection
 	while True:
 		time.sleep(1_000_000)
 
 def run(endpoint='reflected_services', ws_port=8008, http_port=default_http_port):
-	global reflector_node
+	global reflector_node, http_tl
 
 	http_tl = transport.worker(http_port)
 	http_thread = threading.Thread(target=http_tl.run, daemon=True)
 	http_thread.start()
 	time.sleep(0.5)
 
-	reflector_node = axon.worker.register_ServiceNode({}, endpoint, tl=http_tl)
+	reflector_node = axon.worker.ServiceNode([1,2,3], endpoint, tl=http_tl)
+	reflector_node.add_child('test_child', [1,2,3,4], tl=http_tl)
 
 	with sync_serve(sock_serve_fn, '0.0.0.0', ws_port) as server:
 		server.serve_forever()

@@ -17,7 +17,7 @@ big_delay = 0.5
 @pytest.mark.tl
 @pytest.mark.asyncio
 async def test_invokation():
-	remote_worker = axon.client.get_RemoteWorker(f'{url_scheme}://localhost:{axon.config.transport.config.port}')
+	remote_worker = axon.client.get_ServiceStub(f'{url_scheme}://localhost:{axon.config.transport.config.port}')
 	delay = 0
 
 	assert(await remote_worker.inline_service.print_this(delay, message) == message)

@@ -1,29 +1,36 @@
 import sys
 sys.path.append('..')
 
-from axon.client import RemoteWorker, start_client
-from axon.utils import get_active_workers
-from axon.discovery import broadcast_discovery, get_ips
-from axon.config import comms_config
+import axon
 import asyncio
 
 async def main():
 
-	worker = RemoteWorker('127.0.0.1')
-
-	num_processes = 6
-
-	print('starting client')
-	await start_client()
-
-	print('doing work')
-	result_futures = [worker.rpcs.do_work(3, msg='all done!') for i in range(num_processes)]
+	s = axon.client.get_ServiceStub('localhost', stub_type=axon.stubs.SyncStub)
 	
-	print('awaiting responses')
-	results = await asyncio.gather(*result_futures)
+	print(dir(s))
+	print(dir(s.list_service))
 
-	print('responses recieved:')
-	print(results)
+	s = axon.client.get_ServiceStub('localhost/list_service', stub_type=axon.stubs.SyncStub)
+	
+	print(dir(s))
 
+	# print(s.list_service[1])
+	# print(s.rpc.do_work(1))
+	# print(s.rpc.print_msg('hello!'))
+
+	# r = axon.client.get_ServiceStub('localhost/rpc', stub_type=axon.stubs.SyncStub)
+	# print(r.do_work(1))
+	# print(r.print_msg('hello!'))
+
+	# l = axon.client.get_ServiceStub('localhost/list_service', stub_type=axon.stubs.SyncStub)
+	# print(l[1])
+
+	# rw = axon.client.get_RemoteWorker('http://localhost:8000')
+	# print(await rw.list_service[1])
+	# print(await rw.rpcs.do_work(1))
+	# print(await rw.rpcs.print_msg('hello!'))
+
+	
 if (__name__ == '__main__'):
 	asyncio.run(main())

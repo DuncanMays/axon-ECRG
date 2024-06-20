@@ -1,16 +1,21 @@
 import sys
 sys.path.append('..')
 
-from axon import worker
-from axon import discovery
+import axon
 
 import random
 import asyncio
 import signal
 import time
+from threading import Thread
 
-@worker.rpc(comms_pattern='duplex', executor='Process')
-def do_work(num_iters, msg='default'):
+@axon.worker.rpc()
+def print_msg(msg):
+	print(msg)
+
+@axon.worker.rpc()
+def do_work(num_iters):
+	msg='default'
 
 	print('starting work')
 
@@ -25,15 +30,27 @@ def do_work(num_iters, msg='default'):
 
 	return random.randint(0, 10)
 
-	# print('starting')
-
-	# time.sleep(60)
-
-	# print('all done')
+# l = [1, 2, 3, 4]
+# s = axon.worker.register_ServiceNode(l, 'list_service')
+# s.add_child('list_child', [5,6,7])
 
 def main():
-
 	# starts the worker
-	worker.init()
+	# axon.worker.init()
+
+	port = 10_000
+	tlw = axon.config.transport.worker(port)
+
+	l = [1, 2, 3, 4]
+	s = axon.worker.ServiceNode(l, 'list_service', tl=tlw)
+	s.add_child('list_child', [5,6,7])
+
+	wrkr_thread = Thread(target=tlw.run, daemon=True)
+	wrkr_thread.start()
+	time.sleep(0.5)
+
+	s = axon.client.get_ServiceStub(f'localhost:{port}/list_service')
+
+	print(dir(s))
 
 main()

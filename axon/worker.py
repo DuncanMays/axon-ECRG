@@ -1,39 +1,53 @@
 from axon.config import default_rpc_endpoint, default_service_config, default_service_depth
 from axon.ServiceNode import ServiceNode, transport_layers
+from axon.utils import overwrite
 
 from threading import Thread
 
-def _get_profile():
-
-	service_profiles = {}
-	dtl = default_service_config['tl']
-	for key in registered_ServiceNodes:
-		tl = registered_ServiceNodes[key].tl
-		if (dtl == tl):
-			service_profiles[key] = registered_ServiceNodes[key].get_profile()
-
-	profile = {
-		'rpcs': RPC_node.get_profile(),
-		'services': service_profiles,
-	}
-
-	return profile
-
 registered_ServiceNodes = {}
-# top_service_node = ServiceNode({}, default_service_config['endpoint_prefix'])
+TLSNs = {}
+
+def get_TLSN(configuration):
+	global TLSNs
+	configuration = overwrite(default_service_config, configuration)
+
+	top_service_node = None
+	tl_id = id(configuration['tl'])
+
+	# record each transport layer we see, and create a top-level ServiceNode for each of them
+	# if default_service_config['endpoint_prefix'] in configuration['tl'].rpcs:
+	if tl_id in TLSNs:
+		top_service_node = TLSNs[tl_id]
+
+	else:
+		top_service_node = ServiceNode(object(), '', **configuration)
+		top_service_node.add_child(default_rpc_endpoint, object())
+		TLSNs[tl_id] = top_service_node
+
+	return top_service_node
 
 def register_ServiceNode(subject, name, depth=default_service_depth, **configuration):
+	global TLSNs
 
 	s = ServiceNode(subject, name, depth=depth, **configuration)
 	registered_ServiceNodes[name] = s
-	# top_service_node.add_child(name, s, **configuration)
+
+	top_service_node = get_TLSN(configuration)
+	top_service_node.add_child(name, subject, **configuration)
+
 	return s
 
-# a ServiceNode that holds all RPCs associated by this worker instance
-RPC_node = ServiceNode(object(), default_rpc_endpoint)
+# # a ServiceNode that holds all RPCs associated by this worker instance
+# top_service_node.add_child(default_rpc_endpoint, object(), **default_service_config)
+# RPC_node = top_service_node.children[default_rpc_endpoint]
 
 # the RPC decorator adds the associated function to the RPC_node ServiceNode
 def rpc(**configuration):
+	global TLSNs
+
+	top_service_node = get_TLSN(configuration)
+	RPC_node = top_service_node.children[default_rpc_endpoint]
+
 	def add_to_RPC_node(fn):
 		RPC_node.add_child(fn.__name__, fn, **configuration)
 		return fn
@@ -42,8 +56,6 @@ def rpc(**configuration):
 
 def init(tl=default_service_config['tl']):
 
-	profile_endpoint = f"{default_service_config['endpoint_prefix']}/_get_profile"
-	tl.register_RPC(_get_profile, profile_endpoint, default_service_config['executor'])
 	transport_layers.add(tl)
 
 	for i in range(len(transport_layers)-1):

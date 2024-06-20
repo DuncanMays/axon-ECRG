@@ -11,9 +11,7 @@ if '--tl' in cli_args:
 	TL_name = cli_args[i+1]
 
 transport = import_module(TL_name)
-
 inline_executor = InlineExecutor()
-
 version = "0.2.1"
 default_service_depth = 3
 default_rpc_endpoint = 'rpc'
