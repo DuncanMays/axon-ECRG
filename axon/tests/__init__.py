@@ -40,7 +40,7 @@ t_simplex = TestClass(depth=test_service_depth)
 
 simplex_service = axon.worker.register_ServiceNode(t_simplex, 'simplex_service', depth=test_service_depth, endpoint_prefix=endpoint)
 
-class InlineService():
+class PoolTestService():
 	async def print_this_async(self, delay, message):
 		loop = asyncio.get_event_loop()
 		await asyncio.sleep(delay)
@@ -50,34 +50,14 @@ class InlineService():
 		time.sleep(delay)
 		return message
 
-ils = InlineService()
+ils = PoolTestService()
 axon.worker.register_ServiceNode(ils, name='inline_service')
 
-class ThreadPoolService():
-	async def print_this_async(self, delay, message):
-		loop = asyncio.get_event_loop()
-		await asyncio.sleep(delay)
-		return message
-
-	def print_this(self, delay, message):
-		time.sleep(delay)
-		return message
-
-tps = ThreadPoolService()
+tps = PoolTestService()
 tpe = ThreadPoolExecutor(max_workers=10)
 axon.worker.register_ServiceNode(tps, name='thread_pool_service', executor=tpe)
 
-class ProcessPoolService():
-	async def print_this_async(self, delay, message):
-		loop = asyncio.get_event_loop()
-		await asyncio.sleep(delay)
-		return message
-
-	def print_this(self, delay, message):
-		time.sleep(delay)
-		return message
-
-tps = ProcessPoolService()
+tps = PoolTestService()
 ppe = ProcessPoolExecutor(max_workers=10, mp_context=multiprocessing.get_context("spawn"))
 axon.worker.register_ServiceNode(tps, name='process_pool_service', executor=ppe)
 
