@@ -30,27 +30,27 @@ def do_work(num_iters):
 
 	return random.randint(0, 10)
 
-# l = [1, 2, 3, 4]
-# s = axon.worker.register_ServiceNode(l, 'list_service')
-# s.add_child('list_child', [5,6,7])
+l = [1, 2, 3, 4]
+s = axon.worker.register_ServiceNode(l, 'list_service')
+s.add_child('list_child', [5,6,7])
 
 def main():
 	# starts the worker
-	# axon.worker.init()
+	axon.worker.init()
 
-	port = 10_000
-	tlw = axon.config.transport.worker(port)
+	# port = 10_000
+	# tlw = axon.config.transport.worker(port)
 
-	l = [1, 2, 3, 4]
-	s = axon.worker.ServiceNode(l, 'list_service', tl=tlw)
-	s.add_child('list_child', [5,6,7])
+	# l = [1, 2, 3, 4]
+	# s = axon.worker.ServiceNode(l, 'list_service', tl=tlw)
+	# s.add_child('list_child', [5,6,7])
 
-	wrkr_thread = Thread(target=tlw.run, daemon=True)
-	wrkr_thread.start()
-	time.sleep(0.5)
+	# wrkr_thread = Thread(target=tlw.run, daemon=True)
+	# wrkr_thread.start()
+	# time.sleep(0.5)
 
-	s = axon.client.get_ServiceStub(f'localhost:{port}/list_service')
+	# s = axon.client.get_ServiceStub(f'localhost:{port}/list_service')
 
-	print(dir(s))
+	# print(dir(s))
 
 main()

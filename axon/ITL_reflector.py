@@ -85,6 +85,7 @@ def run(endpoint='reflected_services', ws_port=8008, http_port=default_http_port
 	http_thread.start()
 	time.sleep(0.5)
 
+	# reflector_node = axon.worker.register_ServiceNode([1,2,3], endpoint, tl=http_tl)
 	reflector_node = axon.worker.ServiceNode([1,2,3], endpoint, tl=http_tl)
 	reflector_node.add_child('test_child', [1,2,3,4], tl=http_tl)
 

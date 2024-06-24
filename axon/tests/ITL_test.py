@@ -33,6 +33,10 @@ def test_basic_operation():
 	tpe = ThreadPoolExecutor(max_workers=10)
 	t = DummyClass()
 
+	@axon.worker.rpc(tl=itlw, executor=tpe)
+	def test_rpc(msg):
+		return msg
+
 	axon.worker.register_ServiceNode(t, 'test_service', tl=itlw, executor=tpe)
 
 	worker_thread = threading.Thread(target=itlw.run, daemon=True)
@@ -42,12 +46,15 @@ def test_basic_operation():
 	stub = axon.client.get_ServiceStub(f'{url_scheme}://localhost:{worker_port}/reflected_services')
 	print(stub[0].join())
 
-	url = f'{url_scheme}://localhost:{worker_port}/reflected_services'
-	dtl = axon.config.default_client_tl
-	profile = dtl.call_rpc(url, (), {})
-	print(profile.keys())
+	# url = f'{url_scheme}://localhost:{worker_port}/reflected_services'
+	# dtl = axon.config.default_client_tl
+	# profile = dtl.call_rpc(url, (), {})
+	# print(profile.keys())
 
 	reflected_str = 'this is a message sent from client to reflector, then to worker, where it\'s printed to console'
 	print(dir(stub))
 	response = stub.test_worker.test_service.print_str(reflected_str).join()
 	assert(response == 'all done!')
+
+	response = stub.test_worker.rpc.test_rpc('test_msg').join()
+	assert(response == 'test_msg')
