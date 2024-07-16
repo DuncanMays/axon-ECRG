@@ -44,15 +44,17 @@ def test_basic_operation():
 	time.sleep(1)
 
 	stub = axon.client.get_ServiceStub(f'{url_scheme}://localhost:{worker_port}/reflected_services')
-	print(stub[0].join())
+	# print(stub[0].join())
 
 	# url = f'{url_scheme}://localhost:{worker_port}/reflected_services'
 	# dtl = axon.config.default_client_tl
 	# profile = dtl.call_rpc(url, (), {})
 	# print(profile.keys())
 
+	time.sleep(1)
+
 	reflected_str = 'this is a message sent from client to reflector, then to worker, where it\'s printed to console'
-	print(dir(stub))
+	# print(dir(stub))
 	response = stub.test_worker.test_service.print_str(reflected_str).join()
 	assert(response == 'all done!')
 
