@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 c_handler = logging.StreamHandler()
-f_handler = logging.FileHandler('reflector.log')
+f_handler = logging.FileHandler('./reflector.log')
 
 log_format = logging.Formatter('%(asctime)s | %(levelname)s | %(message)s')
 c_handler.setFormatter(log_format)
@@ -89,24 +89,6 @@ def sock_serve_fn(websocket):
 	except(BaseException) as e:
 		logger.exception("An exception occurred while handling a socket connection to worker")
 		websocket.close()
-
-sample = psutil.net_io_counters()
-last_bytes_sent = sample.bytes_sent
-last_bytes_recv = sample.bytes_recv
-# log usage metrics every hour
-log_interval = 60*60
-def log_usage():
-	global last_bytes_sent, last_bytes_recv
-
-	cpu = psutil.cpu_percent()
-	ram = psutil.virtual_memory().percent
-	net = psutil.net_io_counters()
-	sent = net.bytes_sent - last_bytes_sent
-	last_bytes_sent = net.bytes_sent
-	recv = net.bytes_recv - last_bytes_recv
-	last_bytes_recv = net.bytes_recv
-
-	logger.info('usage: CPU %s RAM %s bytes_sent %s bytes_recv %s', cpu, ram, sent, recv)
 
 def run(endpoint='reflected_services', ws_port=8008, http_port=default_http_port):
 	global reflector_node, http_tl

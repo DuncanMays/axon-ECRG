@@ -3,6 +3,7 @@ dist/
 axon_ECRG.egg-info
 axon/__pycache__
 reflector.log
+reflector.metrics
 unit_tests/__pycache__
 integration_tests/__pycache__
 tests/__pycache__
