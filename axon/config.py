@@ -4,7 +4,6 @@ from types import SimpleNamespace
 from axon.inline_executor import InlineExecutor
 
 TL_name = 'axon.HTTP_transport'
-# TL_name = 'axon.socket_transport'
 
 if '--tl' in cli_args:
 	i = cli_args.index('--tl')
