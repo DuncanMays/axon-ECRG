@@ -1,4 +1,5 @@
 import psutil
+import time
 import logging
 import os
 
@@ -10,6 +11,7 @@ if (__name__ == '__main__'):
 	handler.setFormatter(log_format)
 	logger.addHandler(handler)
 
+	time.sleep(1)
 	cpu = psutil.cpu_percent()
 	ram = psutil.virtual_memory().percent
 	net = psutil.net_io_counters()
