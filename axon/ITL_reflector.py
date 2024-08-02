@@ -4,13 +4,14 @@ sys.path.append('..')
 import axon
 import time
 import threading
-import websockets
+import socketio
 import logging
 import psutil
+import random
 
-from websockets.sync.server import serve as sync_serve
 from concurrent.futures import Future
 from threading import Timer
+from flask import Flask
 
 from .serializers import serialize, deserialize
 from .transport_client import req_executor, error_handler, AsyncResultHandle
@@ -31,13 +32,25 @@ f_handler.setFormatter(log_format)
 logger.addHandler(c_handler)
 logger.addHandler(f_handler)
 
+sio = socketio.Server(async_mode='threading')
 reflector_node = None
-http_tl = None
+name_sid_map = {}
+
+def get_call_ID_generator(n=10_000):
+	L = list(range(n))
+	random.shuffle(L)
+	while True:
+		for l in L:
+			yield str(l)
+
+call_ID_gen = get_call_ID_generator()
+pending_reqs = {}
 
 class ITL_Client():
 
-	def __init__(self, socket, name):
-		self.socket = socket
+	def __init__(self, sio, sid, name):
+		self.sio = sio
+		self.sid = sid
 		self.name = name
 
 	def get_config(self):
@@ -45,52 +58,58 @@ class ITL_Client():
 		return None
 
 	def call_rpc(self, url, args, kwargs):
+		global call_ID_gen, pending_reqs
+
 		url_components = url.split('/')
-		url_head = '/'.join(url_components[:3])		
+		url_head = '/'.join(url_components[:3])
 		endpoint = '/' + '/'.join(url_components[3:])
 
-		logger.debug('RPC call to %s for %s', self.socket.remote_address, endpoint)
+		call_ID = next(call_ID_gen)
+		result_future = Future()
+		pending_reqs[call_ID] = result_future
 
-		try:
-			self.socket.send(endpoint)
-			param_str = serialize((args, kwargs))
-			send_in_chunks(self.socket, param_str)
+		logger.debug('RPC call to: %s for: %s call_ID: %s', self.sid, endpoint, call_ID)
+		self.sio.emit('rpc_request', to=self.sid, data=f'{call_ID}|{endpoint}|{serialize((args, kwargs))}')
+		
+		result_str = result_future.result()
+		result_str = error_handler(result_str)
+		return deserialize(result_str)
 
-			result_str = recv_chunks(self.socket)
-			result_str = error_handler(result_str)
-			return deserialize(result_str)
+@sio.event
+def rpc_result(sid, return_str):
+	global pending_reqs
 
-		except(websockets.ConnectionClosed) as e:
-			self.on_close()
-			raise e
+	call_ID, result_str = return_str.split('|', 1)
+	logger.debug('RPC response for call_ID: %s', call_ID)
+	result_future = pending_reqs[call_ID]
+	result_future.set_result(result_str)
 
-	def on_close(self):
-		global reflector_node
-		reflector_node.remove_child(self.name)
+@sio.event
+def connect(sid, e):
+	logger.debug('New connection from: %s', sid)
 
-def sock_serve_fn(websocket):
-	global logger, reflector_node
+@sio.event
+def disconnect(sid, e):
+	global reflector_node, name_sid_map
 
-	try:
-		logger.debug('New connection from worker at %s', websocket.remote_address)
+	logger.debug('Worker %s disconnected', self.sid)
+	name = name_sid_map[sid]
+	reflector_node.remove_child(self.name)
+	del name_sid_map[sid]
 
-		header_str = websocket.recv()
-		name, profile_str = header_str.split('||', 1)
-		profile = deserialize(profile_str)
+@sio.event
+def worker_header(sid, header_str):
+	global reflector_node, name_sid_map
 
-		itl = ITL_Client(websocket, name)
-		stub = axon.client.make_ServiceStub('ws://none:0000', itl, profile, stub_type=axon.stubs.SyncStub)
-		reflector_node.add_child(name, stub)
+	name, profile_str = header_str.split('||', 1)
+	name_sid_map[sid] = name
+	profile = deserialize(profile_str)
 
-		# blocks to keep the socket open until the worker closes the connection
-		while True:
-			time.sleep(1_000_000)
+	itl = ITL_Client(sio, sid, name)
+	stub = axon.client.make_ServiceStub('ws://none:0000', itl, profile, stub_type=axon.stubs.SyncStub)
+	reflector_node.add_child(name, stub)
 
-	except(BaseException) as e:
-		logger.exception("An exception occurred while handling a socket connection to worker")
-		websocket.close()
-
-def run(endpoint='reflected_services', ws_port=8008, http_port=default_http_port):
+def run(endpoint='reflected_services', ws_port=5000, http_port=default_http_port):
 	global reflector_node, http_tl
 
 	http_tl = transport.worker(http_port)
@@ -104,5 +123,6 @@ def run(endpoint='reflected_services', ws_port=8008, http_port=default_http_port
 
 	logger.debug('Reflector start')
 
-	with sync_serve(sock_serve_fn, '0.0.0.0', ws_port) as server:
-		server.serve_forever()
+	app = Flask(__name__)
+	app.wsgi_app = socketio.WSGIApp(sio, app.wsgi_app)
+	app.run(host='0.0.0.0', port=ws_port)

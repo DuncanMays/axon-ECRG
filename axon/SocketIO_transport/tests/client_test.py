@@ -10,5 +10,5 @@ import axon.SocketIO_transport.client as client
 def test_client():
 
 	c = client.SocketIOTransportClient()
-	r = c.call_rpc('http://localhost:5000/endpoint', (5, ), {})
+	r = c.call_rpc('http://localhost:5050/endpoint', (5, ), {})
 	print(r)

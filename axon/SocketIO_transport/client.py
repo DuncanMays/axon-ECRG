@@ -23,13 +23,17 @@ class SocketIOTransportClient(AbstractTransportClient):
 		url_head = '/'.join(url_components[:3])		
 		endpoint = '/' + '/'.join(url_components[3:])
 
+		self.sio.connect(url_head)
+
+		
 		result_future = Future()
+		
 		def handle_result(result_str):
 			result_future.set_result(result_str)
 			self.sio.disconnect()
 
-		self.sio.connect(url_head)
 		self.sio.on('result_from_worker', handle_result)
+
 		self.sio.emit('client_request', data=f'{endpoint}|{serialize((args, kwargs))}')
 
 		result_str = result_future.result()
