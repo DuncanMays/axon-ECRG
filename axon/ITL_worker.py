@@ -77,6 +77,9 @@ class ITL_Worker():
 
 			sio.emit('rpc_result', data=f'{call_ID}|{result_str}')
 
+		while True:
+			time.sleep(1_000_000)
+
 	def register_RPC(self, fn, endpoint, executor):
 
 		if isinstance(executor, PPE):

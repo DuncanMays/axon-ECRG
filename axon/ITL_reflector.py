@@ -89,12 +89,12 @@ def connect(sid, e):
 	logger.debug('New connection from: %s', sid)
 
 @sio.event
-def disconnect(sid, e):
+def disconnect(sid):
 	global reflector_node, name_sid_map
 
-	logger.debug('Worker %s disconnected', self.sid)
+	logger.debug('Worker %s disconnected', sid)
 	name = name_sid_map[sid]
-	reflector_node.remove_child(self.name)
+	reflector_node.remove_child(name)
 	del name_sid_map[sid]
 
 @sio.event
