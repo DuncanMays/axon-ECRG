@@ -18,6 +18,7 @@ from .transport_client import req_executor, error_handler, AsyncResultHandle
 from .config import transport, default_service_config
 from .chunking import send_in_chunks, recv_chunks
 from .HTTP_transport.config import port as default_http_port
+from .utils import get_ID_generator
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -36,15 +37,9 @@ sio = socketio.Server(async_mode='threading')
 reflector_node = None
 name_sid_map = {}
 
-def get_call_ID_generator(n=10_000):
-	L = list(range(n))
-	random.shuffle(L)
-	while True:
-		for l in L:
-			yield str(l)
-
-call_ID_gen = get_call_ID_generator()
+call_ID_gen = get_ID_generator()
 pending_reqs = {}
+chunk_buffers = {}
 
 class ITL_Client():
 
@@ -83,6 +78,35 @@ def rpc_result(sid, return_str):
 	logger.debug('RPC response for call_ID: %s', call_ID)
 	result_future = pending_reqs[call_ID]
 	result_future.set_result(result_str)
+
+@sio.event
+def rpc_result_chunk(sid, res_str):
+	chunk_num, num_chunks, call_ID, chunk_str = res_str.split('|', 3)
+	logger.debug('RPC response chunk %s for call_ID: %s', chunk_num, call_ID)
+
+	chunk_obj = {
+		'chunk_str': chunk_str,
+		'chunk_num': int(chunk_num)
+	}
+
+	if (call_ID in chunk_buffers):
+		chunk_buffers[call_ID].append(chunk_obj)
+
+	else :
+		chunk_buffers[call_ID] = [chunk_obj]
+
+	if (len(chunk_buffers[call_ID]) == int(num_chunks)):
+
+		chunks = chunk_buffers[call_ID]
+		chunks.sort(key=lambda x: x['chunk_num'])
+		chunk_strs = [b['chunk_str'] for b in chunks]
+		result_str = ''.join(chunk_strs)
+
+		result_future = pending_reqs[call_ID]
+		result_future.set_result(result_str)
+
+		logger.debug('recieved all chunks for call_ID: %s', call_ID)
+		del chunk_buffers[call_ID]
 
 @sio.event
 def connect(sid, e):

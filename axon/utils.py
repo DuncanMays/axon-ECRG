@@ -2,6 +2,14 @@ from .config import comms_config
 
 import socket
 import copy
+import random
+
+def get_ID_generator(n=10_000):
+	L = list(range(n))
+	random.shuffle(L)
+	while True:
+		for l in L:
+			yield str(l)
 
 def get_active_workers():
 	status, text = GET('http://'+str(comms_config.notice_board_ip)+':'+str(comms_config.notice_board_port)+'/get_ips')

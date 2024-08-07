@@ -8,6 +8,7 @@ from .stubs import add_url_defaults
 
 from concurrent.futures import ProcessPoolExecutor as PPE
 from types import SimpleNamespace
+from math import ceil
 
 import socketio
 import cloudpickle
@@ -75,7 +76,17 @@ class ITL_Worker():
 				result_str = serialize(traceback.format_exc(), sys.exc_info()[1])
 				result_str = f'1|{result_str}'
 
-			sio.emit('rpc_result', data=f'{call_ID}|{result_str}')
+			chunk_size = 100_000
+
+			if (len(result_str) < chunk_size):
+				sio.emit('rpc_result', data=f'{call_ID}|{result_str}')
+
+			else:
+				num_chunks = ceil(len(result_str)/chunk_size)
+
+				for i in range(num_chunks):
+					chunk_str = result_str[ chunk_size*i : chunk_size*(i+1) ]
+					sio.emit('rpc_result_chunk', data=f'{str(i)}|{str(num_chunks)}|{call_ID}|{chunk_str}')
 
 		while True:
 			time.sleep(1_000_000)

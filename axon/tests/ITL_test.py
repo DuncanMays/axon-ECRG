@@ -2,6 +2,7 @@ import axon
 import threading
 import time
 import pytest
+import random
 
 from websockets.sync.client import connect
 from concurrent.futures import ThreadPoolExecutor
@@ -37,6 +38,12 @@ def test_basic_operation():
 	def test_rpc(msg):
 		return msg
 
+	@axon.worker.rpc(tl=itlw, executor=tpe)
+	def return_big_string():
+		msg_size = 500_000
+		msg = ''.join([str(random.randint(0,9)) for i in range(msg_size)])
+		return msg
+
 	axon.worker.register_ServiceNode(t, 'test_service', tl=itlw, executor=tpe)
 
 	worker_thread = threading.Thread(target=itlw.run, daemon=True)
@@ -51,3 +58,5 @@ def test_basic_operation():
 
 	response = stub.test_worker.rpc.test_rpc('test_msg').join()
 	assert(response == 'test_msg')
+
+	stub.test_worker.rpc.return_big_string().join()
