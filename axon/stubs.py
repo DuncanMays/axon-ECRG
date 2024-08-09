@@ -1,26 +1,42 @@
-from .config import comms_config, default_rpc_config
-from .transport_client import call_rpc
+from axon.transport_client import AsyncResultHandle, req_executor
+
+from urllib.parse import urlparse, urlunparse
+import asyncio
+
+def add_url_defaults(url, config):
+	
+	if '://' not in url:
+		url = config.scheme+'://'+url
+
+	comps = urlparse(url)
+
+	if (comps.port == None):
+		netloc = f'{comps.hostname}:{config.port}'
+		url = urlunparse((comps.scheme, netloc, comps.path, '', '' , ''))
+
+	return url
 
 class GenericStub():
 
-	def __init__(self, worker_ip='localhost', port=comms_config.worker_port, rpc_name=None, endpoint_prefix=default_rpc_config['endpoint_prefix']):
-		self.remote_ip = worker_ip
-		self.port = port
-		self.__name__ = rpc_name
-		self.endpoint_prefix = endpoint_prefix
+	def __init__(self, tl, url):
+		self.url = add_url_defaults(url, tl.get_config())
+		self.tl = tl
 
 	def __call__(self, *args, **kwargs):
-		url = 'http://'+str(self.remote_ip)+':'+str(self.port)+'/'+self.endpoint_prefix+self.__name__
-		return call_rpc(url, args, kwargs)
+		return AsyncResultHandle(self.tl.call_rpc, self.url, args, kwargs)
 
-class SyncStub():
+class FutureStub(GenericStub):
 
-	def __init__(self, worker_ip='localhost', port=comms_config.worker_port, rpc_name=None, endpoint_prefix=default_rpc_config['endpoint_prefix']):
-		self.remote_ip = worker_ip
-		self.port = port
-		self.__name__ = rpc_name
-		self.endpoint_prefix = endpoint_prefix
+	def __init__(self, tl, url):
+		GenericStub.__init__(self, tl, url)
 
 	def __call__(self, *args, **kwargs):
-		url = 'http://'+str(self.remote_ip)+':'+str(self.port)+'/'+self.endpoint_prefix+self.__name__
-		return call_rpc(url, args, kwargs).join()
+		return req_executor.submit(self.tl.call_rpc, self.url, args, kwargs)
+
+class SyncStub(GenericStub):
+
+	def __init__(self, tl, url):
+		GenericStub.__init__(self, tl, url)
+
+	def __call__(self, *args, **kwargs):
+		return self.tl.call_rpc(self.url, args, kwargs)

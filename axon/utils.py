@@ -1,25 +1,15 @@
 from .config import comms_config
 
-import pickle
-import requests
-import aiohttp
-import asyncio
-import codecs
-import time
 import socket
 import copy
+import random
 
-# pickle operates on bytes, but http operates on strings, so we've gotta convert pickles to and from a string
-def serialize(obj):
-	pickled = pickle.dumps(obj)
-	return codecs.encode(pickled, "base64").decode()
-
-# pickle operates on bytes, but http operates on strings, so we've gotta convert pickles to and from a string
-def deserialize(obj_str):
-	# print(obj_str)
-	obj_bytes = codecs.decode(obj_str.encode(), "base64")
-	# print(pickle.loads(obj_bytes))
-	return pickle.loads(obj_bytes)
+def get_ID_generator(n=10_000):
+	L = list(range(n))
+	random.shuffle(L)
+	while True:
+		for l in L:
+			yield str(l)
 
 def get_active_workers():
 	status, text = GET('http://'+str(comms_config.notice_board_ip)+':'+str(comms_config.notice_board_port)+'/get_ips')

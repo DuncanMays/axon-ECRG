@@ -1,29 +1,21 @@
 # the bit that exports worker profile class and uses the RVL
 # an RPC stub is the thing on the client that makes a calling request and waits for the response
 
-from .config import comms_config, default_service_config, default_rpc_config
-from .utils import deserialize
-from .stubs import GenericStub, SyncStub
-from .transport_client import GET
+from axon.config import default_service_config, default_rpc_endpoint, default_client_tl
+from axon.stubs import GenericStub, add_url_defaults
 
 from types import SimpleNamespace
 
-def get_ServiceStub(ip_addr='localhost', port=comms_config.worker_port,  endpoint_prefix=default_service_config['endpoint_prefix'], name='', profile=None, stub_type=GenericStub, top_stub_type=object):
-	global count 
+transport_client = default_client_tl
 
-	# the attributes of the returned object
-	attrs = {}
+def get_ServiceStub(url, tl=transport_client, stub_type=GenericStub, top_stub_type=object):
+	url = add_url_defaults(url, tl.get_config())
+	profile = tl.call_rpc(url, (), {})
+	url_components = url.split('/')
+	base_url = '/'.join(url_components[:3])
+	return make_ServiceStub(base_url, tl, profile, stub_type, top_stub_type)
 
-	# gets the profile if none are provided
-	if (profile == None):
-		url = 'http://'+str(ip_addr)+':'+str(comms_config.worker_port)+'/'+endpoint_prefix+name
-		_, profile_str = GET(url)
-		profile = deserialize(profile_str)
-
-	# once the profil is obtained, metaclass creation is left to get_ServiceStub_helper
-	return get_ServiceStub_helper(ip_addr, port, profile, stub_type, top_stub_type)
-
-def get_ServiceStub_helper(ip_addr, port, profile, stub_type, top_stub_type):
+def make_ServiceStub(url, tl, profile, stub_type=GenericStub, top_stub_type=object):
 
 	attrs = {}
 	keys = list(profile.keys())
@@ -38,60 +30,46 @@ def get_ServiceStub_helper(ip_addr, port, profile, stub_type, top_stub_type):
 
 		if '__profile_flag__' in member:
 			# member is a profile for a ServiceNode
-			attrs[key] = get_ServiceStub_helper(ip_addr, port, member, stub_type, object)
+			attrs[key] = make_ServiceStub(url, tl, member, stub_type, object)
 
 		else:
 			# If a member is not a profile, then it must be an RPC config, and so correspond to a callable object on the worker with no __dict__attribute
-			attrs[key] = stub_type(worker_ip=ip_addr, port=port, endpoint_prefix=member['endpoint_prefix']+'/', rpc_name=key)
+			stub_url = url + f"{member['endpoint_prefix']}/{key}"
+			attrs[key] = stub_type(tl=tl, url=stub_url)
 
 	if '__call__' in keys:
 		# if the profile has a __call__ attribute, than the corresponding object on the server is callable and has a __dict__ attribute, and so must be represented by an RPC stub bound to the given network coordinates
-		BoundStubClass = get_BoundStubClass(stub_type, ip_addr, port, profile['__call__'])
+		stub_url = url + f"{profile['__call__']['endpoint_prefix']}/__call__"
+		BoundStubClass = get_BoundStubClass(stub_type, tl, stub_url)
 		# this ensures the stub will inherit from a stub class that's bound to the configuration
 		parent_classes = (BoundStubClass, ) + parent_classes
 
 	ServiceStub = type('ServiceStub', parent_classes, attrs)
 	return ServiceStub()
 
-def get_BoundStubClass(stub_type, ip_addr, port, configuration):
+def get_BoundStubClass(stub_type, tl, url):
 	
 	# a class for stubs that are bound to a certain RPC
 	class BoundStubClass(stub_type):
 		def __init__(self):
-			stub_type.__init__(self, worker_ip=ip_addr, port=port, endpoint_prefix=configuration['endpoint_prefix']+'/', rpc_name='__call__')
+			stub_type.__init__(self, tl, url)
 
 	return BoundStubClass
 
-def get_worker_profile(ip_addr, port=comms_config.worker_port):
-	url = 'http://'+str(ip_addr)+':'+str(port)+'/_get_profile'
-	_, profile_str = GET(url)
-	profile = deserialize(profile_str)
-	profile['port'] = port
-	return profile
-
 class RemoteWorker():
 
-	def __init__(self, profile, stub_type=GenericStub):
-		self.stub_type = stub_type
-		self.ip_addr = profile['ip_addr']
-		self.port = profile['port']
-		self.name = profile['name']
+	def __init__(self, profile, url, tl=transport_client, stub_type=GenericStub, top_stub_type=object):
+		self.url = url
+		self.tl = tl
 
 		# this will need to be a lookup on a services key to a number of service profiles
-		self.rpcs = get_ServiceStub(self.ip_addr, port=self.port, endpoint_prefix=default_rpc_config['endpoint_prefix']+'/', name=default_rpc_config['endpoint_prefix'], profile=profile['rpcs'], stub_type=self.stub_type)
+		self.rpcs = make_ServiceStub(url, tl, profile=profile['rpcs'], stub_type=stub_type, top_stub_type=top_stub_type)
 
 		for service_name in profile['services'].keys():
-			s = get_ServiceStub(self.ip_addr, port=self.port, endpoint_prefix=f'{service_name}/', name=service_name, profile=profile['services'][service_name], stub_type=self.stub_type)
+			s = make_ServiceStub(url, tl, profile=profile['services'][service_name], stub_type=stub_type, top_stub_type=top_stub_type)
 			setattr(self, service_name, s)
 
-	def setup_rpc_stubs(self, rpcs_descs):
-		rpcs = {}
-
-		for rpc_desc in rpcs_descs:
-			rpcs[name] = stub_type(worker_ip=self.ip_addr, port=self.port, rpc_name=rpc_desc['name'], comms_pattern=rpc_desc['comms_pattern'])
-
-		self.rpcs = SimpleNamespace(**rpcs)
-
-def get_RemoteWorker(ip_addr, port=comms_config.worker_port, stub_type=GenericStub):
-	profile = get_worker_profile(ip_addr, port)
-	return RemoteWorker(profile, stub_type=stub_type)
+def get_RemoteWorker(url, tl=transport_client, stub_type=GenericStub, top_stub_type=object):
+	url = add_url_defaults(url, tl.get_config())
+	profile = tl.call_rpc(f'{url}/_get_profile', (), {})
+	return RemoteWorker(profile, url, tl, stub_type=stub_type)

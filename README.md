@@ -1,6 +1,6 @@
 # Axon
 
-Axon is a general-purpose RPC-proxy framework developed to facilitate machine learning research at Queen’s University in Kingston, Ontario. It focusses on fast development, being easy-to-use, and it does its best to stay out of the programmer’s way. One of Axon's goals is to make programming distributed systems as similar as possible to programming code that only runs locally. Axon does this by creating distributed equivalents of familiar concepts, such as functions and classes.
+Axon is a Python framework that enables developers to host services on edge devices and access them over local networks or the Internet. Axon allows developers to deploy services from the edge, utilizing any available devices on hand, rather than using expensive cloud computing and without opening a port on their network. Moreover, calls to services deployed with Axon are made through developer-friendly RPC proxies that match the interface of the variables being served. Axon can expose services quickly and easily, requiring only a few extra lines of code on top of a service’s core logic.
 
 ## Installation
 
@@ -10,215 +10,59 @@ Axon is a general-purpose RPC-proxy framework developed to facilitate machine le
 
 ### Worker
 
-Expose a function to distributed access with the `rpc` decorator:
+Developers may deploy services by passing Python variables or functions into Axon. These objects are then exposed to distributed access, and clients may create stubs linked to these variables to make calls to them. Designing an Axon service reduces to deciding which functions and variables should be exposed to outside access. Functions can be passed into Axon using the rpc decorator, and variables using the register_ServiceNode function. See below for an example worker script:
 
 ```
-from axon import worker
-
-@worker.rpc()
-def hello_world():
-	print("hello")
-	return "world"
-
-worker.init()
-```
-
-### Client
-
-RPCs can be called with `RemoteWorker` objects:
-
-```
-from axon import client
-
-hw_worker = client.get_RemoteWorker('localhost')
-
-result = hw_worker.rpcs.hello_world().join()
-
-print(result)
-```
-
-Replace 'localhost' with the IP address of the remote host, and you can call functions on other computers on your network.
-
-## Asyncio
-
-Axon RPC requests return an `AsyncResultHandle` that allows for concurrent code execution during a request and parallel execution of requests. The result of the RPC invocation is obtained by calling `.join()` on the handle, for example:
-
-```
-from axon import client
-
-hw_worker = client.get_RemoteWorker('localhost')
-
-result = hw_worker.rpcs.hello_world()
-
-print("Hi there!")
-
-print(result.join())
-```
-
-The `AsyncResultHandle` class can also be awaited using asyncio! Import asyncio and run axon requests inside coroutines using async/await syntax:
-
-```
-from axon import client
-import asyncio
-
-async def main():
-	hw_worker = client.get_RemoteWorker('localhost')
-	result = await hw_worker.rpcs.hello_world()
-	print(result)
-
-asyncio.run(main())
-```
-
-## Synchronous Stubs
-
-If concurrency is not necessary, you may also request axon RPCs synchronously by passing in a different stub type:
-
-```
-import axon
-
-hw_worker = axon.client.get_RemoteWorker('localhost', stub_type=axon.stubs.SyncStub)
-
-result = hw_worker.rpcs.hello_world()
-
-print(result)
-```
-
-## Services
-
-With axon you can expose instances of classes, not just functions, to remote access. Use register_ServiceNode to serve object instances:
-
-```
-from axon import worker
-
-class TestClass():
-
-	def print_msg(self, msg):
-		print(msg)
-
-worker.register_ServiceNode(TestClass(), 'test_service')
-worker.init()
-```
-
-And then call services with:
-
-```
-from axon import client
-
-stub = client.get_ServiceStub('localhost', endpoint_prefix='test_service')
-
-stub.print_msg('hello!').join()
-```
-
-RPCs are also just a service:
-
-```
-from axon import client
-
-stub = client.get_ServiceStub('localhost', endpoint_prefix='rpc')
-
-print(stub.hello_world().join())
-```
-
-The same configuration options like `stub_type` can be used in `get_ServiceStub`. Services can be connected with a RemoteWorker object just like RPCs, though they're on an attribute matching the string passed to the `register_ServiceNode` call on worker:
-
-```
-from axon import client
-
-hw_worker = client.get_RemoteWorker('localhost')
-
-result = hw_worker.test_service.print_msg().join()
-```
-
-## Error Propegation
-
-Errors in the worker propagate back to the client that invoke the error, and are thrown at the line making the RPC call. For example, a worker that throws:
-
-```
-from axon import worker
-
-@worker.rpc()
-def raise_error():
-	raise BaseException('your code sucks!!!')
-
-worker.init()
-```
-
-Would result in the following error message in client:
-
-```
-the following error occured in worker:
-Traceback (most recent call last):
-  File "/home/axon/worker.py", line 77, in invoke_RPC
-    result = target_fn(*args, **kwargs)
-  File "<stdin>", line 2, in raise_error
-BaseException: your code sucks!!!
-
-Traceback (most recent call last):
-  File "<stdin>", line 1, in <module>
-  File "/home/axon/transport_client.py", line 40, in join
-    self.value = self.future.result()
-  File "/home/python3.8/concurrent/futures/_base.py", line 439, in result
-    return self.__get_result()
-  File "/home/python3.8/concurrent/futures/_base.py", line 388, in __get_result
-    raise self._exception
-  File "/home/python3.8/concurrent/futures/thread.py", line 57, in run
-    result = self.fn(*self.args, **self.kwargs)
-  File "/home/axon/transport_client.py", line 74, in call_rpc_helper
-    return error_handler(return_obj)
-  File "/home/axon/transport_client.py", line 20, in error_handler
-    raise(error)
-BaseException: your code sucks!!!
-```
-
-If your worker is at a public IP, be careful sending error traces back to remote users. These error traces can reveal important information about your system, like the name of your home folder and details about the structure of the service. Errors should be caught and only sterile errors without any private information should be sent back to client.
-
-## Worker Discovery
-
-It can be a logistical challenge to keep track of the IP addresses of the workers on your network. Fortunetely this problem can be solved with a simple service, the `SignUpService`:
-
-```
-from axon import worker
-
-class SignUpService():
-    def __init__(self):
-            self.ips = []
-
-    def sign_in(self, ip):
-            self.ips.append(ip)
-
-    def sign_out(self, ip):
-            self.ips.remove(ip)
-
-    def get_ips(self):
-            return self.ips
-
-s = SignUpService()
-worker.register_ServiceNode(s, 'SignUpService')
-worker.init()
-```
-
-The idea is that the `SignUpService` runs at a known IP address, say '192.168.2.10', that way workers are aware of. Then each worker will sign in on startup so that clients can get their IP addresses. 
-
-```
-import axon
-
-s = axon.client.get_ServiceStub('192.168.2.19', endpoint_prefix='SignUpService')
-self_ip = axon.utils.get_self_ip()
-s.sign_in(self_ip).join()
-
 @axon.worker.rpc()
 def print_msg(msg):
-	print(msg)
+print(msg)
+
+l = [1,2,3,4,5]
+axon.worker.register_ServiceNode(l, "list_service")
 
 axon.worker.init()
 ```
 
-This has the advantage that both workers and clients only need to know one IP address, yet can discover eachother's IPs and communicate. Clients can obtain the IP addresses of all workers that have signed in:
+### Client
+
+Developers may access services using stub objects created from URLs that identify the service. Parameters are passed into these stubs much like a normal function call. See below for an example client script that accesses the service described above. To access a service hosted by another machine on the same local network or the Internet, 'localhost' must be replaced with the IP address of the desired host machine. 
+
+Functions that are exposed with Axon are called RPCs, and can be accessed with a stub created from a URL with the rpcs endpoint. The stub returned from this call, has attributes corresponding to each RPC that the worker exposes. In this example, the worker exposes a function called 'print_msg', and so the stub created below has a functional attribute with the same name. Calling this attribute on the stub will transmit any arguments passed in to the worker, which will run the RPC on those arguments. After the RPC is invoked the return value will be transmitted back to the client and passed back through the corresponding call to the stub’s attribute. 
+
+The worker script passes the string 'list_service' with the list, and so a stub linked to the list can be created with URLs ending in the same string. Stubs have a matching interface to the remote variable they are linked to, and so the list stub has a pop attribute just like a Python list. Dunder methods like `__get_item__` are also mimicked on the stub, and so list indexing can be done using the same syntax on the stub as on the list it represents.
 
 ```
-import axon
+rpc_stub = axon.client.get_ServiceStub("http://localhost/rpcs")
+await rpc_stub.print_msg("Hello World!")
 
-s = axon.client.get_ServiceStub('192.168.2.19', endpoint_prefix='SignUpService')
-
-worker_ips = s.get_ips().join()
+list_stub = axon.client.get_ServiceStub("http://localhost/list_service")
+await list_stub.pop() # returns 5
+await list_stub[1] # returns 2
 ```
+
+By default, axon RPC requests return an `AsyncResultHandle` that allows for concurrent code execution during a request with asyncio. The result of the RPC invocation is obtained by calling using the 'await' keyword on the result handle. Another for option when asyncio is impractical is to call `.join()`: 
+```
+rpc_stub = axon.client.get_ServiceStub("http://localhost/rpcs")
+rpc_stub.print_msg("Hello World!").join()
+
+list_stub = axon.client.get_ServiceStub("http://localhost/list_service")
+list_stub.pop().join() # returns 5
+list_stub[1].join() # returns 2
+```
+
+When syncronous behavior is desired, develeopers may pass in a `stub_type` option to make syncronous calls:
+
+```
+rpc_stub = axon.client.get_ServiceStub("http://localhost/rpcs", stub_type=axon.stubs.SyncStub)
+rpc_stub.print_msg("Hello World!")
+
+list_stub = axon.client.get_ServiceStub("http://localhost/list_service", stub_type=axon.stubs.SyncStub)
+list_stub.pop() # returns 5
+list_stub[1] # returns 2
+```
+
+## Edge Hosting Capability
+
+Axon allows developers to host services on local devices while exposing them to access from anywhere in the world. Normally, local networks block incoming TCP connection requests, keeping user devices safe from the threats of the public internet. Anyone wishing to offer worldwide access to a service on a local device would need to open a port on their router; a significant security consideration. Axon workers may take service requests through a pre-established connection to a trusted third party on the internet, known as a reflector. The reflector would then take requests from clients on the worker's behalf, and pass them down to the worker through this connection.
+
+![](http://143.198.32.69/ITL_diagram.png)
