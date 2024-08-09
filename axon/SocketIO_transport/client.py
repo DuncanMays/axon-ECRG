@@ -4,7 +4,6 @@ path.append('..')
 from axon.serializers import serialize, deserialize
 from axon.transport_client import AbstractTransportClient, error_handler
 from axon.SocketIO_transport import config
-from axon.config import split_str
 from axon.utils import get_ID_generator
 from concurrent.futures import Future
 from math import ceil

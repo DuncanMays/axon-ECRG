@@ -4,12 +4,11 @@ import time
 import pytest
 import random
 
-from websockets.sync.client import connect
 from concurrent.futures import ThreadPoolExecutor
 
 url_scheme = axon.config.url_scheme
 reflector = axon.ITL_reflector
-ITL_Worker = axon.ITL_worker.ITL_Worker
+ITLW = axon.ITL_worker.ITLW
 
 class DummyClass():
 
@@ -30,7 +29,7 @@ def test_basic_operation():
 	reflector_thread.start()
 	time.sleep(1)
 
-	itlw = ITL_Worker(url='localhost', name='test_worker')
+	itlw = ITLW(url='localhost', name='test_worker')
 	tpe = ThreadPoolExecutor(max_workers=10)
 	t = DummyClass()
 

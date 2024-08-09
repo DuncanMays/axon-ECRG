@@ -16,9 +16,9 @@ import time
 import sys
 import traceback
 
-class ITL_Worker():
+class ITLW():
 
-	def __init__(self, url, name):
+	def __init__(self, name, url='http://143.198.32.69:5000'):
 		self.name = name
 		self.reflector_url = add_url_defaults(url, SimpleNamespace(port=5000, scheme='http'))
 		self.rpcs = {}

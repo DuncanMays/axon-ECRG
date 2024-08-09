@@ -42,32 +42,6 @@ class AsyncResultHandle():
 		f = req_executor.submit(self.fn, *self.args, **self.kwargs)
 		return f.result()
 
-def POST_thread_fn(url, data):
-	return http.request('POST', url, fields=data)
-
-async def async_POST(url, data=None, timeout=None):
-	future = req_executor.submit(POST_thread_fn, url, data)
-	x = await AsyncResultHandle(future)
-	return x.status, x.data.decode()
-
-def POST(url, data=None, timeout=None):
-	future = req_executor.submit(POST_thread_fn, url, data)
-	x = future.result()
-	return x.status, x.data.decode()
-
-def GET_thread_fn(url):
-	return http.request('GET', url)
-
-async def async_GET(url, timeout=None):
-	future = req_executor.submit(GET_thread_fn, url)
-	x = await AsyncResultHandle(future)
-	return x.status, x.data.decode()
-
-def GET(url, timeout=None):
-	future = req_executor.submit(GET_thread_fn, url)
-	x = future.result()
-	return x.status, x.data.decode()
-
 class AbstractTransportClient(ABC):
 
 	@abstractmethod

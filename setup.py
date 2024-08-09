@@ -17,6 +17,6 @@ setup(
 	long_description_content_type="text/markdown",
 	url="https://github.com/DuncanMays/axon-ECRG",
 	packages=['axon', 'tests'],
-	install_requires=['flask', 'uuid', 'requests', 'aiohttp', 'websockets'],
+	install_requires=['flask', 'uuid', 'requests', 'aiohttp', 'python-socketio[client]', 'psutil', 'cloudpickle'],
 )
 
