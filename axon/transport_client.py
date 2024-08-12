@@ -9,7 +9,7 @@ from abc import ABC, abstractmethod
 from axon.serializers import serialize, deserialize
 
 req_executor = futures.ThreadPoolExecutor(max_workers=100)
-http = urllib3.PoolManager()
+http = urllib3.PoolManager(maxsize=100)
 
 # this function checks if an error flag has been set and raises the corresponding error if it has
 def error_handler(result_str):
