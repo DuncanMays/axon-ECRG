@@ -53,7 +53,7 @@ class ServiceNode():
 		child = self.children[child_key]
 
 		if isinstance(child, ServiceNode):
-			# remove all grandchildren
+			# remove all grandchildren through the child to be deleted by calling that child's remove_child method
 			grand_child_keys = list(child.children.keys())
 			for grand_child_key in grand_child_keys:
 
