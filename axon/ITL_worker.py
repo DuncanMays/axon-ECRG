@@ -31,9 +31,6 @@ class ITLW():
 		# filter out the keys that end in __call__, since they're endpoints for RPCs, not get_profile
 		profile_endpoints = filter(lambda x : not x[::-1].split('/', 1)[0] == '__llac__', endpoints)
 
-		# filter out the keys beginning with an empty string, as their for the TLSN
-		profile_endpoints = filter(lambda x : not x.split('/', 1)[0] == '', profile_endpoints)
-
 		profile = {}
 
 		for pe in profile_endpoints:
@@ -50,6 +47,9 @@ class ITLW():
 			endpoint = profile[service_name]
 			(fn, _) = self.rpcs[endpoint]
 			profile[service_name] = fn()
+
+		# remove the TLSN from the profile
+		del profile ['']
 
 		profile_str = serialize(profile)
 
