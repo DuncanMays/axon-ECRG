@@ -7,8 +7,7 @@ import random
 from concurrent.futures import ThreadPoolExecutor
 
 url_scheme = axon.config.url_scheme
-reflector = axon.ITL_reflector
-ITLW = axon.ITL_worker.ITLW
+reflector = axon.reflector
 
 class DummyClass():
 
@@ -29,7 +28,7 @@ def test_basic_operation():
 	reflector_thread.start()
 	time.sleep(1)
 
-	itlw = ITLW(url='localhost', name='test_worker')
+	itlw = reflector.ITLW(url='localhost', name='test_worker')
 	tpe = ThreadPoolExecutor(max_workers=10)
 	t = DummyClass()
 
