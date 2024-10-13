@@ -13,25 +13,13 @@ from concurrent.futures import Future
 from threading import Timer
 from flask import Flask
 
-from .serializers import serialize, deserialize
-from .transport_client import req_executor, error_handler, AsyncResultHandle
-from .config import transport, default_service_config
-from .chunking import send_in_chunks, recv_chunks
-from .HTTP_transport.config import port as default_http_port
-from .utils import get_ID_generator
-
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-
-c_handler = logging.StreamHandler()
-f_handler = logging.FileHandler('./reflector.log')
-
-log_format = logging.Formatter('%(asctime)s | %(levelname)s | %(message)s')
-c_handler.setFormatter(log_format)
-f_handler.setFormatter(log_format)
-
-logger.addHandler(c_handler)
-logger.addHandler(f_handler)
+from axon.serializers import serialize, deserialize
+from axon.transport_client import req_executor, error_handler, AsyncResultHandle
+from axon.config import transport, default_service_config
+from axon.chunking import send_in_chunks, recv_chunks
+from axon.HTTP_transport.config import port as default_http_port
+from axon.utils import get_ID_generator
+from axon.reflector import config as refl_config
 
 sio = socketio.Server(async_mode='threading')
 reflector_node = None
@@ -40,6 +28,23 @@ name_sid_map = {}
 call_ID_gen = get_ID_generator()
 pending_reqs = {}
 chunk_buffers = {}
+
+logger = None
+def init_logger():
+	global logger
+
+	logger = logging.getLogger(__name__)
+	logger.setLevel(logging.DEBUG)
+
+	c_handler = logging.StreamHandler()
+	f_handler = logging.FileHandler(refl_config.log_file)
+
+	log_format = logging.Formatter('%(asctime)s | %(levelname)s | %(message)s')
+	c_handler.setFormatter(log_format)
+	f_handler.setFormatter(log_format)
+
+	logger.addHandler(c_handler)
+	logger.addHandler(f_handler)
 
 class ITL_Client():
 
@@ -134,7 +139,10 @@ def worker_header(sid, header_str):
 	reflector_node.add_child(name, stub)
 
 def run(endpoint='reflected_services', ws_port=5000, http_port=default_http_port):
-	global reflector_node, http_tl
+	global reflector_node, http_tl, logger
+
+	if logger == None:
+		init_logger()
 
 	http_tl = transport.worker(http_port)
 

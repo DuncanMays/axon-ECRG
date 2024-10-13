@@ -1,10 +1,10 @@
 import sys
 sys.path.append('..')
 
-from .transport_worker import invoke_RPC
-from .serializers import serialize, deserialize
-from .chunking import send_in_chunks, recv_chunks
-from .stubs import add_url_defaults
+from axon.transport_worker import invoke_RPC
+from axon.serializers import serialize, deserialize
+from axon.chunking import send_in_chunks, recv_chunks
+from axon.stubs import add_url_defaults
 
 from concurrent.futures import ProcessPoolExecutor as PPE
 from types import SimpleNamespace
@@ -47,6 +47,9 @@ class ITLW():
 			endpoint = profile[service_name]
 			(fn, _) = self.rpcs[endpoint]
 			profile[service_name] = fn()
+
+		# remove the TLSN from the profile
+		del profile ['']
 
 		profile_str = serialize(profile)
 
