@@ -72,17 +72,3 @@ class SocketIOTransportWorker(AbstractTransportWorker):
 
 	def run(self):
 		self.app.run(host='0.0.0.0', port=self.port)
-
-	def register_RPC(self, fn, endpoint, executor):
-
-		if isinstance(executor, PPE):
-			fn = cloudpickle.dumps(fn)
-
-		self.rpcs[endpoint] = (fn, executor)
-
-	def deregister_RPC(self, endpoint):
-
-		if endpoint in self.rpcs:
-			del self.rpcs[endpoint]
-		else:
-			raise BaseException(f'No RPC registered at endpoint: {endpoint}')

@@ -4,11 +4,18 @@ path.append('..')
 from axon.serializers import serialize, deserialize
 from axon.transport_client import AbstractTransportClient, error_handler
 from axon.SocketIO_transport import config
-from axon.utils import get_ID_generator
 from concurrent.futures import Future
 from math import ceil
 
 import socketio
+import random
+
+def get_ID_generator(n=10_000):
+	L = list(range(n))
+	random.shuffle(L)
+	while True:
+		for l in L:
+			yield str(l)
 
 call_ID_gen = get_ID_generator()
 

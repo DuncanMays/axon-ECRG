@@ -10,9 +10,9 @@ from itertools import product
 url_scheme = axon.config.url_scheme
 message = 'hello world!'
 
-start_delay = 0.05
-small_delay = 0.05
-big_delay = 0.5
+start_delay = 2*0.05
+small_delay = 2*0.05
+big_delay = 2*0.5
 
 @pytest.mark.tl
 @pytest.mark.asyncio
