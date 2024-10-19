@@ -3,6 +3,7 @@ import threading
 import time
 import pytest
 import random
+import cloudpickle
 
 from PIL import Image
 from PIL import ImageChops
@@ -74,3 +75,31 @@ def test_chunking(echo_worker):
 	
 	diff = ImageChops.difference(img, response)
 	assert not diff.getbbox()
+
+@pytest.fixture(scope='package')
+def host_worker(refl_thread):
+
+	itlw = axon.reflector.ITLW(url='localhost', name='host_worker')
+
+	@axon.worker.rpc(tl=itlw, executor=tpe)
+	def host(service_str, name):
+		service = cloudpickle.loads(service_str)
+		axon.worker.register_ServiceNode(service, name, tl=itlw)
+		itlw.update_profile()
+		return 'success'
+
+	worker_thread = threading.Thread(target=itlw.run, daemon=True)
+	worker_thread.start()
+	time.sleep(1)
+
+def test_hosting(host_worker):
+	stub = axon.client.get_ServiceStub(f'{axon.config.url_scheme}://localhost:{refl_http_port}/reflected_services')
+
+	t = DummyClass()
+	r = stub.host_worker.rpc.host(cloudpickle.dumps(t), 'hosted_t').join()
+	assert(r == 'success')
+
+	stub = axon.client.get_ServiceStub(f'{axon.config.url_scheme}://localhost:{refl_http_port}/reflected_services/host_worker/hosted_t')
+	resp = stub.print_str('This comes from the host!').join()
+	assert(resp == 'all done!')
+	
