@@ -23,7 +23,7 @@ from axon.reflector import config as refl_config
 
 sio = socketio.Server(async_mode='threading')
 reflector_node = None
-name_sid_map = {}
+client_sid_map = {}
 
 call_ID_gen = get_ID_generator()
 pending_reqs = {}
@@ -119,24 +119,28 @@ def connect(sid, e):
 
 @sio.event
 def disconnect(sid):
-	global reflector_node, name_sid_map
+	global reflector_node, client_sid_map
 
 	logger.debug('Worker %s disconnected', sid)
-	name = name_sid_map[sid]
+	name = client_sid_map[sid].name
 	reflector_node.remove_child(name)
-	del name_sid_map[sid]
+	del client_sid_map[sid]
 
 @sio.event
-def worker_header(sid, header_str):
-	global reflector_node, name_sid_map
+def worker_header(sid, name):
+	global client_sid_map
+	client_sid_map[sid] = ITL_Client(sio, sid, name)
+	
+@sio.event
+def update_profile(sid, profile_str):
+	global reflector_node, client_sid_map
+	logger.debug(f'update_profile {sid}')
 
-	name, profile_str = header_str.split('||', 1)
-	name_sid_map[sid] = name
 	profile = deserialize(profile_str)
 
-	itl = ITL_Client(sio, sid, name)
+	itl = client_sid_map[sid]
 	stub = axon.client.make_ServiceStub('ws://none:0000', itl, profile, stub_type=axon.stubs.SyncStub)
-	reflector_node.add_child(name, stub)
+	reflector_node.add_child(itl.name, stub)
 
 def run(endpoint='reflected_services', ws_port=5000, http_port=default_http_port):
 	global reflector_node, http_tl, logger
