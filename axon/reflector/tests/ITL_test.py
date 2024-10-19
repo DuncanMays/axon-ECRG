@@ -3,11 +3,21 @@ import threading
 import time
 import pytest
 import random
+import cloudpickle
 
+from PIL import Image
+from PIL import ImageChops
 from concurrent.futures import ThreadPoolExecutor
 
-url_scheme = axon.config.url_scheme
-reflector = axon.reflector
+refl_http_port=8081
+tpe = ThreadPoolExecutor(max_workers=10)
+
+@pytest.fixture(scope='package')
+def refl_thread():
+
+	reflector_thread = threading.Thread(target=axon.reflector.run, kwargs={'http_port':refl_http_port}, daemon=True)
+	reflector_thread.start()
+	time.sleep(1)
 
 class DummyClass():
 
@@ -21,40 +31,75 @@ class DummyClass():
 
 		return 'all done!'
 
-def test_basic_operation():
+@pytest.fixture(scope='package')
+def test_service(refl_thread):
 
-	worker_port=8081
-	reflector_thread = threading.Thread(target=reflector.run, kwargs={'http_port':worker_port}, daemon=True)
-	reflector_thread.start()
-	time.sleep(1)
+	itlw = axon.reflector.ITLW(url='localhost', name='test_service')
 
-	itlw = reflector.ITLW(url='localhost', name='test_worker')
-	tpe = ThreadPoolExecutor(max_workers=10)
-	t = DummyClass()
-
-	@axon.worker.rpc(tl=itlw, executor=tpe)
-	def test_rpc(msg):
-		return msg
-
-	@axon.worker.rpc(tl=itlw, executor=tpe)
-	def return_big_string():
-		msg_size = 500_000
-		msg = ''.join([str(random.randint(0,9)) for i in range(msg_size)])
-		return msg
-
-	axon.worker.register_ServiceNode(t, 'test_service', tl=itlw, executor=tpe)
+	axon.worker.register_ServiceNode(DummyClass(), 'test_service', tl=itlw, executor=tpe)
 
 	worker_thread = threading.Thread(target=itlw.run, daemon=True)
 	worker_thread.start()
 	time.sleep(1)
 
-	stub = axon.client.get_ServiceStub(f'{url_scheme}://localhost:{worker_port}/reflected_services')
+@pytest.fixture(scope='package')
+def echo_worker(refl_thread):
 
-	reflected_str = 'this is a message sent from client to reflector, then to worker, where it\'s printed to console'
-	response = stub.test_worker.test_service.print_str(reflected_str).join()
+	itlw = axon.reflector.ITLW(url='localhost', name='echo_worker')
+
+	@axon.worker.rpc(tl=itlw, executor=tpe)
+	def echo(msg):
+		return msg
+
+	worker_thread = threading.Thread(target=itlw.run, daemon=True)
+	worker_thread.start()
+	time.sleep(1)
+
+def test_basic_operation(echo_worker, test_service):
+
+	stub = axon.client.get_ServiceStub(f'{axon.config.url_scheme}://localhost:{refl_http_port}/reflected_services')
+
+	test_msg = 'this is a message sent from client to reflector, then to worker, and then back again'
+	response = stub.echo_worker.rpc.echo(test_msg).join()
+	assert(response == test_msg)
+
+	response = stub.test_service.test_service.print_str(test_msg).join()
 	assert(response == 'all done!')
 
-	response = stub.test_worker.rpc.test_rpc('test_msg').join()
-	assert(response == 'test_msg')
+def test_chunking(echo_worker):
+	stub = axon.client.get_ServiceStub(f'{axon.config.url_scheme}://localhost:{refl_http_port}/reflected_services')
 
-	stub.test_worker.rpc.return_big_string().join()
+	# sends a PIL image to and from the worker to test if the chunking feature is working, since the image data should be larger than the max message size in SocketIO
+	img = Image.open('./axon/reflector/tests/test_image.jpg')
+	response = stub.echo_worker.rpc.echo(img).join()
+	
+	diff = ImageChops.difference(img, response)
+	assert not diff.getbbox()
+
+@pytest.fixture(scope='package')
+def host_worker(refl_thread):
+
+	itlw = axon.reflector.ITLW(url='localhost', name='host_worker')
+
+	@axon.worker.rpc(tl=itlw, executor=tpe)
+	def host(service_str, name):
+		service = cloudpickle.loads(service_str)
+		axon.worker.register_ServiceNode(service, name, tl=itlw)
+		itlw.update_profile()
+		return 'success'
+
+	worker_thread = threading.Thread(target=itlw.run, daemon=True)
+	worker_thread.start()
+	time.sleep(1)
+
+def test_hosting(host_worker):
+	stub = axon.client.get_ServiceStub(f'{axon.config.url_scheme}://localhost:{refl_http_port}/reflected_services')
+
+	t = DummyClass()
+	r = stub.host_worker.rpc.host(cloudpickle.dumps(t), 'hosted_t').join()
+	assert(r == 'success')
+
+	stub = axon.client.get_ServiceStub(f'{axon.config.url_scheme}://localhost:{refl_http_port}/reflected_services/host_worker/hosted_t')
+	resp = stub.print_str('This comes from the host!').join()
+	assert(resp == 'all done!')
+	
