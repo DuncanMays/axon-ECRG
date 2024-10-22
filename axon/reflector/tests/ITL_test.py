@@ -70,7 +70,7 @@ def test_chunking(echo_worker):
 	stub = axon.client.get_ServiceStub(f'{axon.config.url_scheme}://localhost:{refl_http_port}/reflected_services')
 
 	# sends a PIL image to and from the worker to test if the chunking feature is working, since the image data should be larger than the max message size in SocketIO
-	img = Image.open('./axon/reflector/tests/test_image.jpg')
+	img = Image.open('./axon/reflector/tests/test_img.png')
 	response = stub.echo_worker.rpc.echo(img).join()
 	
 	diff = ImageChops.difference(img, response)
