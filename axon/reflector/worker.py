@@ -50,8 +50,8 @@ class ITLW():
 				result_str = executor.submit(invoke_RPC, fn, param_str).result()
 				result_str = f'0|{result_str}'
 
-			except():
-				result_str = serialize(traceback.format_exc(), sys.exc_info()[1])
+			except:
+				result_str = serialize((traceback.format_exc(), sys.exc_info()[1]))
 				result_str = f'1|{result_str}'
 
 			chunk_size = 100_000
