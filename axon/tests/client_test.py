@@ -9,8 +9,14 @@ url_scheme = axon.config.url_scheme
 TransportClient = type(axon.config.default_client_tl)
 tl_config = axon.config.transport.config
 
+@pytest.fixture(scope='package')
+def fix_simplex_rpc():
+	@axon.worker.rpc()
+	def simplex_rpc(prefix, suffix='simplex test failed'):
+		return prefix+suffix
+
 @pytest.mark.tl
-def test_tl_client():
+def test_tl_client(fix_simplex_rpc):
 	print('test_tl_client')
 
 	rpc_name = 'simplex_rpc'
@@ -40,8 +46,34 @@ def test_url_shorthand(expected, shorthand):
 
 	assert axon.stubs.add_url_defaults(shorthand, config) == expected
 
+class RecursiveCallable():
+	def __init__(self, depth=1):
+		self.depth = depth
+
+		if (depth>1):
+			self.child = RecursiveCallable(depth=self.depth-1)
+		else:
+			self.child = None
+
+	def test_fn(self):
+		print(f'test_fn called at depth {self.depth}')
+
+	def __call__(self):
+		print(f'__call__ called at depth {self.depth}')
+
+@pytest.fixture(scope='package')
+def fix_simplex_service():
+	# the endpoint that our service will be located at
+	endpoint = '/test_endpoint_prefix'
+
+	# defines an instance of RecursiveCallable and creates a service node out of it
+	test_service_depth = 3
+	t_simplex = RecursiveCallable(depth=test_service_depth)
+
+	simplex_service = axon.worker.register_ServiceNode(t_simplex, 'simplex_service', depth=test_service_depth, endpoint_prefix=endpoint)
+
 @pytest.mark.asyncio
-async def test_TopLevelServiceNode():
+async def test_TopLevelServiceNode(fix_simplex_service):
 	print('test_TopLevelServiceNode')
 
 	w = axon.client.get_ServiceStub(f'{url_scheme}://localhost:{tl_config.port}')

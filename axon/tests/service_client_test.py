@@ -4,6 +4,8 @@ import time
 import json
 import pytest
 
+from axon.tests.client_test import fix_simplex_service
+
 default_service_depth = axon.config.default_service_depth
 port = axon.config.transport.config.port
 url_scheme = axon.config.url_scheme
@@ -18,7 +20,7 @@ test_service_depth = 3
 
 # this test manulually creates a stub that points to a service endpoint. Note that each endpoint is suffixed with /__call__ since RPC configs are stored on the __call__ attribute
 @pytest.mark.asyncio
-async def test_GenericStub():
+async def test_GenericStub(fix_simplex_service):
 	print('test_GenericStub')
 
 	# tests that ServiceStubs, including child stubs, are instantiated properly and that their RPCs work

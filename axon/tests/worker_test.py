@@ -2,10 +2,12 @@ import axon
 import asyncio
 import time
 import threading
+import multiprocessing
 import inspect
 import pytest
 
 from itertools import product
+from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 
 url_scheme = axon.config.url_scheme
 message = 'hello world!'
@@ -14,9 +16,32 @@ start_delay = 0.05
 small_delay = 0.05
 big_delay = 0.5
 
+class PoolTestService():
+	async def print_this_async(self, delay, message):
+		loop = asyncio.get_event_loop()
+		await asyncio.sleep(delay)
+		return message
+
+	def print_this(self, delay, message):
+		time.sleep(delay)
+		return message
+
+@pytest.fixture(scope='package')
+def fix_pool_services():
+	ils = PoolTestService()
+	axon.worker.register_ServiceNode(ils, name='inline_service')
+
+	tps = PoolTestService()
+	tpe = ThreadPoolExecutor(max_workers=10)
+	axon.worker.register_ServiceNode(tps, name='thread_pool_service', executor=tpe)
+
+	tps = PoolTestService()
+	ppe = ProcessPoolExecutor(max_workers=10, mp_context=multiprocessing.get_context("spawn"))
+	axon.worker.register_ServiceNode(tps, name='process_pool_service', executor=ppe)
+
 @pytest.mark.tl
 @pytest.mark.asyncio
-async def test_invokation():
+async def test_invokation(fix_pool_services):
 	remote_worker = axon.client.get_ServiceStub(f'{url_scheme}://localhost:{axon.config.transport.config.port}')
 	delay = 0
 
@@ -32,7 +57,7 @@ async def test_invokation():
 
 @pytest.mark.tl
 @pytest.mark.asyncio
-async def test_inline_concurrency():
+async def test_inline_concurrency(fix_pool_services):
 	# tests that non async services with the inline executor do not run in parallel
 
 	inline_service = axon.client.get_ServiceStub(f'localhost:/inline_service')
@@ -75,7 +100,7 @@ async def verify_parallel(service):
 
 @pytest.mark.tl
 @pytest.mark.asyncio
-async def test_service_concurrency():
+async def test_service_concurrency(fix_pool_services):
 	# this function tests to see if calls to services run in executors can be run in parallel
 	
 	endpoints = list(product(['thread_pool_service', 'process_pool_service'], ['print_this', 'print_this_async']))
