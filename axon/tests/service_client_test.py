@@ -4,6 +4,8 @@ import time
 import json
 import pytest
 
+from axon.tests.client_test import fix_basic_service
+
 default_service_depth = axon.config.default_service_depth
 port = axon.config.transport.config.port
 url_scheme = axon.config.url_scheme
@@ -12,13 +14,13 @@ TransportClient = type(axon.config.default_client_tl)
 # the endpoint that our service will be located at
 endpoint = 'test_endpoint_prefix'
 # the name of our service
-service_name = 'simplex_service'
+service_name = 'basic_service'
 
 test_service_depth = 3
 
 # this test manulually creates a stub that points to a service endpoint. Note that each endpoint is suffixed with /__call__ since RPC configs are stored on the __call__ attribute
 @pytest.mark.asyncio
-async def test_GenericStub():
+async def test_GenericStub(fix_basic_service):
 	print('test_GenericStub')
 
 	# tests that ServiceStubs, including child stubs, are instantiated properly and that their RPCs work
@@ -71,7 +73,7 @@ async def test_MetaServiceStub():
 			# if this is the last iteration, worker won't have a child and this line will raise an attribute error
 			worker = worker.child
 
-# this test creates a metastub to a test service that inherits from SimplexStubs and calls methods recursively to check that each child function is a sync stub
+# this test creates a metastub to a test service that inherits from basicStubs and calls methods recursively to check that each child function is a sync stub
 @pytest.mark.asyncio
 async def test_SyncStub():
 	print('test_SyncStub')
@@ -84,7 +86,7 @@ async def test_SyncStub():
 		worker.test_fn()
 		worker()
 
-		# tests that stub is inherited from GenericSimplexStub
+		# tests that stub is inherited from GenericbasicStub
 		if isinstance(worker.test_fn, axon.stubs.SyncStub):
 			print('Inheritance from axon.stubs.SyncStub confirmed')
 		else:
