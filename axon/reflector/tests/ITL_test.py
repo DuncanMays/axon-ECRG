@@ -102,4 +102,29 @@ def test_hosting(host_worker):
 	stub = axon.client.get_ServiceStub(f'{axon.config.url_scheme}://localhost:{refl_http_port}/reflected_services/host_worker/hosted_t')
 	resp = stub.print_str('This comes from the host!').join()
 	assert(resp == 'all done!')
-	
+
+def test_disconnect(refl_thread):
+
+	itlw = axon.reflector.ITLW(url='localhost', name='disconnect_worker')
+
+	@axon.worker.rpc(tl=itlw, executor=tpe)
+	def delay(i):
+		time.sleep(i)
+
+	worker_thread = threading.Thread(target=itlw.run, daemon=True)
+	worker_thread.start()
+	time.sleep(1)
+
+	stub = axon.client.get_ServiceStub(f'{axon.config.url_scheme}://localhost:{refl_http_port}/reflected_services')
+
+	def disconnect_fn():
+		time.sleep(0.5)
+		itlw.sio.disconnect()
+
+	disconnect_thread = threading.Thread(target=disconnect_fn, daemon=True)
+	disconnect_thread.start()
+
+	with pytest.raises(BaseException) as err:
+		stub.disconnect_worker.rpc.delay(1).join()
+
+	assert str(err.value) == 'WorkerDisconnect'

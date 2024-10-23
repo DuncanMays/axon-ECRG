@@ -20,13 +20,11 @@ from axon.chunking import send_in_chunks, recv_chunks
 from axon.HTTP_transport.config import port as default_http_port
 from axon.utils import get_ID_generator
 from axon.reflector import config as refl_config
+from axon.transport_client import AbstractTransportClient
 
 sio = socketio.Server(async_mode='threading')
 reflector_node = None
 client_sid_map = {}
-
-call_ID_gen = get_ID_generator()
-pending_reqs = {}
 chunk_buffers = {}
 
 logger = None
@@ -46,27 +44,29 @@ def init_logger():
 	logger.addHandler(c_handler)
 	logger.addHandler(f_handler)
 
-class ITL_Client():
+# this class extends the client and encapsulates the connection with a worker
+class ITL_Client(AbstractTransportClient):
 
 	def __init__(self, sio, sid, name):
 		self.sio = sio
 		self.sid = sid
 		self.name = name
+		self.pending_reqs = {}
+		self.call_ID_gen = get_ID_generator()
 
 	def get_config(self):
 		# the ITL client sends requests through an already established socket connection, so config info like the port number and scheme don't exist
 		return None
 
 	def call_rpc(self, url, args, kwargs):
-		global call_ID_gen, pending_reqs
 
 		url_components = url.split('/')
 		url_head = '/'.join(url_components[:3])
 		endpoint = '/' + '/'.join(url_components[3:])
 
-		call_ID = next(call_ID_gen)
+		call_ID = next(self.call_ID_gen)
 		result_future = Future()
-		pending_reqs[call_ID] = result_future
+		self.pending_reqs[call_ID] = result_future
 
 		logger.debug('RPC call to: %s for: %s call_ID: %s', self.sid, endpoint, call_ID)
 		self.sio.emit('rpc_request', to=self.sid, data=f'{call_ID}|{endpoint}|{serialize((args, kwargs))}')
@@ -75,17 +75,28 @@ class ITL_Client():
 		result_str = error_handler(result_str)
 		return deserialize(result_str)
 
+	def disconnect_handler(self):
+
+		# send a worker disconnect error back through each pending request
+		for call_ID in self.pending_reqs:
+			result_str = serialize(('The worker closed connection before responding to RPC', BaseException('WorkerDisconnect')))
+			result_str = f'1|{result_str}'
+			self.pending_reqs[call_ID].set_result(result_str)
+
 @sio.event
 def rpc_result(sid, return_str):
-	global pending_reqs
+	global client_sid_map
 
 	call_ID, result_str = return_str.split('|', 1)
 	logger.debug('RPC response for call_ID: %s', call_ID)
-	result_future = pending_reqs[call_ID]
+	client = client_sid_map[sid]
+	result_future = client.pending_reqs[call_ID]
 	result_future.set_result(result_str)
 
 @sio.event
 def rpc_result_chunk(sid, res_str):
+	global client_sid_map
+
 	chunk_num, num_chunks, call_ID, chunk_str = res_str.split('|', 3)
 	logger.debug('RPC response chunk %s for call_ID: %s', chunk_num, call_ID)
 
@@ -107,7 +118,8 @@ def rpc_result_chunk(sid, res_str):
 		chunk_strs = [b['chunk_str'] for b in chunks]
 		result_str = ''.join(chunk_strs)
 
-		result_future = pending_reqs[call_ID]
+		client = client_sid_map[sid]
+		result_future = client.pending_reqs[call_ID]
 		result_future.set_result(result_str)
 
 		logger.debug('recieved all chunks for call_ID: %s', call_ID)
@@ -122,8 +134,10 @@ def disconnect(sid):
 	global reflector_node, client_sid_map
 
 	logger.debug('Worker %s disconnected', sid)
-	name = client_sid_map[sid].name
-	reflector_node.remove_child(name)
+	client = client_sid_map[sid]
+
+	reflector_node.remove_child(client.name)
+	client.disconnect_handler()
 	del client_sid_map[sid]
 
 @sio.event

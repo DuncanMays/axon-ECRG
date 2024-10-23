@@ -32,8 +32,10 @@ async def test_error_catching(fix_error_rpc):
 	url = f'{url_scheme}://localhost:{axon.config.transport.config.port}/rpc'
 	ss = axon.client.get_ServiceStub(url)
 
-	with pytest.raises(BaseException):
+	with pytest.raises(BaseException) as err:
 		await ss.throw_error()
+
+	assert str(err.value) == 'Calling this RPC will raise an error'
 
 @pytest.mark.tl
 def test_tl_basic(fix_live_transport_worker):
