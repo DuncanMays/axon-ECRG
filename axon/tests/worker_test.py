@@ -12,9 +12,9 @@ from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 url_scheme = axon.config.url_scheme
 message = 'hello world!'
 
-start_delay = 0.05
-small_delay = 0.05
-big_delay = 0.5
+start_delay = 2*0.05
+small_delay = 2*0.05
+big_delay = 2*0.5
 
 class PoolTestService():
 	async def print_this_async(self, delay, message):
