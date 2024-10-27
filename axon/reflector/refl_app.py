@@ -25,7 +25,6 @@ from axon.transport_client import AbstractTransportClient
 sio = socketio.Server(async_mode='threading')
 reflector_node = None
 client_sid_map = {}
-chunk_buffers = {}
 
 logger = None
 def init_logger():
@@ -52,6 +51,7 @@ class ITL_Client(AbstractTransportClient):
 		self.sid = sid
 		self.name = name
 		self.pending_reqs = {}
+		self.chunk_buffers = {}
 		self.call_ID_gen = get_ID_generator()
 
 	def get_config(self):
@@ -105,25 +105,26 @@ def rpc_result_chunk(sid, res_str):
 		'chunk_num': int(chunk_num)
 	}
 
-	if (call_ID in chunk_buffers):
-		chunk_buffers[call_ID].append(chunk_obj)
+	client = client_sid_map[sid]
+
+	if (call_ID in client.chunk_buffers):
+		client.chunk_buffers[call_ID].append(chunk_obj)
 
 	else :
-		chunk_buffers[call_ID] = [chunk_obj]
+		client.chunk_buffers[call_ID] = [chunk_obj]
 
-	if (len(chunk_buffers[call_ID]) == int(num_chunks)):
+	if (len(client.chunk_buffers[call_ID]) == int(num_chunks)):
 
-		chunks = chunk_buffers[call_ID]
+		chunks = client.chunk_buffers[call_ID]
 		chunks.sort(key=lambda x: x['chunk_num'])
 		chunk_strs = [b['chunk_str'] for b in chunks]
 		result_str = ''.join(chunk_strs)
 
-		client = client_sid_map[sid]
 		result_future = client.pending_reqs[call_ID]
 		result_future.set_result(result_str)
 
 		logger.debug('recieved all chunks for call_ID: %s', call_ID)
-		del chunk_buffers[call_ID]
+		del client.chunk_buffers[call_ID]
 
 @sio.event
 def connect(sid, e):
