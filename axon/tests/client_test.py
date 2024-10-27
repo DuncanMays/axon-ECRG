@@ -70,13 +70,13 @@ def fix_basic_service():
 	test_service_depth = 3
 	t_basic = RecursiveCallable(depth=test_service_depth)
 
-	basic_service = axon.worker.register_ServiceNode(t_basic, 'basic_service', depth=test_service_depth, endpoint_prefix=endpoint)
+	basic_service = axon.worker.service(t_basic, 'basic_service', depth=test_service_depth, endpoint_prefix=endpoint)
 
 @pytest.mark.asyncio
 async def test_TopLevelServiceNode(fix_basic_service):
 	print('test_TopLevelServiceNode')
 
-	w = axon.client.get_ServiceStub(f'{url_scheme}://localhost:{tl_config.port}')
+	w = axon.client.get_stub(f'{url_scheme}://localhost:{tl_config.port}')
 
 	print(await w.rpc.basic_rpc('basic test ', suffix='passed'))
 

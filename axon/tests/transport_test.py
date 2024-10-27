@@ -30,7 +30,7 @@ def fix_error_rpc():
 @pytest.mark.asyncio
 async def test_error_catching(fix_error_rpc):
 	url = f'{url_scheme}://localhost:{axon.config.transport.config.port}/rpc'
-	ss = axon.client.get_ServiceStub(url)
+	ss = axon.client.get_stub(url)
 
 	with pytest.raises(BaseException) as err:
 		await ss.throw_error()
@@ -69,7 +69,7 @@ async def test_second_tl():
 			return param
 
 	t = TestClass()
-	axon.worker.register_ServiceNode(t, 'test_second_tl_service',tl=tlw)
+	axon.worker.service(t, 'test_second_tl_service',tl=tlw)
 
 	worker_thread = threading.Thread(target=tlw.run, daemon=True)
 	worker_thread.start()
@@ -78,11 +78,11 @@ async def test_second_tl():
 
 	# the positive test that the service registered with the secondary transport layer exists
 	url = f'{url_scheme}://localhost:{port}/test_second_tl_service'
-	ss = axon.client.get_ServiceStub(url, tl=tlc)
+	ss = axon.client.get_stub(url, tl=tlc)
 	result = await ss.test_fn('hi there!')
 	assert(result == 'hi there!')
 
 	# the negative test that the service registered with the secondary transport layer does not show up on the primary transport layer
-	rw = axon.client.get_ServiceStub('localhost')
+	rw = axon.client.get_stub('localhost')
 	assert(hasattr(rw, 'test_second_tl_service') == False)
 

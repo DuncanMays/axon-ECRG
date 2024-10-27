@@ -46,7 +46,7 @@ async def test_MetaServiceStub():
 			pass
 
 	url = f'{url_scheme}://localhost:{port}/{endpoint}/{service_name}'
-	worker = axon.client.get_ServiceStub(url, top_stub_type=BaseClass)
+	worker = axon.client.get_stub(url, top_stub_type=BaseClass)
 
 	# Tests that the stub is inherited from BaseClass, as specified by kwarg top_stub_type
 	if isinstance(worker, BaseClass):
@@ -79,7 +79,7 @@ async def test_SyncStub():
 	print('test_SyncStub')
 
 	url = f'{url_scheme}://localhost:{port}/{endpoint}/{service_name}'
-	worker = axon.client.get_ServiceStub(url, stub_type=axon.stubs.SyncStub)
+	worker = axon.client.get_stub(url, stub_type=axon.stubs.SyncStub)
 
 	# tests that child stubs are instantiated properly and that their RPCs work
 	for i in range(test_service_depth, 0, -1):

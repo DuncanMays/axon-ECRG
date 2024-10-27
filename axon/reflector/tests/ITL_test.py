@@ -36,7 +36,7 @@ def test_service(refl_thread):
 
 	itlw = axon.reflector.ITLW(url='localhost', name='test_service')
 
-	axon.worker.register_ServiceNode(DummyClass(), 'test_service', tl=itlw, executor=tpe)
+	axon.worker.service(DummyClass(), 'test_service', tl=itlw, executor=tpe)
 
 	worker_thread = threading.Thread(target=itlw.run, daemon=True)
 	worker_thread.start()
@@ -57,7 +57,7 @@ def echo_worker(refl_thread):
 
 def test_basic_operation(echo_worker, test_service):
 
-	stub = axon.client.get_ServiceStub(f'{axon.config.url_scheme}://localhost:{refl_http_port}/reflected_services')
+	stub = axon.client.get_stub(f'{axon.config.url_scheme}://localhost:{refl_http_port}/reflected_services')
 
 	test_msg = 'this is a message sent from client to reflector, then to worker, and then back again'
 	response = stub.echo_worker.rpc.echo(test_msg).join()
@@ -67,7 +67,7 @@ def test_basic_operation(echo_worker, test_service):
 	assert(response == 'all done!')
 
 def test_chunking(echo_worker):
-	stub = axon.client.get_ServiceStub(f'{axon.config.url_scheme}://localhost:{refl_http_port}/reflected_services')
+	stub = axon.client.get_stub(f'{axon.config.url_scheme}://localhost:{refl_http_port}/reflected_services')
 
 	# sends a PIL image to and from the worker to test if the chunking feature is working, since the image data should be larger than the max message size in SocketIO
 	img = Image.open('./axon/reflector/tests/test_img.png')
@@ -84,7 +84,7 @@ def host_worker(refl_thread):
 	@axon.worker.rpc(tl=itlw, executor=tpe)
 	def host(service_str, name):
 		service = cloudpickle.loads(service_str)
-		axon.worker.register_ServiceNode(service, name, tl=itlw)
+		axon.worker.service(service, name, tl=itlw)
 		itlw.update_profile()
 		return 'success'
 
@@ -93,13 +93,13 @@ def host_worker(refl_thread):
 	time.sleep(1)
 
 def test_hosting(host_worker):
-	stub = axon.client.get_ServiceStub(f'{axon.config.url_scheme}://localhost:{refl_http_port}/reflected_services')
+	stub = axon.client.get_stub(f'{axon.config.url_scheme}://localhost:{refl_http_port}/reflected_services')
 
 	t = DummyClass()
 	r = stub.host_worker.rpc.host(cloudpickle.dumps(t), 'hosted_t').join()
 	assert(r == 'success')
 
-	stub = axon.client.get_ServiceStub(f'{axon.config.url_scheme}://localhost:{refl_http_port}/reflected_services/host_worker/hosted_t')
+	stub = axon.client.get_stub(f'{axon.config.url_scheme}://localhost:{refl_http_port}/reflected_services/host_worker/hosted_t')
 	resp = stub.print_str('This comes from the host!').join()
 	assert(resp == 'all done!')
 
@@ -115,7 +115,7 @@ def test_disconnect(refl_thread):
 	worker_thread.start()
 	time.sleep(1)
 
-	stub = axon.client.get_ServiceStub(f'{axon.config.url_scheme}://localhost:{refl_http_port}/reflected_services')
+	stub = axon.client.get_stub(f'{axon.config.url_scheme}://localhost:{refl_http_port}/reflected_services')
 
 	def disconnect_fn():
 		time.sleep(0.5)

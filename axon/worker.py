@@ -26,7 +26,7 @@ def get_TLSN(configuration):
 
 	return top_service_node
 
-def register_ServiceNode(subject, name, depth=default_service_depth, **configuration):
+def service(subject, name, depth=default_service_depth, **configuration):
 	global TLSNs
 
 	s = ServiceNode(subject, name, depth=depth, **configuration)

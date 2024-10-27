@@ -10,7 +10,7 @@ Axon is a Python framework that enables developers to host services on edge devi
 
 ### Worker
 
-Developers may deploy services by passing Python variables or functions into Axon. These objects are then exposed to distributed access, and clients may create stubs linked to these variables to make calls to them. Designing an Axon service reduces to deciding which functions and variables should be exposed to outside access. Functions can be passed into Axon using the rpc decorator, and variables using the register_ServiceNode function. See below for an example worker script:
+Developers may deploy services by passing Python variables or functions into Axon. These objects are then exposed to distributed access, and clients may create stubs linked to these variables to make calls to them. Designing an Axon service reduces to deciding which functions and variables should be exposed to outside access. Functions can be passed into Axon using the rpc decorator, and variables using the service function. See below for an example worker script:
 
 ```
 @axon.worker.rpc()
@@ -18,7 +18,7 @@ def print_msg(msg):
 print(msg)
 
 l = [1,2,3,4,5]
-axon.worker.register_ServiceNode(l, "list_service")
+axon.worker.service(l, "list_service")
 
 axon.worker.init()
 ```
@@ -32,20 +32,20 @@ Functions that are exposed with Axon are called RPCs, and can be accessed with a
 The worker script passes the string 'list_service' with the list, and so a stub linked to the list can be created with URLs ending in the same string. Stubs have a matching interface to the remote variable they are linked to, and so the list stub has a pop attribute just like a Python list. Dunder methods like `__get_item__` are also mimicked on the stub, and so list indexing can be done using the same syntax on the stub as on the list it represents.
 
 ```
-rpc_stub = axon.client.get_ServiceStub("http://localhost/rpcs")
+rpc_stub = axon.client.get_stub("http://localhost/rpcs")
 await rpc_stub.print_msg("Hello World!")
 
-list_stub = axon.client.get_ServiceStub("http://localhost/list_service")
+list_stub = axon.client.get_stub("http://localhost/list_service")
 await list_stub.pop() # returns 5
 await list_stub[1] # returns 2
 ```
 
 By default, axon RPC requests return an `AsyncResultHandle` that allows for concurrent code execution during a request with asyncio. The result of the RPC invocation is obtained by calling using the 'await' keyword on the result handle. Another for option when asyncio is impractical is to call `.join()`: 
 ```
-rpc_stub = axon.client.get_ServiceStub("http://localhost/rpcs")
+rpc_stub = axon.client.get_stub("http://localhost/rpcs")
 rpc_stub.print_msg("Hello World!").join()
 
-list_stub = axon.client.get_ServiceStub("http://localhost/list_service")
+list_stub = axon.client.get_stub("http://localhost/list_service")
 list_stub.pop().join() # returns 5
 list_stub[1].join() # returns 2
 ```
@@ -53,10 +53,10 @@ list_stub[1].join() # returns 2
 When syncronous behavior is desired, develeopers may pass in a `stub_type` option to make syncronous calls:
 
 ```
-rpc_stub = axon.client.get_ServiceStub("http://localhost/rpcs", stub_type=axon.stubs.SyncStub)
+rpc_stub = axon.client.get_stub("http://localhost/rpcs", stub_type=axon.stubs.SyncStub)
 rpc_stub.print_msg("Hello World!")
 
-list_stub = axon.client.get_ServiceStub("http://localhost/list_service", stub_type=axon.stubs.SyncStub)
+list_stub = axon.client.get_stub("http://localhost/list_service", stub_type=axon.stubs.SyncStub)
 list_stub.pop() # returns 5
 list_stub[1] # returns 2
 ```

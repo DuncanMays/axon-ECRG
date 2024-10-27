@@ -83,7 +83,7 @@ def test_add_child_live(fix_live_transport_worker):
 
 	parent.add_child('test_add_child', child)
 
-	stub = axon.client.get_ServiceStub(f'{url_scheme}://localhost:{port}/test_add_child_live')
+	stub = axon.client.get_stub(f'{url_scheme}://localhost:{port}/test_add_child_live')
 
 	stub.test_add_child.test_fn().join()
 
@@ -94,7 +94,7 @@ def test_remove_child_live(fix_live_transport_worker):
 	parent = axon.worker.ServiceNode(t, 'test_remove_child_live', tl=tlw)
 
 	# the stub before the child gets removed
-	stub_with_child = axon.client.get_ServiceStub(f'{url_scheme}://localhost:{port}/test_remove_child_live')
+	stub_with_child = axon.client.get_stub(f'{url_scheme}://localhost:{port}/test_remove_child_live')
 
 	parent.remove_child('child')
 
@@ -107,7 +107,7 @@ def test_remove_child_live(fix_live_transport_worker):
 			stub_with_child.test_fn().join()
 
 	# the stub after the child gets removed
-	no_child_stub = axon.client.get_ServiceStub(f'{url_scheme}://localhost:{port}/test_remove_child_live')
+	no_child_stub = axon.client.get_stub(f'{url_scheme}://localhost:{port}/test_remove_child_live')
 
 	# checks that the child attribute has been removed from the stub
 	assert(not hasattr(no_child_stub, 'child'))
