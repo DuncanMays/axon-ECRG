@@ -20,7 +20,7 @@ def get_TLSN(configuration):
 		top_service_node = TLSNs[tl_id]
 
 	else:
-		top_service_node = ServiceNode(object(), '', **configuration)
+		top_service_node = ServiceNode({}, '', **configuration)
 		top_service_node.add_child(default_rpc_endpoint, object())
 		TLSNs[tl_id] = top_service_node
 
@@ -36,10 +36,6 @@ def service(subject, name, depth=default_service_depth, **configuration):
 	top_service_node.add_child(name, subject, **configuration)
 
 	return s
-
-# # a ServiceNode that holds all RPCs associated by this worker instance
-# top_service_node.add_child(default_rpc_endpoint, object(), **default_service_config)
-# RPC_node = top_service_node.children[default_rpc_endpoint]
 
 # the RPC decorator adds the associated function to the RPC_node ServiceNode
 def rpc(**configuration):

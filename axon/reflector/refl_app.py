@@ -169,7 +169,7 @@ def run(endpoint='reflected_services', ws_port=5000, http_port=default_http_port
 	http_thread.start()
 	time.sleep(0.5)
 
-	# reflector_node = axon.worker.register_ServiceNode({}, endpoint, tl=http_tl)
+	# reflector_node = axon.worker.service({}, endpoint, tl=http_tl)
 	reflector_node = axon.worker.ServiceNode({}, endpoint, tl=http_tl)
 
 	logger.debug('Reflector start')

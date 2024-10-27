@@ -5,8 +5,6 @@ import pytest
 import random
 import cloudpickle
 
-from PIL import Image
-from PIL import ImageChops
 from concurrent.futures import ThreadPoolExecutor
 
 refl_http_port=8081
@@ -69,12 +67,13 @@ def test_basic_operation(echo_worker, test_service):
 def test_chunking(echo_worker):
 	stub = axon.client.get_stub(f'{axon.config.url_scheme}://localhost:{refl_http_port}/reflected_services')
 
-	# sends a PIL image to and from the worker to test if the chunking feature is working, since the image data should be larger than the max message size in SocketIO
-	img = Image.open('./axon/reflector/tests/test_img.png')
-	response = stub.echo_worker.rpc.echo(img).join()
+	# creates a large string to test if the chunking feature is working, since the data should be larger than the max message size in SocketIO
+	msg_size = 1_000_000
+	msg = ''.join([str(random.randint(0,9)) for i in range(msg_size)])
+
+	response = stub.echo_worker.rpc.echo(msg).join()
 	
-	diff = ImageChops.difference(img, response)
-	assert not diff.getbbox()
+	assert response == msg
 
 @pytest.fixture(scope='package')
 def host_worker(refl_thread):
