@@ -3,10 +3,10 @@ import time
 import sys
 sys.path.append('..')
 
-import axon.SocketIO_transport.worker as worker
+from axon.SocketIO_transport.worker import SocketIOTransportWorker as worker
 import axon.inline_executor as ie
 
-w = worker.SocketIOTransportWorker()
+w = worker()
 
 def print_x(x):
 	print('================================')

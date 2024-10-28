@@ -8,7 +8,7 @@ from types import SimpleNamespace
 
 transport_client = default_client_tl
 
-def get_ServiceStub(url, tl=transport_client, stub_type=GenericStub, top_stub_type=object):
+def get_stub(url, tl=transport_client, stub_type=GenericStub, top_stub_type=object):
 	url = add_url_defaults(url, tl.get_config())
 	profile = tl.call_rpc(url, (), {})
 	url_components = url.split('/')
@@ -55,21 +55,3 @@ def get_BoundStubClass(stub_type, tl, url):
 			stub_type.__init__(self, tl, url)
 
 	return BoundStubClass
-
-class RemoteWorker():
-
-	def __init__(self, profile, url, tl=transport_client, stub_type=GenericStub, top_stub_type=object):
-		self.url = url
-		self.tl = tl
-
-		# this will need to be a lookup on a services key to a number of service profiles
-		self.rpcs = make_ServiceStub(url, tl, profile=profile['rpcs'], stub_type=stub_type, top_stub_type=top_stub_type)
-
-		for service_name in profile['services'].keys():
-			s = make_ServiceStub(url, tl, profile=profile['services'][service_name], stub_type=stub_type, top_stub_type=top_stub_type)
-			setattr(self, service_name, s)
-
-def get_RemoteWorker(url, tl=transport_client, stub_type=GenericStub, top_stub_type=object):
-	url = add_url_defaults(url, tl.get_config())
-	profile = tl.call_rpc(f'{url}/_get_profile', (), {})
-	return RemoteWorker(profile, url, tl, stub_type=stub_type)

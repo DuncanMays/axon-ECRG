@@ -11,18 +11,17 @@ README = (HERE / "README.md").read_text()
 # This call to setup() does all the work
 setup(
 	name="axon-ECRG",
-	version="0.2.3",
+	version="0.2.4",
 	description="RPC proxy framework",
 	long_description=README,
 	long_description_content_type="text/markdown",
 	url="https://github.com/DuncanMays/axon-ECRG",
-	packages=['axon', 'axon.tests', 'axon.HTTP_transport'],
+	packages=['axon', 'axon.tests', 'axon.HTTP_transport', 'axon.reflector', 'axon.reflector.tests'],
 	package_data={'': ['pytest.ini']},
 	install_requires=[
 		'pytest',
 		'pytest-asyncio',
-		'flask', 
-		'uuid', 
+		'flask',
 		'urllib3',
 		'requests', 
 		'aiohttp', 

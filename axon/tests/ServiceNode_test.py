@@ -62,42 +62,41 @@ def test_remove_child_not_live():
 	assert('/test/test_fn' not in s.tl.rpcs)
 	assert('/test/test_fn/__call__' not in s.tl.rpcs)
 
-def test_add_child_live():
-
+@pytest.fixture(scope='package')
+def fix_live_transport_worker():
 	port = axon.utils.get_open_port(lower_bound=8003)
 	tlw = TransportWorker(port)
 
-	t = DummyClass()
-	s = axon.worker.ServiceNode(t, 'test', tl=tlw)
-
 	worker_thread = threading.Thread(target=tlw.run, daemon=True)
 	worker_thread.start()
 	time.sleep(0.5)
+
+	return tlw, port
+
+def test_add_child_live(fix_live_transport_worker):
+	tlw, port = fix_live_transport_worker
+
+	t = DummyClass()
+	parent = axon.worker.ServiceNode(t, 'test_add_child_live', tl=tlw)
 
 	child = DummyClass()
 
-	s.add_child('test_add_child', child)
+	parent.add_child('test_add_child', child)
 
-	stub = axon.client.get_ServiceStub(f'{url_scheme}://localhost:{port}/test')
+	stub = axon.client.get_stub(f'{url_scheme}://localhost:{port}/test_add_child_live')
 
 	stub.test_add_child.test_fn().join()
 
-def test_remove_child_live():
-
-	port = axon.utils.get_open_port(lower_bound=8004)
-	tlw = TransportWorker(port)
+def test_remove_child_live(fix_live_transport_worker):
+	tlw, port = fix_live_transport_worker
 
 	t = DummyClass()
-	s = axon.worker.ServiceNode(t, 'test', tl=tlw)
-
-	worker_thread = threading.Thread(target=tlw.run, daemon=True)
-	worker_thread.start()
-	time.sleep(0.5)
+	parent = axon.worker.ServiceNode(t, 'test_remove_child_live', tl=tlw)
 
 	# the stub before the child gets removed
-	stub_with_child = axon.client.get_ServiceStub(f'{url_scheme}://localhost:{port}/test')
+	stub_with_child = axon.client.get_stub(f'{url_scheme}://localhost:{port}/test_remove_child_live')
 
-	s.remove_child('child')
+	parent.remove_child('child')
 
 	# recursively checks that all the child's children were removed as well
 	for i in range(default_depth-1):
@@ -108,7 +107,7 @@ def test_remove_child_live():
 			stub_with_child.test_fn().join()
 
 	# the stub after the child gets removed
-	no_child_stub = axon.client.get_ServiceStub(f'{url_scheme}://localhost:{port}/test')
+	no_child_stub = axon.client.get_stub(f'{url_scheme}://localhost:{port}/test_remove_child_live')
 
 	# checks that the child attribute has been removed from the stub
 	assert(not hasattr(no_child_stub, 'child'))
