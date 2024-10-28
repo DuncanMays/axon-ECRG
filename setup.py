@@ -11,7 +11,7 @@ README = (HERE / "README.md").read_text()
 # This call to setup() does all the work
 setup(
 	name="axon-ECRG",
-	version="0.2.6",
+	version="0.2.4",
 	description="RPC proxy framework",
 	long_description=README,
 	long_description_content_type="text/markdown",

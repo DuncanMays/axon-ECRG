@@ -1,6 +1,6 @@
 # Axon
 
-Axon is a Python framework that enables developers to host services on edge devices and access them over local networks or the Internet. Axon allows developers to deploy services from the edge, utilizing any available devices on hand, rather than using expensive cloud computing and without opening a port on their network. Moreover, calls to services deployed with Axon are made through developer-friendly RPC proxies that match the interface of the variables being served. Axon can expose services quickly and easily, requiring only a few extra lines of code on top of a service’s core logic.
+Axon is a Python RPC-proxy framework that enables developers to host services on edge devices and access them over local networks or the Internet. Axon allows developers to deploy services from the edge, utilizing any available devices on hand, rather than using expensive cloud computing and without opening a port on their network. Moreover, calls to services deployed with Axon are made through developer-friendly RPC proxies that match the interface of the variables being served. Axon can expose services quickly and easily, requiring only a few extra lines of code on top of a service’s core logic.
 
 ## Installation
 
@@ -72,6 +72,7 @@ await stub.list_service[1] # returns 2
 ### Concurrency
 
 By default, axon RPC requests return an `AsyncResultHandle` that allows for concurrent code execution during a request with asyncio. The result of the RPC invocation is obtained by calling using the 'await' keyword on the result handle. Another for option when asyncio is impractical is to call `.join()`: 
+
 ```
 rpc_stub = axon.client.get_stub("localhost/rpcs")
 rpc_stub.print_msg("Hello World!").join()
@@ -98,10 +99,8 @@ There is a strong case for Axon services to be used to invoke computationally ex
 
 ```
 import axon
-import json
 import torch
 F = torch.nn.functional
-
 
 class ConvNet(torch.nn.Module):
 
