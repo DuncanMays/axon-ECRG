@@ -11,7 +11,6 @@ class ServiceNode():
 		self.subject = subject
 		self.name = name
 		self.children = {}
-		self.depth = depth
 
 		self.configuration = overwrite(default_service_config, configuration)
 		self.tl = self.configuration['tl']
@@ -37,7 +36,7 @@ class ServiceNode():
 			
 			elif hasattr(member, '__dict__'):
 				# Any member with a __dict__ attribute gets a profile, provided it as not been accessed via __call__
-				self.add_child(key, member)
+				self.add_child(key, member, depth)
 
 			elif hasattr(member, '__call__'):
 				# Any member with a __call__ attribute but no __dict__ attribute is represented in profile by an RPC config
@@ -70,10 +69,10 @@ class ServiceNode():
 
 		del self.children[child_key]
 
-	def add_child(self, key, child, **child_config):
+	def add_child(self, key, child, depth=default_service_depth, **child_config):
 
 		# limits recursion to a depth parameter
-		if (self.depth < 0): return
+		if (depth < 0): return
 
 		# The child config overwrites the parent's config, meaning by default children inherit configuration from their parents
 		child_config = overwrite(self.configuration, child_config)
@@ -83,7 +82,7 @@ class ServiceNode():
 			child_config['endpoint_prefix'] += '/'+str(self.name)
 
 		# create a ServiceNode out of it and register it as a child
-		child = ServiceNode(child, key, depth=self.depth-1, **child_config)
+		child = ServiceNode(child, key, depth=depth-1, **child_config)
 		self.children[key] = child
 		return child
 

@@ -4,7 +4,6 @@ from axon.utils import overwrite
 
 from threading import Thread
 
-registered_ServiceNodes = {}
 TLSNs = {}
 
 def get_TLSN(configuration):
@@ -20,8 +19,8 @@ def get_TLSN(configuration):
 		top_service_node = TLSNs[tl_id]
 
 	else:
-		top_service_node = ServiceNode({}, '', **configuration)
-		top_service_node.add_child(default_rpc_endpoint, object())
+		top_service_node = ServiceNode({}, '', depth=1, **configuration)
+		top_service_node.add_child(default_rpc_endpoint, object(), 1)
 		TLSNs[tl_id] = top_service_node
 
 	return top_service_node
@@ -29,11 +28,8 @@ def get_TLSN(configuration):
 def service(subject, name, depth=default_service_depth, **configuration):
 	global TLSNs
 
-	s = ServiceNode(subject, name, depth=depth, **configuration)
-	registered_ServiceNodes[name] = s
-
 	top_service_node = get_TLSN(configuration)
-	top_service_node.add_child(name, subject, **configuration)
+	s = top_service_node.add_child(name, subject, depth, **configuration)
 
 	return s
 
