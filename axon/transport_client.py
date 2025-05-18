@@ -48,6 +48,14 @@ class AbstractTransportClient(ABC):
 	def get_config(self):
 		pass
 
-	@abstractmethod
 	def call_rpc(self, url, args, kwargs):
+		param_str = serialize((args, kwargs))
+
+		result_str = self.net_call(url, param_str)
+
+		result_str = error_handler(result_str)
+		return deserialize(result_str)
+
+	@abstractmethod
+	def net_call(self, url, param_str):
 		pass

@@ -58,7 +58,7 @@ class ITL_Client(AbstractTransportClient):
 		# the ITL client sends requests through an already established socket connection, so config info like the port number and scheme don't exist
 		return None
 
-	def call_rpc(self, url, args, kwargs):
+	def net_call(self, url, param_str):
 
 		url_components = url.split('/')
 		url_head = '/'.join(url_components[:3])
@@ -69,11 +69,9 @@ class ITL_Client(AbstractTransportClient):
 		self.pending_reqs[call_ID] = result_future
 
 		logger.debug('RPC call to: %s for: %s call_ID: %s', self.sid, endpoint, call_ID)
-		self.sio.emit('rpc_request', to=self.sid, data=f'{call_ID}|{endpoint}|{serialize((args, kwargs))}')
+		self.sio.emit('rpc_request', to=self.sid, data=f'{call_ID}|{endpoint}|{param_str}')
 		
-		result_str = result_future.result()
-		result_str = error_handler(result_str)
-		return deserialize(result_str)
+		return result_future.result()
 
 	def disconnect_handler(self):
 
@@ -82,6 +80,9 @@ class ITL_Client(AbstractTransportClient):
 			result_str = serialize(('The worker closed connection before responding to RPC', BaseException('WorkerDisconnect')))
 			result_str = f'1|{result_str}'
 			self.pending_reqs[call_ID].set_result(result_str)
+
+	def net_call(self):
+		pass
 
 @sio.event
 def rpc_result(sid, return_str):

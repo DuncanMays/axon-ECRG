@@ -27,7 +27,7 @@ class SocketIOTransportClient(AbstractTransportClient):
 	def get_config(self):
 		return config
 
-	def call_rpc(self, url, args, kwargs):
+	def net_call(self, url, req_str):
 
 		# split the endpoint from the url
 		url_components = url.split('/')
@@ -44,7 +44,6 @@ class SocketIOTransportClient(AbstractTransportClient):
 
 		self.sio.on('result_from_worker', handle_result)
 
-		req_str = serialize((args, kwargs))
 		chunk_size = 100_000
 
 		if (len(req_str) < chunk_size):
@@ -58,6 +57,4 @@ class SocketIOTransportClient(AbstractTransportClient):
 				chunk_str = req_str[ chunk_size*i : chunk_size*(i+1) ]
 				self.sio.emit('client_request_chunk', data=f'{str(i)}|{str(num_chunks)}|{endpoint}|{call_ID}|{chunk_str}')
 
-		result_str = result_future.result()
-		result_str = error_handler(result_str)
-		return deserialize(result_str)
+		return result_future.result()

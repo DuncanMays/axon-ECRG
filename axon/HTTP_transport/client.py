@@ -13,8 +13,6 @@ class HTTPTransportClient(AbstractTransportClient):
 	def get_config(self):
 		return config
 
-	def call_rpc(self, url, args, kwargs):
-
-		resp = http.request('POST', url, fields={'msg': serialize((args, kwargs))})
-		result_str = error_handler(resp.data.decode())
-		return deserialize(result_str)
+	def net_call(self, url, param_str):
+		resp = http.request('POST', url, fields={'msg': param_str})
+		return resp.data.decode()
