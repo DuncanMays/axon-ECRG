@@ -47,6 +47,8 @@ def init_logger():
 class ITL_Client(AbstractTransportClient):
 
 	def __init__(self, sio, sid, name):
+		super().__init__()
+		
 		self.sio = sio
 		self.sid = sid
 		self.name = name
@@ -80,9 +82,6 @@ class ITL_Client(AbstractTransportClient):
 			result_str = serialize(('The worker closed connection before responding to RPC', BaseException('WorkerDisconnect')))
 			result_str = f'1|{result_str}'
 			self.pending_reqs[call_ID].set_result(result_str)
-
-	def net_call(self):
-		pass
 
 @sio.event
 def rpc_result(sid, return_str):

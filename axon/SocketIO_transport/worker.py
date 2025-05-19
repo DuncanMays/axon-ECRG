@@ -17,6 +17,8 @@ from flask import Flask
 class SocketIOTransportWorker(AbstractTransportWorker):
 
 	def __init__(self, port=config.port):
+		super().__init__()
+
 		# all RPCs registered with this TL are stored here in this dict
 		self.rpcs = {}
 		self.port = port
@@ -61,7 +63,7 @@ class SocketIOTransportWorker(AbstractTransportWorker):
 		try:
 			(fn, executor) = self.rpcs[endpoint]
 
-			result_str = executor.submit(invoke_RPC, fn, param_str, in_parallel=True).result()
+			result_str = executor.submit(invoke_RPC, fn, param_str, in_parallel=True, serialize=self.serialize, deserialize=self.deserialize).result()
 			result_str = f'0|{result_str}'
 
 		except:

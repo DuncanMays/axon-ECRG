@@ -1,14 +1,13 @@
 from sys import path
 path.append('..')
 
-from axon.serializers import serialize, deserialize
-from axon.transport_client import AbstractTransportClient, http, error_handler
+from axon.transport_client import AbstractTransportClient, http
 from axon.HTTP_transport import config
 
 class HTTPTransportClient(AbstractTransportClient):
 
 	def __init__(self):
-		pass
+		super().__init__()
 
 	def get_config(self):
 		return config

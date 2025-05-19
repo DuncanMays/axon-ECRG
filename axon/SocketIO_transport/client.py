@@ -22,6 +22,7 @@ call_ID_gen = get_ID_generator()
 class SocketIOTransportClient(AbstractTransportClient):
 
 	def __init__(self):
+		super().__init__()
 		self.sio = socketio.Client()
 
 	def get_config(self):

@@ -5,8 +5,7 @@ import threading
 import inspect
 
 from abc import ABC, abstractmethod
-
-from axon.serializers import serialize, deserialize
+from axon.serializers import AbstractSerializer, deserialize
 
 req_executor = futures.ThreadPoolExecutor(max_workers=100)
 http = urllib3.PoolManager(maxsize=100)
@@ -42,19 +41,22 @@ class AsyncResultHandle():
 		f = req_executor.submit(self.fn, *self.args, **self.kwargs)
 		return f.result()
 
-class AbstractTransportClient(ABC):
+class AbstractTransportClient(AbstractSerializer):
+
+	def __init__(self):
+		super().__init__()
 
 	@abstractmethod
 	def get_config(self):
 		pass
 
 	def call_rpc(self, url, args, kwargs):
-		param_str = serialize((args, kwargs))
+		param_str = self.serialize((args, kwargs))
 
 		result_str = self.net_call(url, param_str)
 
 		result_str = error_handler(result_str)
-		return deserialize(result_str)
+		return self.deserialize(result_str)
 
 	@abstractmethod
 	def net_call(self, url, param_str):

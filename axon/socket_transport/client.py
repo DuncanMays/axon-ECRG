@@ -11,19 +11,19 @@ from websockets.sync.client import connect
 class SocketTransportClient(AbstractTransportClient):
 
 	def __init__(self, port=config.port):
+		super().__init__()
 		self.maxsize = 100_000
 
 	def get_config(self):
 		return config
 
-	def call_rpc(self, url, args, kwargs):
+	def net_call(self, url, param_str):
 
 		# split the endpoint from the url
 		url_components = url.split('/')
 		url_head = '/'.join(url_components[:3])		
 		endpoint = '/' + '/'.join(url_components[3:])
 
-		param_str = serialize((args, kwargs))
 		req_str = endpoint+' '+param_str
 		result = None
 
@@ -31,7 +31,5 @@ class SocketTransportClient(AbstractTransportClient):
 			socket.send(endpoint)
 			send_in_chunks(socket, param_str)
 			result_str = recv_chunks(socket)
-			result_str = error_handler(result_str)
-			result = deserialize(result_str)
 
-		return result
+		return result_str

@@ -1,4 +1,4 @@
-from axon.serializers import deserialize, serialize
+from axon.serializers import AbstractSerializer, deserialize, serialize
 
 from flask import Flask
 from flask import request as route_req
@@ -26,7 +26,7 @@ def start_event_loop_thread():
 	event_loop_thread.start()
 
 inline_lock = Lock()
-def invoke_RPC(target_fn, param_str, in_parallel=True):
+def invoke_RPC(target_fn, param_str, in_parallel=True, serialize=serialize, deserialize=deserialize):
 	global loop, event_loop_thread
 
 	if isinstance(target_fn, bytes) or isinstance(target_fn, str):
@@ -50,7 +50,10 @@ def invoke_RPC(target_fn, param_str, in_parallel=True):
 
 	return serialize(result)
 
-class AbstractTransportWorker(ABC):
+class AbstractTransportWorker(AbstractSerializer):
+
+	def __init__(self):
+		super().__init__()
 
 	@abstractmethod
 	def run(self):
