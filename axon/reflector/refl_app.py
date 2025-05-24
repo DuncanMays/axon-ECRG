@@ -26,6 +26,23 @@ sio = socketio.Server(async_mode='threading')
 reflector_node = None
 client_sid_map = {}
 
+def null_serialize(params):
+	
+	if (params == ((), {})):
+		return serialize(((), {}))
+
+	if ("__profile_flag__" in params):
+		return serialize(params)
+
+	return params[0][0]
+
+def null_deserialize(input_str):
+
+	if (input_str == serialize(((), {}))):
+		return ((), {})
+
+	return (input_str, ), {}
+
 logger = None
 def init_logger():
 	global logger
@@ -55,6 +72,9 @@ class ITL_Client(AbstractTransportClient):
 		self.pending_reqs = {}
 		self.chunk_buffers = {}
 		self.call_ID_gen = get_ID_generator()
+
+		self.serialize = null_serialize
+		self.deserialize = null_deserialize
 
 	def get_config(self):
 		# the ITL client sends requests through an already established socket connection, so config info like the port number and scheme don't exist
@@ -164,6 +184,9 @@ def run(endpoint='reflected_services', ws_port=5000, http_port=default_http_port
 		init_logger()
 
 	http_tl = transport.worker(http_port)
+
+	http_tl.serialize = null_serialize
+	http_tl.deserialize = null_deserialize
 
 	http_thread = threading.Thread(target=http_tl.run, daemon=True)
 	http_thread.start()

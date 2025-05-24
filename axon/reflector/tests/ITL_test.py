@@ -127,3 +127,24 @@ def test_disconnect(refl_thread):
 		stub.disconnect_worker.rpc.delay(1).join()
 
 	assert str(err.value) == 'WorkerDisconnect'
+
+@pytest.fixture(scope='package')
+def no_param_worker(refl_thread):
+
+	itlw = axon.reflector.ITLW(url='localhost', name='no_param_worker')
+
+	@axon.worker.rpc(tl=itlw, executor=tpe)
+	def no_param():
+		return
+
+	worker_thread = threading.Thread(target=itlw.run, daemon=True)
+	worker_thread.start()
+	time.sleep(1)
+
+# regression test for null_serializers
+def test_no_param(no_param_worker):
+	stub = axon.client.get_stub(f'{axon.config.url_scheme}://localhost:{refl_http_port}/reflected_services/no_param_worker')
+
+	t = DummyClass()
+	r = stub.rpc.no_param().join()
+	assert(r == None)
