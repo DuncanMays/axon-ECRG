@@ -7,7 +7,7 @@ from axon.chunking import send_in_chunks, recv_chunks
 from axon.stubs import add_url_defaults
 from axon.worker import TLSNs
 
-from concurrent.futures import ProcessPoolExecutor as PPE
+from concurrent.futures import Future, ProcessPoolExecutor as PPE
 from types import SimpleNamespace
 from math import ceil
 
@@ -35,39 +35,44 @@ class ITLW():
 
 		self.update_profile()
 
+		error_future = Future()
+
 		@self.sio.event
 		def rpc_request(req_str):
-			call_ID, endpoint, param_str = req_str.split('|', 3)
-
-			return_object = {
-				'errcode': 0,
-				'result': None,
-			}
-
 			try:
-				(fn, executor) = self.rpcs[endpoint]
+				call_ID, endpoint, param_str = req_str.split('|', 3)
 
-				result_str = executor.submit(invoke_RPC, fn, param_str).result()
-				result_str = f'0|{result_str}'
+				return_object = {
+					'errcode': 0,
+					'result': None,
+				}
 
+				try:
+					(fn, executor) = self.rpcs[endpoint]
+
+					result_str = executor.submit(invoke_RPC, fn, param_str).result()
+					result_str = f'0|{result_str}'
+
+				except:
+					result_str = serialize((traceback.format_exc(), sys.exc_info()[1]))
+					result_str = f'1|{result_str}'
+
+				chunk_size = 100_000
+
+				if (len(result_str) < chunk_size):
+					self.sio.emit('rpc_result', data=f'{call_ID}|{result_str}')
+
+				else:
+					num_chunks = ceil(len(result_str)/chunk_size)
+
+					for i in range(num_chunks):
+						chunk_str = result_str[ chunk_size*i : chunk_size*(i+1) ]
+						self.sio.emit('rpc_result_chunk', data=f'{str(i)}|{str(num_chunks)}|{call_ID}|{chunk_str}')
 			except:
-				result_str = serialize((traceback.format_exc(), sys.exc_info()[1]))
-				result_str = f'1|{result_str}'
+				error = sys.exc_info()[1]
+				error_future.set_result(error)
 
-			chunk_size = 100_000
-
-			if (len(result_str) < chunk_size):
-				self.sio.emit('rpc_result', data=f'{call_ID}|{result_str}')
-
-			else:
-				num_chunks = ceil(len(result_str)/chunk_size)
-
-				for i in range(num_chunks):
-					chunk_str = result_str[ chunk_size*i : chunk_size*(i+1) ]
-					self.sio.emit('rpc_result_chunk', data=f'{str(i)}|{str(num_chunks)}|{call_ID}|{chunk_str}')
-
-		while True:
-			time.sleep(1_000_000)
+		raise(error_future.result())
 
 	def update_profile(self):
 		

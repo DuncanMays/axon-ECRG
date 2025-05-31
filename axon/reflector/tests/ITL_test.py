@@ -110,7 +110,13 @@ def test_disconnect(refl_thread):
 	def delay(i):
 		time.sleep(i)
 
-	worker_thread = threading.Thread(target=itlw.run, daemon=True)
+	def err_wrapper():
+		try:
+			itlw.run()
+		except(BaseException):
+			print("This error should throw when the worker disconnects")
+
+	worker_thread = threading.Thread(target=err_wrapper, daemon=True)
 	worker_thread.start()
 	time.sleep(1)
 
