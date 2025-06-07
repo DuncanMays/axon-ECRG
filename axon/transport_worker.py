@@ -1,4 +1,5 @@
 from axon.serializers import AbstractSerializer, deserialize, serialize
+from axon.inline_executor import InlineExecutor
 
 from flask import Flask
 from flask import request as route_req

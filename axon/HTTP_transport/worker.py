@@ -40,7 +40,6 @@ class HTTPTransportWorker(AbstractTransportWorker):
 				(fn, executor) = self.rpcs[path]
 
 				param_str = route_req.form['msg']
-				# print(self.serialize)
 				result_str = executor.submit(invoke_RPC, fn, param_str, in_parallel=True, serialize=self.serialize, deserialize=self.deserialize).result()
 				result_str = f'0|{result_str}'
 
