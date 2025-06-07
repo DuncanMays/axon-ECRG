@@ -34,12 +34,12 @@ class HTTPTransportWorker(AbstractTransportWorker):
 		@self.app.route('/', defaults={'path': ''}, methods=['POST'])
 		@self.app.route('/<path:path>', methods=['POST'])
 		def catch_all(path):
+			path = '/'+path
 			
 			try:
-				path = '/'+path
+				param_str = route_req.form['msg']
 				(fn, executor) = self.rpcs[path]
 
-				param_str = route_req.form['msg']
 				result_str = executor.submit(invoke_RPC, fn, param_str, in_parallel=True, serialize=self.serialize, deserialize=self.deserialize).result()
 				result_str = f'0|{result_str}'
 
