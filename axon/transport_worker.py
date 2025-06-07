@@ -27,7 +27,7 @@ def start_event_loop_thread():
 	event_loop_thread.start()
 
 inline_lock = Lock()
-def invoke_RPC(target_fn, param_str, in_parallel=True, serialize=serialize, deserialize=deserialize):
+def invoke_RPC_helper(target_fn, param_str, in_parallel=True, serialize=serialize, deserialize=deserialize):
 	global loop, event_loop_thread
 
 	if isinstance(target_fn, bytes) or isinstance(target_fn, str):
@@ -51,6 +51,7 @@ def invoke_RPC(target_fn, param_str, in_parallel=True, serialize=serialize, dese
 
 	return serialize(result)
 
+
 class AbstractTransportWorker(AbstractSerializer):
 
 	def __init__(self):
@@ -59,6 +60,21 @@ class AbstractTransportWorker(AbstractSerializer):
 	@abstractmethod
 	def run(self):
 		pass
+
+	def invoke_RPC(self, endpoint, param_str, in_parallel=True):
+		result_str = None
+
+		try:
+			(fn, executor) = self.rpcs[endpoint]
+
+			result_str = executor.submit(invoke_RPC_helper, fn, param_str, in_parallel=True, serialize=self.serialize, deserialize=self.deserialize).result()
+			result_str = f'0|{result_str}'
+
+		except:
+			result_str = serialize((traceback.format_exc(), sys.exc_info()[1]))
+			result_str = f'1|{result_str}'
+
+		return result_str
 
 	def register_RPC(self, fn, endpoint, executor):
 

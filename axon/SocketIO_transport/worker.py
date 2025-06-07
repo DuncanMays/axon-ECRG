@@ -8,7 +8,7 @@ import logging
 import psutil
 
 from concurrent.futures import ProcessPoolExecutor as PPE
-from axon.transport_worker import AbstractTransportWorker, invoke_RPC
+from axon.transport_worker import AbstractTransportWorker
 from axon.serializers import serialize, deserialize
 from axon.SocketIO_transport import config
 from aiohttp import web
@@ -31,7 +31,7 @@ class SocketIOTransportWorker(AbstractTransportWorker):
 		@self.sio.event
 		def client_request(sid, req_str):
 			endpoint, param_str = req_str.split('|', 1)
-			result_str = self.call_RPC(endpoint, param_str)
+			result_str = self.invoke_RPC(endpoint, param_str, in_parallel=True)
 			self.sio.emit('result_from_worker', to=sid, data=result_str)
 
 		@self.sio.event
@@ -54,23 +54,8 @@ class SocketIOTransportWorker(AbstractTransportWorker):
 				chunks.sort(key=lambda x: x['chunk_num'])
 				chunk_strs = [b['chunk_str'] for b in chunks]
 				param_str = ''.join(chunk_strs)
-				result_str = self.call_RPC(endpoint, param_str)
+				result_str = self.invoke_RPC(endpoint, param_str, in_parallel=True)
 				self.sio.emit('result_from_worker', to=sid, data=result_str)
-
-	def call_RPC(self, endpoint, param_str):
-		result_str = None
-
-		try:
-			(fn, executor) = self.rpcs[endpoint]
-
-			result_str = executor.submit(invoke_RPC, fn, param_str, in_parallel=True, serialize=self.serialize, deserialize=self.deserialize).result()
-			result_str = f'0|{result_str}'
-
-		except:
-			result_str = serialize((traceback.format_exc(), sys.exc_info()[1]))
-			result_str = f'1|{result_str}'
-
-		return result_str
 
 	def run(self):
 		self.app.run(host='0.0.0.0', port=self.port)

@@ -1,7 +1,7 @@
 import sys
 sys.path.append('..')
 
-from axon.transport_worker import invoke_RPC, AbstractTransportWorker
+from axon.transport_worker import AbstractTransportWorker
 from axon.serializers import serialize, deserialize
 from axon.chunking import send_in_chunks, recv_chunks
 from axon.stubs import add_url_defaults
@@ -42,17 +42,9 @@ class ITLW(AbstractTransportWorker):
 		@self.sio.event
 		def rpc_request(req_str):
 			try:
+				call_ID, endpoint, param_str = req_str.split('|', 3)
 
-				try:
-					call_ID, endpoint, param_str = req_str.split('|', 3)
-					(fn, executor) = self.rpcs[endpoint]
-
-					result_str = executor.submit(invoke_RPC, fn, param_str, in_parallel=True, serialize=self.serialize, deserialize=self.deserialize).result()
-					result_str = f'0|{result_str}'
-
-				except:
-					result_str = serialize((traceback.format_exc(), sys.exc_info()[1]))
-					result_str = f'1|{result_str}'
+				result_str = self.invoke_RPC(endpoint, param_str, in_parallel=True)
 
 				chunk_size = 100_000
 

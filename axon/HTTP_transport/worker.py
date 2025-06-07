@@ -8,7 +8,7 @@ from concurrent.futures import ProcessPoolExecutor as PPE
 import traceback
 import logging
 
-from axon.transport_worker import AbstractTransportWorker, invoke_RPC
+from axon.transport_worker import AbstractTransportWorker
 from axon.serializers import serialize
 from axon.HTTP_transport import config
 
@@ -35,18 +35,9 @@ class HTTPTransportWorker(AbstractTransportWorker):
 		@self.app.route('/<path:path>', methods=['POST'])
 		def catch_all(path):
 			path = '/'+path
+			param_str = route_req.form['msg']
 			
-			try:
-				param_str = route_req.form['msg']
-				(fn, executor) = self.rpcs[path]
-
-				result_str = executor.submit(invoke_RPC, fn, param_str, in_parallel=True, serialize=self.serialize, deserialize=self.deserialize).result()
-				result_str = f'0|{result_str}'
-
-			except:
-				result_str = serialize((traceback.format_exc(), sys.exc_info()[1]))
-				result_str = f'1|{result_str}'
-
+			result_str = self.invoke_RPC(path, param_str, in_parallel=True)
 			return result_str
 
 	def run(self):
