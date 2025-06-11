@@ -19,8 +19,6 @@ class SocketIOTransportWorker(AbstractTransportWorker):
 	def __init__(self, port=config.port):
 		super().__init__()
 
-		# all RPCs registered with this TL are stored here in this dict
-		self.rpcs = {}
 		self.port = port
 		self.chunk_buffers = {}
 

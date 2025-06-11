@@ -24,30 +24,20 @@ class ITLW(AbstractTransportWorker):
 
 		self.name = name
 		self.reflector_url = add_url_defaults(url, SimpleNamespace(port=5000, scheme='http'))
-		self.rpcs = {}
-		self.sio = None
-
-	def run(self):
-
 		self.sio = socketio.Client()
-		self.sio.connect(self.reflector_url)
-
-		# this is the first message we'll send the reflector, containing the worker name
-		self.sio.emit('worker_header', data=str(self.name))
-
-		self.update_profile()
-
-		error_future = Future()
+		# for if an error means the worker must terminate
+		self.terminal_error_future = Future()
 
 		@self.sio.event
 		def rpc_request(req_str):
+
+			call_ID, endpoint, param_str = req_str.split('|', 3)
+
+			result_str = self.invoke_RPC(endpoint, param_str, in_parallel=True)
+
+			chunk_size = 100_000
+
 			try:
-				call_ID, endpoint, param_str = req_str.split('|', 3)
-
-				result_str = self.invoke_RPC(endpoint, param_str, in_parallel=True)
-
-				chunk_size = 100_000
-
 				if (len(result_str) < chunk_size):
 					self.sio.emit('rpc_result', data=f'{call_ID}|{result_str}')
 
@@ -57,11 +47,21 @@ class ITLW(AbstractTransportWorker):
 					for i in range(num_chunks):
 						chunk_str = result_str[ chunk_size*i : chunk_size*(i+1) ]
 						self.sio.emit('rpc_result_chunk', data=f'{str(i)}|{str(num_chunks)}|{call_ID}|{chunk_str}')
-			except:
-				error = sys.exc_info()[1]
-				error_future.set_result(error)
 
-		raise(error_future.result())
+			except(BaseException):
+				error = sys.exc_info()[1]
+				self.terminal_error_future.set_result(error)
+
+	def run(self):
+
+		self.sio.connect(self.reflector_url)
+
+		# this is the first message we'll send the reflector, containing the worker name
+		self.sio.emit('worker_header', data=str(self.name))
+
+		self.update_profile()
+
+		raise(self.terminal_error_future.result())
 
 	def update_profile(self):
 		

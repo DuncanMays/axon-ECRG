@@ -56,6 +56,7 @@ class AbstractTransportWorker(AbstractSerializer):
 
 	def __init__(self):
 		super().__init__()
+		self.rpcs = {}
 
 	@abstractmethod
 	def run(self):

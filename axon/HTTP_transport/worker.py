@@ -17,9 +17,6 @@ class HTTPTransportWorker(AbstractTransportWorker):
 	def __init__(self, port=config.port):
 		super().__init__()
 
-		# all RPCs registered with this TL are stored here in this dict
-		self.rpcs = {}
-
 		# removes the startup text
 		cli = sys.modules['flask.cli']
 		cli.show_server_banner = lambda *x: None
