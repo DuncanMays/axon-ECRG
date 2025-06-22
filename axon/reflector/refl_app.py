@@ -99,7 +99,7 @@ class ITL_Client(AbstractTransportClient):
 
 		# send a worker disconnect error back through each pending request
 		for call_ID in self.pending_reqs:
-			result_str = serialize(('The worker closed connection before responding to RPC', BaseException('WorkerDisconnect')))
+			result_str = serialize(BaseException('WorkerDisconnect'))
 			result_str = f'1|{result_str}'
 			self.pending_reqs[call_ID].set_result(result_str)
 

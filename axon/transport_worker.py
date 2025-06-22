@@ -72,7 +72,7 @@ class AbstractTransportWorker(AbstractSerializer):
 			result_str = f'0|{result_str}'
 
 		except:
-			result_str = serialize((traceback.format_exc(), sys.exc_info()[1]))
+			result_str = serialize(sys.exc_info()[1])
 			result_str = f'1|{result_str}'
 
 		return result_str

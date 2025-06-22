@@ -16,10 +16,9 @@ def error_handler(result_str):
 
 	if (err_code == '1'):
 		# an error occured in worker, raise it
-		(error_info, error) = deserialize(result_str)
+		error = deserialize(result_str)
 
 		print('the following error occured in worker:')
-		print(error_info)
 		raise(error)
 
 	else:
