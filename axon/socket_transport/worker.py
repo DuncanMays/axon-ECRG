@@ -12,6 +12,8 @@ import traceback
 class SocketTransportWorker(AbstractTransportWorker):
 
 	def __init__(self, port=config.port):
+		super().__init__()
+		
 		self.port = port
 		self.rpcs = {}
 		self.maxsize = 100_000
@@ -21,19 +23,12 @@ class SocketTransportWorker(AbstractTransportWorker):
 			server.serve_forever()
 
 	def sock_serve_fn(self, websocket):
-		
-		try:
-			endpoint = websocket.recv()
-			endpoint = endpoint.replace('//', '/')
 
-			param_str = recv_chunks(websocket)
+		path = websocket.recv()
+		path = path.replace('//', '/')
 
-			(fn, executor) = self.rpcs[endpoint]
-			result_str = executor.submit(self.invoke_RPC, fn, param_str).result()
-			result_str = f'0|{result_str}'
-			
-		except:
-			result_str = serialize((traceback.format_exc(), sys.exc_info()[1]))
-			result_str = f'1|{result_str}'
+		param_str = recv_chunks(websocket)
+
+		result_str = self.invoke_RPC(path, param_str, in_parallel=True)
 
 		send_in_chunks(websocket, result_str)

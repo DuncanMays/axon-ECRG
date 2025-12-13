@@ -67,7 +67,6 @@ class AbstractTransportWorker(AbstractSerializer):
 
 		try:
 			(fn, executor) = self.rpcs[endpoint]
-
 			result_str = executor.submit(invoke_RPC_helper, fn, param_str, in_parallel=True, serialize=self.serialize, deserialize=self.deserialize).result()
 			result_str = f'0|{result_str}'
 

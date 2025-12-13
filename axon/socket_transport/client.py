@@ -24,9 +24,6 @@ class SocketTransportClient(AbstractTransportClient):
 		url_head = '/'.join(url_components[:3])		
 		endpoint = '/' + '/'.join(url_components[3:])
 
-		req_str = endpoint+' '+param_str
-		result = None
-
 		with connect(url_head) as socket:
 			socket.send(endpoint)
 			send_in_chunks(socket, param_str)
