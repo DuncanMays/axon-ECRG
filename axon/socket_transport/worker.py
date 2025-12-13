@@ -1,4 +1,4 @@
-from axon.transport_worker import AbstractTransportWorker, invoke_RPC
+from axon.transport_worker import AbstractTransportWorker
 from axon.serializers import serialize
 from axon.chunking import send_in_chunks, recv_chunks
 from axon.socket_transport import config
@@ -29,7 +29,7 @@ class SocketTransportWorker(AbstractTransportWorker):
 			param_str = recv_chunks(websocket)
 
 			(fn, executor) = self.rpcs[endpoint]
-			result_str = executor.submit(invoke_RPC, fn, param_str).result()
+			result_str = executor.submit(self.invoke_RPC, fn, param_str).result()
 			result_str = f'0|{result_str}'
 			
 		except:
