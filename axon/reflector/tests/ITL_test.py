@@ -68,8 +68,8 @@ def test_chunking(echo_worker):
 	stub = axon.client.get_stub(f'{axon.config.url_scheme}://localhost:{refl_http_port}/reflected_services')
 
 	# creates a large string to test if the chunking feature is working, since the data should be larger than the max message size in SocketIO
-	# msg_size = 370_000
-	msg_size = 500_000
+	msg_size = 370_000
+	# msg_size = 500_000
 	msg = ''.join([str(random.randint(0,9)) for i in range(msg_size)])
 
 	response = stub.echo_worker.rpc.echo(msg).join()

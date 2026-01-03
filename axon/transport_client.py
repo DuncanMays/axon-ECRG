@@ -12,7 +12,12 @@ http = urllib3.PoolManager(maxsize=100)
 
 # this function checks if an error flag has been set and raises the corresponding error if it has
 def error_handler(result_str):
-	err_code, result_str = result_str.split('|', 1)
+
+	try:
+		err_code, result_str = result_str.split('|', 1)
+
+	except(BaseException):
+		raise BaseException(f'Invalid string returned: {result_str}')
 
 	if (err_code == '1'):
 		# an error occured in worker, raise it
