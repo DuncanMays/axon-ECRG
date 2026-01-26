@@ -12,19 +12,25 @@ import random
 from concurrent.futures import Future
 from threading import Timer
 from flask import Flask
+from math import ceil
+from copy import copy
 
 from axon.serializers import serialize, deserialize
-from axon.transport_client import req_executor, error_handler, AsyncResultHandle
+from axon.transport_client import req_executor, error_handler, AsyncResultHandle, AbstractTransportClient
+from axon.transport_worker import AbstractTransportWorker
 from axon.config import transport, default_service_config
 from axon.chunking import send_in_chunks, recv_chunks
 from axon.HTTP_transport.config import port as default_http_port
 from axon.utils import get_ID_generator
 from axon.reflector import config as refl_config
-from axon.transport_client import AbstractTransportClient
 
 sio = socketio.Server(async_mode='threading')
-reflector_node = None
+
+http_node = None
+socket_node = None
+
 client_sid_map = {}
+worker_sid_map = {}
 
 def null_serialize(params):
 	
@@ -91,7 +97,20 @@ class ITL_Client(AbstractTransportClient):
 		self.pending_reqs[call_ID] = result_future
 
 		logger.debug('RPC call to: %s for: %s call_ID: %s', self.sid, endpoint, call_ID)
-		self.sio.emit('rpc_request', to=self.sid, data=f'{call_ID}|{endpoint}|{param_str}')
+
+		chunk_size = 100_000
+
+		req_str = f'{call_ID}|{endpoint}|{param_str}'
+
+		if (len(req_str) < chunk_size):
+			self.sio.emit('rpc_request', to=self.sid, data=req_str)
+
+		else:
+			num_chunks = ceil(len(req_str)/chunk_size)
+
+			for i in range(num_chunks):
+				chunk_str = req_str[ chunk_size*i : chunk_size*(i+1) ]
+				self.sio.emit('rpc_request_chunk', to=self.sid, data=f'{str(i)}|{str(num_chunks)}|{call_ID}|{chunk_str}')		
 		
 		return result_future.result()
 
@@ -147,38 +166,135 @@ def rpc_result_chunk(sid, res_str):
 		del client.chunk_buffers[call_ID]
 
 @sio.event
-def connect(sid, e):
-	logger.debug('New connection from: %s', sid)
-
-@sio.event
-def disconnect(sid):
-	global reflector_node, client_sid_map
-
-	logger.debug('Worker %s disconnected', sid)
-	client = client_sid_map[sid]
-
-	reflector_node.remove_child(client.name)
-	client.disconnect_handler()
-	del client_sid_map[sid]
-
-@sio.event
 def worker_header(sid, name):
 	global client_sid_map
 	client_sid_map[sid] = ITL_Client(sio, sid, name)
 	
 @sio.event
 def update_profile(sid, profile_str):
-	global reflector_node, client_sid_map
+	global http_node, socket_node, client_sid_map
 	logger.debug(f'update_profile {sid}')
 
 	profile = deserialize(profile_str)
 
-	itl = client_sid_map[sid]
-	stub = axon.client.make_ServiceStub('ws://none:0000', itl, profile, stub_type=axon.stubs.SyncStub)
-	reflector_node.add_child(itl.name, stub)
+	tl_client = client_sid_map[sid]
+	stub = axon.client.make_ServiceStub('ws://none:0000', tl_client, profile, stub_type=axon.stubs.SyncStub)
+	
+	http_node.add_child(tl_client.name, stub)
+	# socket_node.add_child(tl_client.name, stub)
+
+# this class extends the client and encapsulates the connection with a client
+class ITL_Worker(AbstractTransportWorker):
+
+	def __init__(self, sio, sid):
+		super().__init__()
+
+		self.chunk_buffers = {}
+		self.sio = sio
+		self.sid = sid
+
+		# for if an error means the worker must terminate
+		self.terminal_error_future = Future()
+
+	# handles chunking the response back to client
+	def invoke_rpc_helper(self, req_str):
+		call_ID, endpoint, param_str = req_str.split('|', 3)
+
+		result_str = self.invoke_RPC(endpoint, param_str, in_parallel=True)
+
+		chunk_size = 100_000
+
+		try:
+			if (len(result_str) < chunk_size):
+				self.sio.emit('rpc_result', data=f'{call_ID}|{result_str}')
+
+			else:
+				num_chunks = ceil(len(result_str)/chunk_size)
+
+				for i in range(num_chunks):
+					chunk_str = result_str[ chunk_size*i : chunk_size*(i+1) ]
+					self.sio.emit('rpc_result_chunk', data=f'{str(i)}|{str(num_chunks)}|{call_ID}|{chunk_str}')
+
+		except(BaseException):
+			error = sys.exc_info()[1]
+			self.terminal_error_future.set_result(error)
+
+	def run(self):
+		raise(self.terminal_error_future.result())
+
+@sio.event
+def rpc_request(sid, req_str):
+	global worker_sid_map
+
+	worker = worker_sid_map[sid]
+	worker.invoke_rpc_helper(req_str)
+
+@sio.event
+def rpc_request_chunk(sid, event_str):
+	global worker_sid_map
+	
+	worker = worker_sid_map[sid]
+	chunk_num, num_chunks, call_ID, chunk_str = event_str.split('|', 3)
+
+	chunk_obj = {
+		'chunk_str': chunk_str,
+		'chunk_num': int(chunk_num)
+	}
+
+	if (call_ID in worker.chunk_buffers):
+		worker.chunk_buffers[call_ID].append(chunk_obj)
+
+	else :
+		worker.chunk_buffers[call_ID] = [chunk_obj]
+
+	if (len(worker.chunk_buffers[call_ID]) == int(num_chunks)):
+
+		chunks = worker.chunk_buffers[call_ID]
+		chunks.sort(key=lambda x: x['chunk_num'])
+		chunk_strs = [b['chunk_str'] for b in chunks]
+		req_str = ''.join(chunk_strs)
+
+		worker.invoke_rpc_helper(req_str)
+
+@sio.event
+def client_header(sid):
+	global worker_sid_map
+	print('client connected, creating worker object to interface with')
+	worker = ITL_Worker(sio, sid)
+	
+	worker.serialize = null_serialize
+	worker.deserialize = null_deserialize
+	print('copying RPCs from the http transport layer')
+	worker.rpcs = copy(http_node.tl.rpcs)
+	print('setting global sid map')
+	worker_sid_map[sid] = worker
+
+@sio.event
+def connect(sid, e):
+	logger.debug('New connection from: %s', sid)
+
+@sio.event
+def disconnect(sid):
+	global http_node, client_sid_map
+
+	if sid in client_sid_map:
+		logger.debug('Worker %s disconnected', sid)
+		client = client_sid_map[sid]
+
+		http_node.remove_child(client.name)
+		# socket_node.remove_child(client.name)
+
+		client.disconnect_handler()
+		del client_sid_map[sid]
+
+	if sid in worker_sid_map:
+		# logger.debug('Client %s disconnected', sid)
+		worker = worker_sid_map[sid]
+		worker.disconnect_handler()
+		del worker_sid_map[sid]
 
 def run(endpoint='reflected_services', ws_port=5000, http_port=default_http_port):
-	global reflector_node, http_tl, logger
+	global http_node, socket_node, http_tl, logger
 
 	if logger == None:
 		init_logger()
@@ -192,8 +308,7 @@ def run(endpoint='reflected_services', ws_port=5000, http_port=default_http_port
 	http_thread.start()
 	time.sleep(0.5)
 
-	# reflector_node = axon.worker.service({}, endpoint, tl=http_tl)
-	reflector_node = axon.worker.ServiceNode({}, endpoint, tl=http_tl)
+	http_node = axon.worker.ServiceNode({}, endpoint, tl=http_tl)
 
 	logger.debug('Reflector start')
 

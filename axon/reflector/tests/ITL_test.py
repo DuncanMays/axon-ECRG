@@ -155,3 +155,7 @@ def test_no_param(no_param_worker):
 	t = DummyClass()
 	r = stub.rpc.no_param().join()
 	assert(r == None)
+
+# access an eecho worker through the socket-based client
+# def test_two_way_client(echo_worker):
+	
