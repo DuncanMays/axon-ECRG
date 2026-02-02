@@ -19,8 +19,9 @@ class EdgeClient(AbstractTransportClient):
 		self.pending_reqs = {}
 		self.chunk_buffers = {}
 		self.call_ID_gen = get_ID_generator()
+		self.init_future = Future()
 
-		self.sio.emit('client_header')
+		self.sio.emit('client_header', callback=lambda: self.init_future.set_result(None))
 
 		@self.sio.event
 		def rpc_result(return_str):
@@ -67,6 +68,8 @@ class EdgeClient(AbstractTransportClient):
 		return None
 
 	def net_call(self, url, param_str):
+
+		self.init_future.result()
 
 		url_components = url.split('/')
 		url_head = '/'.join(url_components[:3])

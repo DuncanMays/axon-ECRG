@@ -259,14 +259,12 @@ def rpc_request_chunk(sid, event_str):
 @sio.event
 def client_header(sid):
 	global worker_sid_map
-	print('client connected, creating worker object to interface with')
 	worker = ITL_Worker(sio, sid)
-	
+
 	worker.serialize = null_serialize
 	worker.deserialize = null_deserialize
-	print('copying RPCs from the http transport layer')
+	
 	worker.rpcs = copy(http_node.tl.rpcs)
-	print('setting global sid map')
 	worker_sid_map[sid] = worker
 
 @sio.event
