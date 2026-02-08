@@ -6,20 +6,16 @@ import time
 import threading
 import socketio
 import logging
-import psutil
-import random
 
-from concurrent.futures import Future
-from threading import Timer
+from concurrent.futures import Future, ThreadPoolExecutor
 from flask import Flask
 from math import ceil
 from copy import copy
 
 from axon.serializers import serialize, deserialize
-from axon.transport_client import req_executor, error_handler, AsyncResultHandle, AbstractTransportClient
+from axon.transport_client import AbstractTransportClient
 from axon.transport_worker import AbstractTransportWorker
-from axon.config import transport, default_service_config
-from axon.chunking import send_in_chunks, recv_chunks
+from axon.config import transport
 from axon.HTTP_transport.config import port as default_http_port
 from axon.utils import get_ID_generator
 from axon.reflector import config as refl_config
@@ -280,15 +276,11 @@ def disconnect(sid):
 		client = client_sid_map[sid]
 
 		http_node.remove_child(client.name)
-		# socket_node.remove_child(client.name)
 
 		client.disconnect_handler()
 		del client_sid_map[sid]
 
 	if sid in worker_sid_map:
-		# logger.debug('Client %s disconnected', sid)
-		worker = worker_sid_map[sid]
-		worker.disconnect_handler()
 		del worker_sid_map[sid]
 
 def run(endpoint='reflected_services', ws_port=5000, http_port=default_http_port):
@@ -298,6 +290,7 @@ def run(endpoint='reflected_services', ws_port=5000, http_port=default_http_port
 		init_logger()
 
 	http_tl = transport.worker(http_port)
+	tpe = ThreadPoolExecutor(100)
 
 	http_tl.serialize = null_serialize
 	http_tl.deserialize = null_deserialize
@@ -306,7 +299,7 @@ def run(endpoint='reflected_services', ws_port=5000, http_port=default_http_port
 	http_thread.start()
 	time.sleep(0.5)
 
-	http_node = axon.worker.ServiceNode({}, endpoint, tl=http_tl)
+	http_node = axon.worker.ServiceNode({}, endpoint, tl=http_tl, executor=tpe)
 
 	logger.debug('Reflector start')
 

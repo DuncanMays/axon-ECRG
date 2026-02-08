@@ -9,6 +9,7 @@ from concurrent.futures import Future
 
 from axon.transport_client import req_executor, error_handler, AsyncResultHandle, AbstractTransportClient
 from axon.utils import get_ID_generator
+from axon.serializers import serialize
 
 class EdgeClient(AbstractTransportClient):
 
@@ -60,7 +61,7 @@ class EdgeClient(AbstractTransportClient):
 				del self.chunk_buffers[call_ID]
 
 		@self.sio.event
-		def disconnect():
+		def disconnect(e):
 			self.disconnect_handler()
 
 	def get_config(self):
