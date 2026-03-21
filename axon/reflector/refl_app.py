@@ -8,6 +8,7 @@ import socketio
 import logging
 
 from concurrent.futures import Future, ThreadPoolExecutor
+from functools import partial
 from flask import Flask
 from copy import copy
 
@@ -96,7 +97,7 @@ class ITL_Client(AbstractTransportClient):
 		logger.debug('RPC call to: %s for: %s call_ID: %s', self.sid, endpoint, call_ID)
 
 		req_str = f'{call_ID}|{endpoint}|{param_str}'
-		sio_send(self.sio, 'rpc_request', req_str, to=self.sid)
+		sio_send(partial(self.sio.emit, to=self.sid), 'rpc_request', req_str)
 
 		return result_future.result()
 
@@ -168,7 +169,7 @@ class ITL_Worker(AbstractTransportWorker):
 		result_str = self.invoke_RPC(endpoint, param_str, in_parallel=True)
 
 		try:
-			sio_send(self.sio, 'rpc_result', f'{call_ID}|{result_str}')
+			sio_send(self.sio.emit, 'rpc_result', f'{call_ID}|{result_str}')
 
 		except(BaseException):
 			error = sys.exc_info()[1]

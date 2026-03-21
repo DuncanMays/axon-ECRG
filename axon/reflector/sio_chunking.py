@@ -3,8 +3,11 @@ from math import ceil
 CHUNK_SIZE = 100_000
 
 
-def sio_send(sio, event, message, **emit_kwargs):
+def sio_send(emit, event, message):
 	"""Send a SocketIO message, chunking if it exceeds CHUNK_SIZE.
+
+	emit is a callable matching the signature of sio.emit — use functools.partial
+	to pre-bind any arguments (e.g. to=sid) before passing in.
 
 	message must be formatted as '{call_ID}|{...rest...}'. If small enough,
 	emits event with the full message. Otherwise splits into numbered chunks
@@ -15,7 +18,7 @@ def sio_send(sio, event, message, **emit_kwargs):
 	call_ID = message.split('|', 1)[0]
 
 	if len(message) < CHUNK_SIZE:
-		sio.emit(event, data=message, **emit_kwargs)
+		emit(event, data=message)
 
 	else:
 		chunk_event = event + '_chunk'
@@ -23,7 +26,7 @@ def sio_send(sio, event, message, **emit_kwargs):
 
 		for i in range(num_chunks):
 			chunk = message[CHUNK_SIZE * i: CHUNK_SIZE * (i + 1)]
-			sio.emit(chunk_event, data=f'{i}|{num_chunks}|{call_ID}|{chunk}', **emit_kwargs)
+			emit(chunk_event, data=f'{i}|{num_chunks}|{call_ID}|{chunk}')
 
 
 class ChunkBuffer:
