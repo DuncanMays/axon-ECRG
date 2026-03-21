@@ -45,7 +45,7 @@ class ITLW(AbstractTransportWorker):
 		result_str = self.invoke_RPC(endpoint, param_str, in_parallel=True)
 
 		try:
-			sio_send(self.sio, 'rpc_result', 'rpc_result_chunk', f'{call_ID}|{result_str}')
+			sio_send(self.sio, 'rpc_result', f'{call_ID}|{result_str}')
 
 		except(BaseException):
 			error = sys.exc_info()[1]

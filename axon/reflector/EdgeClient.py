@@ -61,7 +61,7 @@ class EdgeClient(AbstractTransportClient):
 		# logger.debug('RPC call to: %s for: %s call_ID: %s', endpoint, call_ID)
 
 		req_str = f'{call_ID}|{endpoint}|{param_str}'
-		sio_send(self.sio, 'rpc_request', 'rpc_request_chunk', req_str)
+		sio_send(self.sio, 'rpc_request', req_str)
 
 		return result_future.result()
 

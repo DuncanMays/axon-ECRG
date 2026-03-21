@@ -96,7 +96,7 @@ class ITL_Client(AbstractTransportClient):
 		logger.debug('RPC call to: %s for: %s call_ID: %s', self.sid, endpoint, call_ID)
 
 		req_str = f'{call_ID}|{endpoint}|{param_str}'
-		sio_send(self.sio, 'rpc_request', 'rpc_request_chunk', req_str, to=self.sid)
+		sio_send(self.sio, 'rpc_request', req_str, to=self.sid)
 
 		return result_future.result()
 
@@ -168,7 +168,7 @@ class ITL_Worker(AbstractTransportWorker):
 		result_str = self.invoke_RPC(endpoint, param_str, in_parallel=True)
 
 		try:
-			sio_send(self.sio, 'rpc_result', 'rpc_result_chunk', f'{call_ID}|{result_str}')
+			sio_send(self.sio, 'rpc_result', f'{call_ID}|{result_str}')
 
 		except(BaseException):
 			error = sys.exc_info()[1]
