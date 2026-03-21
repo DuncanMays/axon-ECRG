@@ -1,7 +1,7 @@
 from axon.transport_worker import AbstractTransportWorker
 from axon.serializers import serialize
-from axon.chunking import send_in_chunks, recv_chunks
 from axon.socket_transport import config
+from axon.socket_transport.chunking import send_in_chunks, recv_chunks
 
 from concurrent.futures import ProcessPoolExecutor as PPE
 

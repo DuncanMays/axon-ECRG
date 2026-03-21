@@ -3,7 +3,6 @@ sys.path.append('..')
 
 from axon.transport_worker import AbstractTransportWorker
 from axon.serializers import serialize, deserialize
-from axon.chunking import send_in_chunks, recv_chunks
 from axon.stubs import add_url_defaults
 from axon.worker import TLSNs
 

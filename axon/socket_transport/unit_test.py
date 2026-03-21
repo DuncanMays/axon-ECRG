@@ -8,7 +8,7 @@ from websockets.sync.client import connect
 from axon.socket_transport import client, worker, config
 from axon.transport_client import AbstractTransportClient
 from axon.config import inline_executor
-from axon.chunking import send_in_chunks, recv_chunks
+from axon.socket_transport.chunking import send_in_chunks, recv_chunks
 
 port = 8989
 

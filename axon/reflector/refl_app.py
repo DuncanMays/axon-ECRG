@@ -290,7 +290,7 @@ def run(endpoint='reflected_services', ws_port=5000, http_port=default_http_port
 		init_logger()
 
 	http_tl = transport.worker(http_port)
-	tpe = ThreadPoolExecutor(100)
+	tpe = ThreadPoolExecutor(axon.config.NUM_OPEN_REQS)
 
 	http_tl.serialize = null_serialize
 	http_tl.deserialize = null_deserialize
