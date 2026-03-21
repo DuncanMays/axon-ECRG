@@ -4,7 +4,7 @@ sys.path.append('..')
 import axon
 import cloudpickle
 
-itlw = axon.reflector.ITLW(url='143.198.32.69', name='host_worker')
+itlw = axon.reflector.EdgeWorker(url='143.198.32.69', name='host_worker')
 
 @axon.worker.rpc(tl=itlw)
 # @axon.worker.rpc()

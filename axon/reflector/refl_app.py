@@ -64,8 +64,8 @@ def init_logger():
 	logger.addHandler(c_handler)
 	logger.addHandler(f_handler)
 
-# this class extends the client and encapsulates the connection with a worker
-class ITL_Client(AbstractTransportClient):
+# created on the cloud/reflector side when an EdgeWorker connects
+class CloudClient(AbstractTransportClient):
 
 	def __init__(self, sio, sid, name):
 		super().__init__()
@@ -134,7 +134,7 @@ def rpc_result_chunk(sid, res_str):
 @sio.event
 def worker_header(sid, name):
 	global client_sid_map
-	client_sid_map[sid] = ITL_Client(sio, sid, name)
+	client_sid_map[sid] = CloudClient(sio, sid, name)
 	
 @sio.event
 def update_profile(sid, profile_str):
@@ -149,8 +149,8 @@ def update_profile(sid, profile_str):
 	http_node.add_child(tl_client.name, stub)
 	# socket_node.add_child(tl_client.name, stub)
 
-# this class extends the client and encapsulates the connection with a client
-class ITL_Worker(AbstractTransportWorker):
+# created on the cloud/reflector side when an EdgeClient connects
+class CloudWorker(AbstractTransportWorker):
 
 	def __init__(self, sio, sid):
 		super().__init__()
@@ -198,7 +198,7 @@ def rpc_request_chunk(sid, event_str):
 @sio.event
 def client_header(sid):
 	global worker_sid_map
-	worker = ITL_Worker(sio, sid)
+	worker = CloudWorker(sio, sid)
 
 	worker.serialize = null_serialize
 	worker.deserialize = null_deserialize

@@ -17,7 +17,7 @@ import time
 import sys
 import traceback
 
-class ITLW(AbstractTransportWorker):
+class EdgeWorker(AbstractTransportWorker):
 
 	def __init__(self, name, url='http://143.198.32.69:5000'):
 		super().__init__()
