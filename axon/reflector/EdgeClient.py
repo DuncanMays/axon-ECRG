@@ -3,13 +3,13 @@ sys.path.append('..')
 
 import axon
 
-from math import ceil
-
 from concurrent.futures import Future
 
 from axon.transport_client import req_executor, error_handler, AsyncResultHandle, AbstractTransportClient
 from axon.utils import get_ID_generator
 from axon.serializers import serialize
+
+from axon.reflector.sio_chunking import sio_send, ChunkBuffer
 
 class EdgeClient(AbstractTransportClient):
 
@@ -18,7 +18,7 @@ class EdgeClient(AbstractTransportClient):
 		
 		self.sio = sio
 		self.pending_reqs = {}
-		self.chunk_buffers = {}
+		self.chunk_buffer = ChunkBuffer()
 		self.call_ID_gen = get_ID_generator()
 		self.init_future = Future()
 
@@ -33,32 +33,10 @@ class EdgeClient(AbstractTransportClient):
 
 		@self.sio.event
 		def rpc_result_chunk(event_str):
-			chunk_num, num_chunks, call_ID, chunk_str = event_str.split('|', 3)
-			# logger.debug('RPC response chunk %s for call_ID: %s', chunk_num, call_ID)
-
-			chunk_obj = {
-				'chunk_str': chunk_str,
-				'chunk_num': int(chunk_num)
-			}
-
-			if (call_ID in self.chunk_buffers):
-				self.chunk_buffers[call_ID].append(chunk_obj)
-
-			else :
-				self.chunk_buffers[call_ID] = [chunk_obj]
-
-			if (len(self.chunk_buffers[call_ID]) == int(num_chunks)):
-
-				chunks = self.chunk_buffers[call_ID]
-				chunks.sort(key=lambda x: x['chunk_num'])
-				chunk_strs = [b['chunk_str'] for b in chunks]
-				result_str = ''.join(chunk_strs)
-
-				result_future = self.pending_reqs[call_ID]
-				result_future.set_result(result_str)
-
-				# logger.debug('recieved all chunks for call_ID: %s', call_ID)
-				del self.chunk_buffers[call_ID]
+			assembled = self.chunk_buffer.receive(event_str)
+			if assembled is not None:
+				call_ID, result_str = assembled.split('|', 1)
+				self.pending_reqs[call_ID].set_result(result_str)
 
 		@self.sio.event
 		def disconnect(e):
@@ -82,20 +60,9 @@ class EdgeClient(AbstractTransportClient):
 
 		# logger.debug('RPC call to: %s for: %s call_ID: %s', endpoint, call_ID)
 
-		chunk_size = 100_000
-
 		req_str = f'{call_ID}|{endpoint}|{param_str}'
+		sio_send(self.sio, 'rpc_request', 'rpc_request_chunk', req_str)
 
-		if (len(req_str) < chunk_size):
-			self.sio.emit('rpc_request', data=req_str)
-
-		else:
-			num_chunks = ceil(len(req_str)/chunk_size)
-
-			for i in range(num_chunks):
-				chunk_str = req_str[ chunk_size*i : chunk_size*(i+1) ]
-				self.sio.emit('rpc_request_chunk', data=f'{str(i)}|{str(num_chunks)}|{call_ID}|{chunk_str}')		
-		
 		return result_future.result()
 
 	def disconnect_handler(self):

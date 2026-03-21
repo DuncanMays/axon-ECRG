@@ -9,7 +9,6 @@ import logging
 
 from concurrent.futures import Future, ThreadPoolExecutor
 from flask import Flask
-from math import ceil
 from copy import copy
 
 from axon.serializers import serialize, deserialize
@@ -18,7 +17,9 @@ from axon.transport_worker import AbstractTransportWorker
 from axon.config import transport
 from axon.HTTP_transport.config import port as default_http_port
 from axon.utils import get_ID_generator
+
 from axon.reflector import config as refl_config
+from axon.reflector.sio_chunking import sio_send, ChunkBuffer
 
 sio = socketio.Server(async_mode='threading')
 
@@ -72,7 +73,7 @@ class ITL_Client(AbstractTransportClient):
 		self.sid = sid
 		self.name = name
 		self.pending_reqs = {}
-		self.chunk_buffers = {}
+		self.chunk_buffer = ChunkBuffer()
 		self.call_ID_gen = get_ID_generator()
 
 		self.serialize = null_serialize
@@ -94,20 +95,9 @@ class ITL_Client(AbstractTransportClient):
 
 		logger.debug('RPC call to: %s for: %s call_ID: %s', self.sid, endpoint, call_ID)
 
-		chunk_size = 100_000
-
 		req_str = f'{call_ID}|{endpoint}|{param_str}'
+		sio_send(self.sio, 'rpc_request', 'rpc_request_chunk', req_str, to=self.sid)
 
-		if (len(req_str) < chunk_size):
-			self.sio.emit('rpc_request', to=self.sid, data=req_str)
-
-		else:
-			num_chunks = ceil(len(req_str)/chunk_size)
-
-			for i in range(num_chunks):
-				chunk_str = req_str[ chunk_size*i : chunk_size*(i+1) ]
-				self.sio.emit('rpc_request_chunk', to=self.sid, data=f'{str(i)}|{str(num_chunks)}|{call_ID}|{chunk_str}')		
-		
 		return result_future.result()
 
 	def disconnect_handler(self):
@@ -132,34 +122,13 @@ def rpc_result(sid, return_str):
 def rpc_result_chunk(sid, res_str):
 	global client_sid_map
 
-	chunk_num, num_chunks, call_ID, chunk_str = res_str.split('|', 3)
-	logger.debug('RPC response chunk %s for call_ID: %s', chunk_num, call_ID)
-
-	chunk_obj = {
-		'chunk_str': chunk_str,
-		'chunk_num': int(chunk_num)
-	}
-
 	client = client_sid_map[sid]
+	assembled = client.chunk_buffer.receive(res_str)
 
-	if (call_ID in client.chunk_buffers):
-		client.chunk_buffers[call_ID].append(chunk_obj)
-
-	else :
-		client.chunk_buffers[call_ID] = [chunk_obj]
-
-	if (len(client.chunk_buffers[call_ID]) == int(num_chunks)):
-
-		chunks = client.chunk_buffers[call_ID]
-		chunks.sort(key=lambda x: x['chunk_num'])
-		chunk_strs = [b['chunk_str'] for b in chunks]
-		result_str = ''.join(chunk_strs)
-
-		result_future = client.pending_reqs[call_ID]
-		result_future.set_result(result_str)
-
-		logger.debug('recieved all chunks for call_ID: %s', call_ID)
-		del client.chunk_buffers[call_ID]
+	if assembled is not None:
+		call_ID, result_str = assembled.split('|', 1)
+		logger.debug('received all chunks for call_ID: %s', call_ID)
+		client.pending_reqs[call_ID].set_result(result_str)
 
 @sio.event
 def worker_header(sid, name):
@@ -185,7 +154,7 @@ class ITL_Worker(AbstractTransportWorker):
 	def __init__(self, sio, sid):
 		super().__init__()
 
-		self.chunk_buffers = {}
+		self.chunk_buffer = ChunkBuffer()
 		self.sio = sio
 		self.sid = sid
 
@@ -194,22 +163,12 @@ class ITL_Worker(AbstractTransportWorker):
 
 	# handles chunking the response back to client
 	def invoke_rpc_helper(self, req_str):
-		call_ID, endpoint, param_str = req_str.split('|', 3)
+		call_ID, endpoint, param_str = req_str.split('|', 2)
 
 		result_str = self.invoke_RPC(endpoint, param_str, in_parallel=True)
 
-		chunk_size = 100_000
-
 		try:
-			if (len(result_str) < chunk_size):
-				self.sio.emit('rpc_result', data=f'{call_ID}|{result_str}')
-
-			else:
-				num_chunks = ceil(len(result_str)/chunk_size)
-
-				for i in range(num_chunks):
-					chunk_str = result_str[ chunk_size*i : chunk_size*(i+1) ]
-					self.sio.emit('rpc_result_chunk', data=f'{str(i)}|{str(num_chunks)}|{call_ID}|{chunk_str}')
+			sio_send(self.sio, 'rpc_result', 'rpc_result_chunk', f'{call_ID}|{result_str}')
 
 		except(BaseException):
 			error = sys.exc_info()[1]
@@ -228,29 +187,12 @@ def rpc_request(sid, req_str):
 @sio.event
 def rpc_request_chunk(sid, event_str):
 	global worker_sid_map
-	
+
 	worker = worker_sid_map[sid]
-	chunk_num, num_chunks, call_ID, chunk_str = event_str.split('|', 3)
+	assembled = worker.chunk_buffer.receive(event_str)
 
-	chunk_obj = {
-		'chunk_str': chunk_str,
-		'chunk_num': int(chunk_num)
-	}
-
-	if (call_ID in worker.chunk_buffers):
-		worker.chunk_buffers[call_ID].append(chunk_obj)
-
-	else :
-		worker.chunk_buffers[call_ID] = [chunk_obj]
-
-	if (len(worker.chunk_buffers[call_ID]) == int(num_chunks)):
-
-		chunks = worker.chunk_buffers[call_ID]
-		chunks.sort(key=lambda x: x['chunk_num'])
-		chunk_strs = [b['chunk_str'] for b in chunks]
-		req_str = ''.join(chunk_strs)
-
-		worker.invoke_rpc_helper(req_str)
+	if assembled is not None:
+		worker.invoke_rpc_helper(assembled)
 
 @sio.event
 def client_header(sid):

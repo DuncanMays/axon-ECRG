@@ -6,9 +6,10 @@ from axon.serializers import serialize, deserialize
 from axon.stubs import add_url_defaults
 from axon.worker import TLSNs
 
+from axon.reflector.sio_chunking import sio_send, ChunkBuffer
+
 from concurrent.futures import Future, ProcessPoolExecutor as PPE
 from types import SimpleNamespace
-from math import ceil
 
 import socketio
 import cloudpickle
@@ -22,7 +23,7 @@ class ITLW(AbstractTransportWorker):
 		super().__init__()
 
 		self.name = name
-		self.chunk_buffers = {}
+		self.chunk_buffer = ChunkBuffer()
 		self.reflector_url = add_url_defaults(url, SimpleNamespace(port=5000, scheme='http'))
 		self.sio = socketio.Client()
 		# for if an error means the worker must terminate
@@ -34,46 +35,17 @@ class ITLW(AbstractTransportWorker):
 
 		@self.sio.event
 		def rpc_request_chunk(event_str):
-
-			chunk_num, num_chunks, call_ID, chunk_str = event_str.split('|', 3)
-
-			chunk_obj = {
-				'chunk_str': chunk_str,
-				'chunk_num': int(chunk_num)
-			}
-
-			if (call_ID in self.chunk_buffers):
-				self.chunk_buffers[call_ID].append(chunk_obj)
-
-			else :
-				self.chunk_buffers[call_ID] = [chunk_obj]
-
-			if (len(self.chunk_buffers[call_ID]) == int(num_chunks)):
-
-				chunks = self.chunk_buffers[call_ID]
-				chunks.sort(key=lambda x: x['chunk_num'])
-				chunk_strs = [b['chunk_str'] for b in chunks]
-				req_str = ''.join(chunk_strs)
-
-				self.invoke_rpc_helper(req_str)
+			assembled = self.chunk_buffer.receive(event_str)
+			if assembled is not None:
+				self.invoke_rpc_helper(assembled)
 
 	def invoke_rpc_helper(self, req_str):
-		call_ID, endpoint, param_str = req_str.split('|', 3)
+		call_ID, endpoint, param_str = req_str.split('|', 2)
 
 		result_str = self.invoke_RPC(endpoint, param_str, in_parallel=True)
 
-		chunk_size = 100_000
-
 		try:
-			if (len(result_str) < chunk_size):
-				self.sio.emit('rpc_result', data=f'{call_ID}|{result_str}')
-
-			else:
-				num_chunks = ceil(len(result_str)/chunk_size)
-
-				for i in range(num_chunks):
-					chunk_str = result_str[ chunk_size*i : chunk_size*(i+1) ]
-					self.sio.emit('rpc_result_chunk', data=f'{str(i)}|{str(num_chunks)}|{call_ID}|{chunk_str}')
+			sio_send(self.sio, 'rpc_result', 'rpc_result_chunk', f'{call_ID}|{result_str}')
 
 		except(BaseException):
 			error = sys.exc_info()[1]
