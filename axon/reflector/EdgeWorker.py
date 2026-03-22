@@ -1,21 +1,20 @@
 import sys
 sys.path.append('..')
 
+from functools import partial
+
 from axon.transport_worker import AbstractTransportWorker
-from axon.serializers import serialize, deserialize
+from axon.serializers import serialize
 from axon.stubs import add_url_defaults
 from axon.worker import TLSNs
 
 from axon.reflector.sio_chunking import sio_send, ChunkBuffer
+from axon.reflector.CloudClient import NAMESPACE
 
-from concurrent.futures import Future, ProcessPoolExecutor as PPE
+from concurrent.futures import Future
 from types import SimpleNamespace
 
 import socketio
-import cloudpickle
-import time
-import sys
-import traceback
 
 class EdgeWorker(AbstractTransportWorker):
 
@@ -29,11 +28,11 @@ class EdgeWorker(AbstractTransportWorker):
 		# for if an error means the worker must terminate
 		self.terminal_error_future = Future()
 
-		@self.sio.event
+		@self.sio.on('rpc_request', namespace=NAMESPACE)
 		def rpc_request(req_str):
 			self.invoke_rpc_helper(req_str)
 
-		@self.sio.event
+		@self.sio.on('rpc_request_chunk', namespace=NAMESPACE)
 		def rpc_request_chunk(event_str):
 			assembled = self.chunk_buffer.receive(event_str)
 			if assembled is not None:
@@ -45,25 +44,22 @@ class EdgeWorker(AbstractTransportWorker):
 		result_str = self.invoke_RPC(endpoint, param_str, in_parallel=True)
 
 		try:
-			sio_send(self.sio.emit, 'rpc_result', f'{call_ID}|{result_str}')
+			sio_send(partial(self.sio.emit, namespace=NAMESPACE), 'rpc_result', f'{call_ID}|{result_str}')
 
-		except(BaseException):
+		except BaseException:
 			error = sys.exc_info()[1]
 			self.terminal_error_future.set_result(error)
 
 	def run(self):
 
-		self.sio.connect(self.reflector_url)
-
-		# this is the first message we'll send the reflector, containing the worker name
-		self.sio.emit('worker_header', data=str(self.name))
-
+		self.sio.connect(self.reflector_url, namespaces=[NAMESPACE])
+		self.sio.emit('worker_header', data=str(self.name), namespace=NAMESPACE)
 		self.update_profile()
 
-		raise(self.terminal_error_future.result())
+		raise self.terminal_error_future.result()
 
 	def update_profile(self):
-		
+
 		tlsn = TLSNs[id(self)]
 		profile = tlsn.get_profile()
-		self.sio.emit('update_profile', data=serialize(profile))
+		self.sio.emit('update_profile', data=serialize(profile), namespace=NAMESPACE)
