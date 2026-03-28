@@ -32,7 +32,7 @@ class DummyClass():
 @pytest.fixture(scope='package')
 def test_service(refl_thread):
 
-	itlw = axon.reflector.ITLW(url='localhost', name='test_service')
+	itlw = axon.reflector.EdgeWorker(url='localhost', name='test_service')
 
 	axon.worker.service(DummyClass(), 'test_service', tl=itlw, executor=tpe)
 
@@ -43,7 +43,7 @@ def test_service(refl_thread):
 @pytest.fixture(scope='package')
 def echo_worker(refl_thread):
 
-	itlw = axon.reflector.ITLW(url='localhost', name='echo_worker')
+	itlw = axon.reflector.EdgeWorker(url='localhost', name='echo_worker')
 
 	@axon.worker.rpc(tl=itlw, executor=tpe)
 	def echo(msg):
@@ -79,7 +79,7 @@ def test_chunking(echo_worker):
 @pytest.fixture(scope='package')
 def host_worker(refl_thread):
 
-	itlw = axon.reflector.ITLW(url='localhost', name='host_worker')
+	itlw = axon.reflector.EdgeWorker(url='localhost', name='host_worker')
 
 	@axon.worker.rpc(tl=itlw, executor=tpe)
 	def host(service_str, name):
@@ -105,7 +105,7 @@ def test_hosting(host_worker):
 
 def test_disconnect(refl_thread):
 
-	itlw = axon.reflector.ITLW(url='localhost', name='disconnect_worker')
+	itlw = axon.reflector.EdgeWorker(url='localhost', name='disconnect_worker')
 
 	@axon.worker.rpc(tl=itlw, executor=tpe)
 	def delay(i):
@@ -138,7 +138,7 @@ def test_disconnect(refl_thread):
 @pytest.fixture(scope='package')
 def no_param_worker(refl_thread):
 
-	itlw = axon.reflector.ITLW(url='localhost', name='no_param_worker')
+	itlw = axon.reflector.EdgeWorker(url='localhost', name='no_param_worker')
 
 	@axon.worker.rpc(tl=itlw, executor=tpe)
 	def no_param():

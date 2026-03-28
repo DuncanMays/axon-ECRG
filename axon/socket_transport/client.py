@@ -3,8 +3,8 @@ path.append('..')
 
 from axon.serializers import serialize, deserialize
 from axon.transport_client import AbstractTransportClient, req_executor, error_handler, AsyncResultHandle
-from axon.chunking import send_in_chunks, recv_chunks
 from axon.socket_transport import config
+from axon.socket_transport.chunking import send_in_chunks, recv_chunks
 
 from websockets.sync.client import connect
 
